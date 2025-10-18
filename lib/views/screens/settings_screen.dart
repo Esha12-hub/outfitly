@@ -256,8 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) =>
-                                const UpdateFaqScreen()),
+                                builder: (context) => const UpdateFaqScreen()),
                           );
                         },
                       ),
@@ -355,16 +354,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         },
                         showBadge: true,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 32),
 
-                      // Logout Button
-                      _buildSettingItem(
-                        'Logout',
-                        Icons.logout,
-                        onTap: () {
-                          _showLogoutDialog();
-                        },
+                      // Centered Logout Button
+                      Center(
+                        child: ElevatedButton.icon(
+                          onPressed: _showLogoutDialog,
+                          icon: const Icon(Icons.logout, color: Colors.white),
+                          label: const Text(
+                            'Logout',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.pink,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 50, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                        ),
                       ),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
@@ -405,14 +419,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
               Navigator.pushAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const AdminLoginScreen()),
                     (route) => false,
               );
             },
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.black),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.pink,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
+            child: const Text('Logout'),
           ),
         ],
       ),
@@ -448,8 +466,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Icon(
                   icon,
-                  color:
-                  title == 'Logout' ? Colors.black : AppColors.textSecondary,
+                  color: AppColors.textSecondary,
                   size: 20,
                 ),
                 if (showBadge)
@@ -471,10 +488,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Expanded(
               child: Text(
                 title,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: title == 'Logout' ? Colors.black : Colors.black87,
+                  color: Colors.black87,
                 ),
               ),
             ),
