@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
+import 'fabric_detail.dart'; // import FabricDetailScreen
 
 class FabricCareAdvisorScreen extends StatelessWidget {
   const FabricCareAdvisorScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final List<String> fabrics = [
-      "SILK",
-      "COTTON",
-      "LAWN",
-      "LINEN",
-      "CHIFFON",
-      "KHADDAR",
-      "VELVET",
-      "JERSEY",
-      "LEATHER",
-      "CRINKLE",
-      "WOOL",
-      "MARINA",
+    final List<Map<String, String>> fabrics = [
+      {"name": "SILK", "id": "silk_doc_id"},
+      {"name": "COTTON", "id": "cotton_doc_id"},
+      {"name": "LAWN", "id": "lawn_doc_id"},
+      {"name": "LINEN", "id": "linen_doc_id"},
+      {"name": "CHIFFON", "id": "chiffon_doc_id"},
+      {"name": "KHADDAR", "id": "khaddar_doc_id"},
+      {"name": "VELVET", "id": "velvet_doc_id"},
+      {"name": "JERSEY", "id": "jersey_doc_id"},
+      {"name": "LEATHER", "id": "leather_doc_id"},
+      {"name": "CRINKLE", "id": "crinkle_doc_id"},
+      {"name": "WOOL", "id": "wool_doc_id"},
+      {"name": "MARINA", "id": "marina_doc_id"},
     ];
 
     return Scaffold(
@@ -50,7 +51,7 @@ class FabricCareAdvisorScreen extends StatelessWidget {
               ),
             ),
 
-            // White rounded background section
+            // White rounded section
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -67,12 +68,16 @@ class FabricCareAdvisorScreen extends StatelessWidget {
                     childAspectRatio: 0.8,
                   ),
                   itemBuilder: (context, index) {
+                    final fabric = fabrics[index];
                     return GestureDetector(
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('You clicked on ${fabrics[index]}'),
-                            duration: Duration(seconds: 1),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FabricDetailScreen(
+                              fabricId: fabric['id']!,
+                              fabricName: fabric['name']!,
+                            ),
                           ),
                         );
                       },
@@ -85,30 +90,26 @@ class FabricCareAdvisorScreen extends StatelessWidget {
                               color: Colors.black.withOpacity(0.15),
                               spreadRadius: 2,
                               blurRadius: 6,
-                              offset: Offset(0, 3),
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: Column(
                           children: [
-                            // Placeholder image on top
                             Container(
                               height: 120,
-                              decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(12)),
-                                image: const DecorationImage(
-                                  image: AssetImage('assets/images/fabric_placeholder.png'), // replace with your placeholder
+                              decoration: const BoxDecoration(
+                                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                                image: DecorationImage(
+                                  image: AssetImage('assets/images/fabric_placeholder.png'),
                                   fit: BoxFit.cover,
                                 ),
                               ),
                             ),
-
-                            // Fabric name below
                             Expanded(
                               child: Center(
                                 child: Text(
-                                  fabrics[index],
+                                  fabric['name']!,
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.black,
