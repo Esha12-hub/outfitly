@@ -9,6 +9,7 @@ import 'settings_screen.dart';
 import 'user_login_screen.dart';
 import 'outfit_planner.dart';
 import 'color_palette_screen.dart';
+import 'fabric_care.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -216,7 +217,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                       ),
                     );
                   },),
-                  _preferenceOption("Fabric Care Advise"),
+                  _preferenceOption("Fabric Care Advise",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                          const FabricCareAdvisorScreen(),
+                        ),
+                      );
+                    },),
 
                   const _SectionTitle(title: 'SOCIAL & COLLABORATIVE'),
                   _preferenceOption("Style Share"),
