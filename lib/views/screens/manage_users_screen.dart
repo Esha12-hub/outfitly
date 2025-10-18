@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -28,7 +29,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
             hint: 'Search users...',
             onChanged: (value) {
               setState(() {
-                searchQuery = value.toLowerCase();
+                searchQuery = value.toLowerCase().trim();
               });
             },
           ),
@@ -37,9 +38,7 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
         // 📋 Firestore Users List inside container
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('users')
-                .snapshots(),
+            stream: FirebaseFirestore.instance.collection('users').snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -76,12 +75,33 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   ),
                 ),
                 child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   itemCount: filteredUsers.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final userDoc = filteredUsers[index];
                     final data = userDoc.data() as Map<String, dynamic>;
+
+                    // ✅ Handle profile images: Base64, imageUrl, photoUrl, fallback
+                    final imageBase64 = data['image_base64'];
+                    final imageUrl = data['imageUrl'];
+                    final photoUrl = data['photoUrl'];
+                    ImageProvider? profileImage;
+
+                    if (imageBase64 != null && imageBase64.toString().isNotEmpty) {
+                      try {
+                        final bytes =
+                        base64Decode(imageBase64.toString().split(',').last);
+                        profileImage = MemoryImage(bytes);
+                      } catch (e) {
+                        profileImage = null;
+                      }
+                    } else if (imageUrl != null && imageUrl.toString().isNotEmpty) {
+                      profileImage = NetworkImage(imageUrl);
+                    } else if (photoUrl != null && photoUrl.toString().isNotEmpty) {
+                      profileImage = NetworkImage(photoUrl);
+                    }
 
                     return UserCard(
                       userId: userDoc.id,
@@ -91,15 +111,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                       status: data['status'] ?? 'Active',
                       avatarColor: AppColors.avatarColors[
                       index % AppColors.avatarColors.length],
-                      onTap: () => Get.to(() => UserProfileScreen(
-                        name: data['name'] ?? 'Unknown',
-                        email: data['email'] ?? '',
-                        role: data['role'] ?? 'User',
-                        status: data['status'] ?? 'Active',
-                        avatarColor: AppColors.avatarColors[
-                        index % AppColors.avatarColors.length],
-                        avatarIcon: Icons.person,
-                      )),
+                      profileImage: profileImage, // ✅ Added profile picture
+                      onTap: () => Get.to(
+                            () => UserProfileScreen(
+                          name: data['name'] ?? 'Unknown',
+                          email: data['email'] ?? '',
+                          role: data['role'] ?? 'User',
+                          status: data['status'] ?? 'Active',
+                          avatarColor: AppColors.avatarColors[
+                          index % AppColors.avatarColors.length],
+                          avatarIcon: Icons.person,
+                        ),
+                      ),
                     );
                   },
                 ),

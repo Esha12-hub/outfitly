@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../constants/app_colors.dart';
@@ -15,6 +16,43 @@ class ContentWriterScreen extends StatefulWidget {
 class _ContentWriterScreenState extends State<ContentWriterScreen> {
   String searchQuery = '';
 
+  ImageProvider? _getProfileImage(Map<String, dynamic> data) {
+    final imageBase64 = data['image_base64'];
+    final imageUrl = data['imageUrl'];
+    final photoUrl = data['photoUrl'];
+    final profilePic = data['profilePic']; // sometimes stored with this name
+
+    ImageProvider? profileImage;
+
+    try {
+      if (imageBase64 != null && imageBase64.toString().isNotEmpty) {
+        // ✅ Decode Base64 image
+        final bytes = base64Decode(imageBase64.toString().split(',').last);
+        profileImage = MemoryImage(bytes);
+      } else if (imageUrl != null && imageUrl.toString().isNotEmpty) {
+        // ✅ Use Firestore URL
+        profileImage = NetworkImage(imageUrl);
+      } else if (photoUrl != null && photoUrl.toString().isNotEmpty) {
+        // ✅ Use Google/Firebase Auth photo URL
+        profileImage = NetworkImage(photoUrl);
+      } else if (profilePic != null && profilePic.toString().isNotEmpty) {
+        // ✅ Handle profilePic (could be Base64 or direct URL)
+        final picStr = profilePic.toString();
+        if (picStr.startsWith('data:image')) {
+          final bytes = base64Decode(picStr.split(',').last);
+          profileImage = MemoryImage(bytes);
+        } else {
+          profileImage = NetworkImage(picStr);
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error decoding profile image: $e');
+      profileImage = null;
+    }
+
+    return profileImage;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,9 +60,8 @@ class _ContentWriterScreenState extends State<ContentWriterScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 16), // spacing at top
+            const SizedBox(height: 16),
 
-            // Main Content
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -36,20 +73,20 @@ class _ContentWriterScreenState extends State<ContentWriterScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Search Bar
+                    // 🔍 Search Bar
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: CustomSearchField(
-                        hint: 'Search...',
+                        hint: 'Search content writers...',
                         onChanged: (value) {
                           setState(() {
-                            searchQuery = value.toLowerCase();
+                            searchQuery = value.toLowerCase().trim();
                           });
                         },
                       ),
                     ),
 
-                    // Firestore Users List
+                    // 📋 Firestore List
                     Expanded(
                       child: StreamBuilder<QuerySnapshot>(
                         stream: FirebaseFirestore.instance
@@ -89,22 +126,24 @@ class _ContentWriterScreenState extends State<ContentWriterScreen> {
                             );
                           }
 
-                          return ListView.builder(
+                          return ListView.separated(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             itemCount: filteredUsers.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 8),
                             itemBuilder: (context, index) {
-                              final userData = filteredUsers[index].data() as Map<String, dynamic>;
+                              final doc = filteredUsers[index];
+                              final data = doc.data() as Map<String, dynamic>;
 
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: UserCard(
-                                  userId: filteredUsers[index].id, // 🔑 Firestore doc id
-                                  name: userData['name'] ?? 'Unknown',
-                                  email: userData['email'] ?? '',
-                                  role: userData['role'] ?? 'Content Writer',
-                                  status: userData['status'] ?? 'Active',
-                                  avatarColor: AppColors.avatarColors[index % AppColors.avatarColors.length],
-                                ),
+                              final profileImage = _getProfileImage(data);
+
+                              return UserCard(
+                                userId: doc.id,
+                                name: data['name'] ?? 'Unknown',
+                                email: data['email'] ?? '',
+                                role: data['role'] ?? 'Content Writer',
+                                status: data['status'] ?? 'Active',
+                                avatarColor: AppColors.avatarColors[index % AppColors.avatarColors.length],
+                                profileImage: profileImage, // ✅ Added
                               );
                             },
                           );

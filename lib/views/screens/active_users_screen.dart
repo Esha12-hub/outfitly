@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -18,8 +19,7 @@ class ActiveUsersScreen extends StatefulWidget {
 }
 
 class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
-  int selectedTabIndex =
-  1; // 0: All Users, 1: Active, 2: Blocked, 3: Regular, 4: Content Writer
+  int selectedTabIndex = 1; // 0: All Users, 1: Active, 2: Blocked, 3: Regular, 4: Writer
 
   final List<Widget> _tabContents = const [
     ManageUsersScreen(),
@@ -28,7 +28,6 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
     RegularUsersScreen(),
     ContentWriterScreen(),
   ];
-
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +43,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: AppColors.textWhite,
-                    ),
+                    icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
                   ),
                   const Expanded(
                     child: Text(
@@ -58,10 +54,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                   ),
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(
-                      Icons.filter_list,
-                      color: AppColors.textWhite,
-                    ),
+                    icon: const Icon(Icons.filter_list, color: AppColors.textWhite),
                   ),
                 ],
               ),
@@ -153,7 +146,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   }
 }
 
-// ✅ Active Users Content with Search
+// ✅ Active Users Tab (Base64 + imageUrl + photoUrl + placeholder)
 class _ActiveUsersTab extends StatefulWidget {
   const _ActiveUsersTab();
 
@@ -162,13 +155,13 @@ class _ActiveUsersTab extends StatefulWidget {
 }
 
 class _ActiveUsersTabState extends State<_ActiveUsersTab> {
-  String searchQuery = "";
+  String searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Search Bar
+        // 🔍 Search Bar
         Padding(
           padding: const EdgeInsets.all(16),
           child: CustomSearchField(
@@ -181,7 +174,7 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
           ),
         ),
 
-        // Firestore User List
+        // 👥 Firestore Active Users List
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -195,52 +188,68 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(
-                  child: Text(
-                    'No active users found.',
-                    style: AppTextStyles.h3,
-                  ),
+                  child: Text('No active users found.', style: AppTextStyles.h3),
                 );
               }
 
               final users = snapshot.data!.docs;
 
-              // ✅ Filter users by search query (name or email)
               final filteredUsers = users.where((doc) {
                 final data = doc.data() as Map<String, dynamic>;
                 final name = (data['name'] ?? '').toString().toLowerCase();
                 final email = (data['email'] ?? '').toString().toLowerCase();
-
-                return name.contains(searchQuery) ||
-                    email.contains(searchQuery);
+                return name.contains(searchQuery) || email.contains(searchQuery);
               }).toList();
 
               if (filteredUsers.isEmpty) {
                 return const Center(
-                  child: Text(
-                    'No matching users.',
-                    style: AppTextStyles.h3,
-                  ),
+                  child: Text('No matching users.', style: AppTextStyles.h3),
                 );
               }
 
               return ListView.builder(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 itemCount: filteredUsers.length,
                 itemBuilder: (context, index) {
-                  final user =
+                  final data =
                   filteredUsers[index].data() as Map<String, dynamic>;
+
+                  final name = data['name'] ?? 'Unknown';
+                  final email = data['email'] ?? '';
+                  final role = data['role'] ?? 'User';
+                  final status = data['status'] ?? 'Active';
+
+                  // ✅ Handle all image sources
+                  final imageBase64 = data['image_base64'];
+                  final imageUrl = data['imageUrl'];
+                  final photoUrl = data['photoUrl'];
+                  ImageProvider? profileImage;
+
+                  if (imageBase64 != null && imageBase64.toString().isNotEmpty) {
+                    try {
+                      final bytes =
+                      base64Decode(imageBase64.toString().split(',').last);
+                      profileImage = MemoryImage(bytes);
+                    } catch (e) {
+                      profileImage = null;
+                    }
+                  } else if (imageUrl != null && imageUrl.toString().isNotEmpty) {
+                    profileImage = NetworkImage(imageUrl);
+                  } else if (photoUrl != null && photoUrl.toString().isNotEmpty) {
+                    profileImage = NetworkImage(photoUrl);
+                  }
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: UserCard(
                       userId: filteredUsers[index].id,
-                      name: user['name'] ?? 'Unknown',
-                      email: user['email'] ?? '',
-                      role: user['role'] ?? 'User',
-                      status: user['status'] ?? 'Active',
+                      name: name,
+                      email: email,
+                      role: role,
+                      status: status,
                       avatarColor: AppColors.avatarColors[
                       index % AppColors.avatarColors.length],
+                      profileImage: profileImage, // ✅ Placeholder handled in UserCard
                     ),
                   );
                 },

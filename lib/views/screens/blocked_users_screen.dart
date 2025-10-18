@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../widgets/user_card.dart';
@@ -16,24 +16,61 @@ class BlockedUsersScreen extends StatefulWidget {
 class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   String searchQuery = '';
 
+  ImageProvider? _getProfileImage(Map<String, dynamic> data) {
+    final imageBase64 = data['image_base64'];
+    final imageUrl = data['imageUrl'];
+    final photoUrl = data['photoUrl'];
+    final profilePic = data['profilePic']; // sometimes used in your data
+
+    ImageProvider? profileImage;
+
+    try {
+      if (imageBase64 != null && imageBase64.toString().isNotEmpty) {
+        // ✅ Base64 encoded image
+        final bytes = base64Decode(imageBase64.toString().split(',').last);
+        profileImage = MemoryImage(bytes);
+      } else if (imageUrl != null && imageUrl.toString().isNotEmpty) {
+        // ✅ Firestore-stored URL
+        profileImage = NetworkImage(imageUrl);
+      } else if (photoUrl != null && photoUrl.toString().isNotEmpty) {
+        // ✅ Google Auth or similar URL
+        profileImage = NetworkImage(photoUrl);
+      } else if (profilePic != null && profilePic.toString().isNotEmpty) {
+        // ✅ Legacy field, may also be base64
+        final picStr = profilePic.toString();
+        if (picStr.startsWith('data:image')) {
+          final bytes = base64Decode(picStr.split(',').last);
+          profileImage = MemoryImage(bytes);
+        } else {
+          profileImage = NetworkImage(picStr);
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Error loading profile image: $e');
+      profileImage = null;
+    }
+
+    return profileImage;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Search Bar
+        // 🔍 Search Bar
         Padding(
           padding: const EdgeInsets.all(16),
           child: CustomSearchField(
-            hint: 'Search...',
+            hint: 'Search blocked users...',
             onChanged: (value) {
               setState(() {
-                searchQuery = value.toLowerCase();
+                searchQuery = value.toLowerCase().trim();
               });
             },
           ),
         ),
 
-        // Firestore Blocked User List
+        // 📋 Firestore Blocked Users List
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -47,17 +84,13 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                 return const Center(
-                  child: Text(
-                    'No blocked users found.',
-                    style: AppTextStyles.h3,
-                  ),
+                  child: Text('No blocked users found.', style: AppTextStyles.h3),
                 );
               }
 
-              // Get all users
               final users = snapshot.data!.docs;
 
-              // Apply search filter
+              // ✅ Filter search results
               final filteredUsers = users.where((doc) {
                 final user = doc.data() as Map<String, dynamic>;
                 final name = (user['name'] ?? '').toString().toLowerCase();
@@ -67,34 +100,39 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
               if (filteredUsers.isEmpty) {
                 return const Center(
-                  child: Text(
-                    'No matching users found.',
-                    style: AppTextStyles.h3,
-                  ),
+                  child: Text('No matching blocked users found.', style: AppTextStyles.h3),
                 );
               }
 
-              return ListView.builder(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                itemCount: filteredUsers.length,
-                itemBuilder: (context, index) {
-                  final user =
-                  filteredUsers[index].data() as Map<String, dynamic>;
+              return Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  itemCount: filteredUsers.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final doc = filteredUsers[index];
+                    final data = doc.data() as Map<String, dynamic>;
 
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: UserCard(
-                      userId: filteredUsers[index].id,
-                      name: user['name'] ?? 'Unknown',
-                      email: user['email'] ?? '',
-                      role: user['role'] ?? 'User',
-                      status: user['status'] ?? 'Blocked',
-                      avatarColor: AppColors.avatarColors[
-                      index % AppColors.avatarColors.length],
-                    ),
-                  );
-                },
+                    final profileImage = _getProfileImage(data);
+
+                    return UserCard(
+                      userId: doc.id,
+                      name: data['name'] ?? 'Unknown',
+                      email: data['email'] ?? '',
+                      role: data['role'] ?? 'User',
+                      status: data['status'] ?? 'Blocked',
+                      avatarColor: AppColors.avatarColors[index % AppColors.avatarColors.length],
+                      profileImage: profileImage,
+                    );
+                  },
+                ),
               );
             },
           ),

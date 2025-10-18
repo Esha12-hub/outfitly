@@ -1,29 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // 🔥 for Firestore
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../screens/user_profile_screen.dart';
 
 class UserCard extends StatelessWidget {
-  final String userId; // Firestore document ID
+  final String userId;
   final String name;
   final String email;
   final String role;
   final String status;
   final Color avatarColor;
+  final ImageProvider? profileImage; // ✅ NEW
   final VoidCallback? onTap;
   final IconData? avatarIcon;
   final Widget? trailing;
 
   const UserCard({
     super.key,
-    required this.userId, // 🔥 must be passed when building card
+    required this.userId,
     required this.name,
     required this.email,
     required this.role,
     required this.status,
     required this.avatarColor,
+    this.profileImage, // ✅ NEW
     this.onTap,
     this.avatarIcon,
     this.trailing,
@@ -34,54 +36,69 @@ class UserCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.cardBorder),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorder.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            // Avatar
+            // 👤 Avatar (with optional profile image)
             CircleAvatar(
-              radius: 24,
-              backgroundColor: avatarColor,
-              child: Icon(
+              radius: 26,
+              backgroundColor:
+              profileImage == null ? avatarColor : Colors.transparent,
+              backgroundImage: profileImage, // ✅ show image if available
+              child: profileImage == null
+                  ? Icon(
                 avatarIcon ?? Icons.person,
                 color: AppColors.textWhite,
-                size: 24,
-              ),
+                size: 26,
+              )
+                  : null,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
 
-            // User Info
+            // 📝 User Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: AppTextStyles.h4,
-                  ),
+                  Text(name, style: AppTextStyles.h4),
                   const SizedBox(height: 4),
-                  Text(
-                    email,
-                    style: AppTextStyles.bodySmall,
-                  ),
+                  Text(email, style: AppTextStyles.bodySmall),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _buildStatusChip(role),
+                      _buildChip(role, AppColors.primary.withOpacity(0.2),
+                          AppColors.primary),
                       const SizedBox(width: 8),
-                      _buildStatusChip(status),
+                      _buildChip(
+                          status,
+                          status == 'Active'
+                              ? Colors.green.withOpacity(0.2)
+                              : Colors.red.withOpacity(0.2),
+                          status == 'Active' ? Colors.green : Colors.red),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // Options Menu
+            // ⋮ Options Menu
             PopupMenuButton<String>(
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
               onSelected: (value) async {
                 switch (value) {
                   case 'edit':
@@ -96,34 +113,49 @@ class UserCard extends StatelessWidget {
                     break;
 
                   case 'block':
-                    try {
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(userId)
-                          .update({'status': 'Blocked'}); // 🔥 update Firestore
+                    _confirmAction(
+                      context,
+                      title: 'Block User',
+                      message: 'Are you sure you want to block $name?',
+                      confirmText: 'Block',
+                      confirmColor: Colors.red,
+                      onConfirm: () async {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(userId)
+                            .update({'status': 'Blocked'});
 
-                      Get.snackbar(
-                        'Block User',
-                        '$name has been blocked ✅',
-                        backgroundColor: AppColors.success,
-                        colorText: AppColors.textWhite,
-                      );
-                    } catch (e) {
-                      Get.snackbar(
-                        'Error',
-                        'Failed to block user: $e',
-                        backgroundColor: AppColors.error,
-                        colorText: AppColors.textWhite,
-                      );
-                    }
+                        Get.snackbar(
+                          'User Blocked',
+                          '$name has been blocked successfully.',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      },
+                    );
                     break;
 
                   case 'delete':
-                    Get.snackbar(
-                      'Delete User',
-                      'User deleted successfully!',
-                      backgroundColor: AppColors.error,
-                      colorText: AppColors.textWhite,
+                    _confirmAction(
+                      context,
+                      title: 'Delete User',
+                      message:
+                      'Are you sure you want to permanently delete $name?',
+                      confirmText: 'Delete',
+                      confirmColor: Colors.red,
+                      onConfirm: () async {
+                        await FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(userId)
+                            .delete();
+
+                        Get.snackbar(
+                          'User Deleted',
+                          '$name has been deleted.',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                      },
                     );
                     break;
                 }
@@ -133,7 +165,7 @@ class UserCard extends StatelessWidget {
                   value: 'edit',
                   child: Row(
                     children: [
-                      Icon(Icons.edit, size: 16),
+                      Icon(Icons.edit, size: 16, color: Colors.black87),
                       SizedBox(width: 8),
                       Text('Edit User'),
                     ],
@@ -143,7 +175,7 @@ class UserCard extends StatelessWidget {
                   value: 'block',
                   child: Row(
                     children: [
-                      Icon(Icons.block, size: 16),
+                      Icon(Icons.block, size: 16, color: Colors.red),
                       SizedBox(width: 8),
                       Text('Block User'),
                     ],
@@ -153,17 +185,14 @@ class UserCard extends StatelessWidget {
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete, size: 16),
+                      Icon(Icons.delete, size: 16, color: Colors.red),
                       SizedBox(width: 8),
                       Text('Delete User'),
                     ],
                   ),
                 ),
               ],
-              child: const Icon(
-                Icons.more_vert,
-                color: AppColors.textSecondary,
-              ),
+              child: const Icon(Icons.more_vert, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -171,17 +200,56 @@ class UserCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(String label) {
+  // 🌈 Role / Status Chip
+  Widget _buildChip(String label, Color bgColor, Color textColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder),
       ),
       child: Text(
         label,
-        style: AppTextStyles.caption,
+        style: AppTextStyles.caption.copyWith(color: textColor),
+      ),
+    );
+  }
+
+  // ⚠️ Confirmation Dialog
+  void _confirmAction(
+      BuildContext context, {
+        required String title,
+        required String message,
+        required String confirmText,
+        required Color confirmColor,
+        required VoidCallback onConfirm,
+      }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape:
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        content: Text(message, style: const TextStyle(fontSize: 15)),
+        actions: [
+          TextButton(
+            child: const Text('Cancel',
+                style: TextStyle(color: Colors.black, fontSize: 14)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: Text(
+              confirmText,
+              style: TextStyle(color: confirmColor, fontWeight: FontWeight.bold),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              onConfirm();
+            },
+          ),
+        ],
       ),
     );
   }
