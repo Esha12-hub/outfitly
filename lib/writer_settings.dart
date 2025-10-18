@@ -4,6 +4,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'writer_login_screen.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'about_us_screen.dart';
+import 'writer_terms.dart';
+import 'writer_profile.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -16,6 +20,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool feedbackNotifications = false;
   bool submissionAlerts = true;
   bool twoFactorAuth = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSettings();
+  }
+
+  /// Load saved notification states
+  Future<void> _loadNotificationSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      feedbackNotifications = prefs.getBool('feedbackNotifications') ?? false;
+      submissionAlerts = prefs.getBool('submissionAlerts') ?? true;
+      twoFactorAuth = prefs.getBool('twoFactorAuth') ?? true;
+    });
+  }
+
+  /// Save specific notification setting
+  Future<void> _saveNotificationSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool(key, value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,51 +68,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSectionTitle('ACCOUNT SETTINGS'),
                     _buildTile(Icons.email, 'Email/Phone Number Details'),
                     _buildTile(Icons.lock, 'Change Password'),
-                    _buildTile(Icons.delete, 'Delete Profile'),
-                    const SizedBox(height: 20),
-
-                    /// Content Preferences
-                    _buildSectionTitle('CONTENT PREFERENCES'),
-                    _buildTile(Icons.language, 'Language',
-                        trailingText: 'English'),
-                    _buildTile(Icons.access_time, 'Timezone',
-                        trailingText: '(GMT+0) UTC'),
+                    _buildTile(Icons.delete, 'Delete Profile', onTap: _confirmDeleteProfile),
                     const SizedBox(height: 20),
 
                     /// Notifications
                     _buildSectionTitle('NOTIFICATIONS'),
-                    _buildToggleTile(Icons.feedback, 'Feedback Notifications',
-                        feedbackNotifications, (val) {
-                          setState(() => feedbackNotifications = val);
-                        }),
-                    _buildToggleTile(Icons.notifications_active,
-                        'Submission Alerts', submissionAlerts, (val) {
-                          setState(() => submissionAlerts = val);
-                        }),
+                    _buildToggleTile(Icons.feedback, 'Feedback Notifications', feedbackNotifications, (val) {
+                      setState(() => feedbackNotifications = val);
+                      _saveNotificationSetting('feedbackNotifications', val);
+                    }),
+                    _buildToggleTile(Icons.notifications_active, 'Submission Alerts', submissionAlerts, (val) {
+                      setState(() => submissionAlerts = val);
+                      _saveNotificationSetting('submissionAlerts', val);
+                    }),
                     const SizedBox(height: 20),
 
-                    /// Privacy
-                    _buildSectionTitle('PRIVACY AND SECURITY'),
-                    _buildToggleTile(Icons.security, '2-Factor Authentication',
-                        twoFactorAuth, (val) {
-                          setState(() => twoFactorAuth = val);
-                        }),
-                    const SizedBox(height: 20),
 
                     /// About
                     _buildSectionTitle('ABOUT APP'),
-                    _buildTile(Icons.menu_book, 'Terms of Use'),
-                    _buildTile(Icons.info_outline, 'About App'),
+                    _buildTile(Icons.menu_book, 'Terms of Use', onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const WriterTermsOfUseScreen()),
+                      );
+                    }),
+                    _buildTile(Icons.info_outline, 'About App', onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AboutUsScreen()),
+                      );
+                    }),
+
 
                     /// Logout
                     const SizedBox(height: 5),
-                    _buildTile(Icons.logout, 'Logout', onTap: _confirmLogout),
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: _confirmLogout,
+                        icon: const Icon(
+                          Icons.logout,
+                          color: Colors.white, // White icon
+                        ),
+                        label: const Text(
+                          "Logout",
+                          style: TextStyle(
+                            color: Colors.white, // White text
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFD71D5C), // Pink background
+                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30), // Rounded corners
+                          ),
+                        ),
+                      ),
+                    ),
 
                     const SizedBox(height: 20),
                     const Center(
-                        child: Text("Version 1.1.1",
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.black54))),
+                      child: Text(
+                        "Version 1.1.1",
+                        style: TextStyle(fontSize: 12, color: Colors.black54),
+                      ),
+                    ),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -116,11 +163,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Center(
             child: Text(
               "Settings",
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -146,7 +189,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// ✅ Fetch user info & base64 image from Firestore
   Widget _buildUserProfileTile() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const SizedBox.shrink();
@@ -164,17 +206,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         final data = snapshot.data!.data() as Map<String, dynamic>;
         final name = data['name'] ?? 'User Name';
-        final email = data['email'] ?? '';
+        final role = data['role'] ?? 'Writer';
         final imageBase64 = data['image_base64'];
 
+        // Profile picture
         Widget avatar;
-        if (imageBase64 != null &&
-            imageBase64.isNotEmpty &&
-            imageBase64 is String) {
+        if (imageBase64 != null && imageBase64.isNotEmpty) {
           try {
             final bytes = base64Decode(imageBase64.split(',').last);
-            avatar =
-                CircleAvatar(radius: 26, backgroundImage: MemoryImage(bytes));
+            avatar = CircleAvatar(radius: 26, backgroundImage: MemoryImage(bytes));
           } catch (_) {
             avatar = _buildFallbackAvatar(name);
           }
@@ -182,51 +222,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
           avatar = _buildFallbackAvatar(name);
         }
 
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 10),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(2, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              avatar,
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const WriterProfileScreen()),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                avatar,
+                const SizedBox(width: 12),
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
-                    Text(
-                      email,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          fontSize: 13, color: Colors.black54),
-                    ),
+                    Text(role, style: const TextStyle(fontSize: 13, color: Colors.black54)),
                   ],
                 ),
-              ),
-              const Icon(Icons.arrow_forward_ios, size: 16),
-            ],
+                const Spacer(),
+                const Icon(Icons.arrow_forward_ios, size: 16),
+              ],
+            ),
           ),
         );
       },
     );
   }
+
+
 
   Widget _buildFallbackAvatar(String name) {
     return CircleAvatar(
@@ -243,8 +275,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildTile(IconData icon, String title,
-      {String? trailingText, VoidCallback? onTap}) {
+  Widget _buildTile(IconData icon, String title, {VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -253,19 +284,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: ListTile(
         leading: Icon(icon, color: Colors.black),
-        title: Text(title, overflow: TextOverflow.ellipsis),
-        trailing: trailingText != null
-            ? Text(trailingText,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold))
-            : const Icon(Icons.arrow_forward_ios, size: 16),
+        title: Text(title),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
       ),
     );
   }
 
-  Widget _buildToggleTile(
-      IconData icon, String title, bool value, Function(bool) onChanged) {
+  Widget _buildToggleTile(IconData icon, String title, bool value, Function(bool) onChanged) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -274,7 +300,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: SwitchListTile(
         secondary: Icon(icon, color: Colors.black),
-        title: Text(title, overflow: TextOverflow.ellipsis),
+        title: Text(title),
         value: value,
         onChanged: onChanged,
         activeColor: Colors.pink,
@@ -282,21 +308,61 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// ------------------ DELETE PROFILE ------------------ ///
+  Future<void> _confirmDeleteProfile() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Profile"),
+        content: const Text("Are you sure you want to permanently delete your account?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yes, Delete")),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        await FirebaseFirestore.instance.collection('users').doc(user!.uid).delete();
+        await user.delete();
+
+        if (mounted) {
+          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const WriterLoginScreen()));
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error deleting profile: $e")));
+      }
+    }
+  }
+
   /// ------------------ LOGOUT ------------------ ///
   Future<void> _confirmLogout() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Logout"),
-        content: const Text("Are you sure you want to log out?"),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text(
+          "Logout",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text("Do you want to logout?"),
         actions: [
           TextButton(
+            child: const Text(
+              "No",
+              style: TextStyle(color: Colors.black),
+            ),
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
           ),
           TextButton(
+            child: const Text(
+              "Yes",
+              style: TextStyle(color: Colors.red),
+            ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Logout"),
           ),
         ],
       ),

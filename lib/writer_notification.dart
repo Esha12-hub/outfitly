@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WriterNotificationScreen extends StatefulWidget {
   const WriterNotificationScreen({super.key});
@@ -12,43 +13,98 @@ class WriterNotificationScreen extends StatefulWidget {
       _WriterNotificationScreenState();
 }
 
-class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
+class _WriterNotificationScreenState extends State<WriterNotificationScreen>
+    with WidgetsBindingObserver {
   bool showUnread = false;
   String? userId;
   bool isContentWriter = false;
   bool _initialLoadComplete = false;
+  bool submissionAlerts = true;
+  bool feedbackNotifications = false;
+
   StreamSubscription<QuerySnapshot>? _articleListener;
   final List<StreamSubscription> _commentListeners = [];
 
-  // Keep last known status for each article (to detect actual changes)
   final Map<String, String?> _articleStatusCache = {};
+  final Set<String> _notifiedArticles = {};
 
   @override
   void initState() {
     super.initState();
-    _checkUserRole();
+    WidgetsBinding.instance.addObserver(this);
+    _initialize();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _articleListener?.cancel();
     for (var listener in _commentListeners) {
       listener.cancel();
     }
+    _commentListeners.clear();
     super.dispose();
   }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadNotificationPreferences();
+    }
+  }
+
+  Future<void> _initialize() async {
+    await _loadNotificationPreferences();
+    await _checkUserRole();
+  }
+
+  // ---------------- Preferences ----------------
+
+  Future<void> _loadNotificationPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final newFeedback = prefs.getBool('feedbackNotifications') ?? false;
+    final newSubmission = prefs.getBool('submissionAlerts') ?? true;
+
+    setState(() {
+      feedbackNotifications = newFeedback;
+      submissionAlerts = newSubmission;
+    });
+
+    // If feedback notifications turned off, stop listening to comments
+    if (!feedbackNotifications) {
+      for (var listener in _commentListeners) {
+        listener.cancel();
+      }
+      _commentListeners.clear();
+    } else {
+      // Reattach comment listeners if turned on again
+      if (isContentWriter && userId != null) {
+        _listenToArticleUpdates();
+      }
+    }
+  }
+
+  Future<void> _saveNotificationPreference(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  // ---------------- User Role ----------------
 
   Future<void> _checkUserRole() async {
     userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
-      final userDoc =
-      await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
 
-      if (mounted) {
-        setState(() {
-          isContentWriter = (userDoc['role'] == 'Content Writer');
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        isContentWriter = (userDoc['role'] == 'Content Writer');
+      });
 
       if (isContentWriter) {
         _listenToArticleUpdates();
@@ -56,66 +112,75 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
     }
   }
 
-  /// 🔔 Listen for article changes and attach comment listeners
+  // ---------------- Article & Comment Listeners ----------------
+
   void _listenToArticleUpdates() {
     if (userId == null) return;
 
+    _articleListener?.cancel();
     _articleListener = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .collection('articles')
         .snapshots()
         .listen((snapshot) async {
-      if (!_initialLoadComplete) {
-        _initialLoadComplete = true;
-      }
+      if (!_initialLoadComplete) _initialLoadComplete = true;
 
       for (var change in snapshot.docChanges) {
         final articleId = change.doc.id;
         final data = change.doc.data() as Map<String, dynamic>?;
-        if (data == null) continue;
 
+        if (data == null) continue;
         final title = data['title'] ?? 'Untitled';
         final newStatus = data['status'] as String?;
         final oldStatus = _articleStatusCache[articleId];
 
-        // 🔹 Detect real status change (not just same value on reload)
         final hasStatusChanged = newStatus != null && newStatus != oldStatus;
 
         if (hasStatusChanged) {
           _articleStatusCache[articleId] = newStatus;
 
-          if (newStatus == 'approved') {
-            await _createNotificationIfNotExists(
-              title: "Article Approved",
-              message:
-              "Your article '$title' has been approved and will be published soon.",
-              type: "content_approved",
-              articleId: articleId,
-            );
-          } else if (newStatus == 'rejected') {
-            await _createNotificationIfNotExists(
-              title: "Article Rejected",
-              message:
-              "Your article '$title' was rejected. Reason: ${data['rejectionReason'] ?? 'Not specified'}.",
-              type: "content_rejected",
-              articleId: articleId,
-            );
+          if (submissionAlerts && newStatus != null) {
+            final notificationKey = '$articleId-$newStatus';
+            if (!_notifiedArticles.contains(notificationKey)) {
+              _notifiedArticles.add(notificationKey);
+
+              if (newStatus == 'approved') {
+                await _createNotificationIfNotExists(
+                  title: "Article Approved",
+                  message:
+                  "Your article '$title' has been approved and will be published soon.",
+                  type: "content_approved",
+                  articleId: articleId,
+                );
+              } else if (newStatus == 'rejected') {
+                await _createNotificationIfNotExists(
+                  title: "Article Rejected",
+                  message:
+                  "Your article '$title' was rejected. Reason: ${data['rejectionReason'] ?? 'Not specified'}.",
+                  type: "content_rejected",
+                  articleId: articleId,
+                );
+              }
+            }
           }
         }
 
-        // 🔹 Attach comment listener once per article
-        final alreadyListening =
-        _commentListeners.any((sub) => sub.hashCode == articleId.hashCode);
-        if (!alreadyListening) {
-          _listenToComments(articleId, title);
+        // ✅ Attach comment listener only if feedback notifications are enabled
+        if (feedbackNotifications) {
+          final alreadyListening = _commentListeners
+              .any((sub) => sub.hashCode == articleId.hashCode);
+          if (!alreadyListening) {
+            _listenToComments(articleId, title);
+          }
         }
       }
     });
   }
 
-  /// 🗨️ Listen to new comments in each article
   void _listenToComments(String articleId, String title) {
+    if (!feedbackNotifications) return;
+
     final commentStream = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
@@ -125,6 +190,8 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
         .orderBy('timestamp', descending: false)
         .snapshots()
         .listen((snapshot) async {
+      if (!feedbackNotifications) return;
+
       for (var change in snapshot.docChanges) {
         if (change.type == DocumentChangeType.added) {
           final data = change.doc.data() as Map<String, dynamic>?;
@@ -158,7 +225,8 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
     _commentListeners.add(commentStream);
   }
 
-  /// ✅ Prevent duplicate notifications per article + type
+  // ---------------- Notifications ----------------
+
   Future<void> _createNotificationIfNotExists({
     required String title,
     required String message,
@@ -167,12 +235,20 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
   }) async {
     if (userId == null) return;
 
+    // ✅ Block notification creation based on user preferences
+    if (!submissionAlerts &&
+        (type == "content_approved" || type == "content_rejected")) {
+      return;
+    }
+    if (!feedbackNotifications && type == "new_comment") {
+      return;
+    }
+
     final ref = FirebaseFirestore.instance
         .collection('users')
         .doc(userId)
         .collection('notifications');
 
-    // 🔍 Check if a notification for this article + type already exists
     final existing = await ref
         .where('articleId', isEqualTo: articleId)
         .where('type', isEqualTo: type)
@@ -191,7 +267,22 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
     });
   }
 
-  // --------------------------- UI ---------------------------
+  Future<void> _clearAllNotifications() async {
+    if (userId == null) return;
+    final ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('notifications');
+    final docs = await ref.get();
+    for (var doc in docs.docs) {
+      await doc.reference.delete();
+    }
+
+    _articleStatusCache.clear();
+    _notifiedArticles.clear();
+  }
+
+  // ---------------- UI ----------------
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +330,8 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.white, size: 26),
-            onPressed: () {
+            onPressed: () async {
+              await _loadNotificationPreferences();
               setState(() {
                 _initialLoadComplete = false;
               });
@@ -249,6 +341,7 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
               }
               _commentListeners.clear();
               _articleStatusCache.clear();
+              _notifiedArticles.clear();
               _listenToArticleUpdates();
             },
           ),
@@ -423,16 +516,5 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen> {
   String _formatTime(Timestamp ts) {
     final date = ts.toDate();
     return DateFormat.jm().format(date);
-  }
-
-  Future<void> _clearAllNotifications() async {
-    final ref = FirebaseFirestore.instance
-        .collection('users')
-        .doc(userId)
-        .collection('notifications');
-    final docs = await ref.get();
-    for (var doc in docs.docs) {
-      await doc.reference.delete();
-    }
   }
 }

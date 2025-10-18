@@ -4,6 +4,8 @@ import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+// 🔹 Local imports
 import 'favorite_screen.dart';
 import 'weather.dart';
 import 'user_profile_screen.dart';
@@ -14,6 +16,7 @@ import 'wardrobe_screen.dart';
 import 'ai_outfit_suggestions.dart';
 import 'fashion_content_screen.dart';
 import 'smart_assistant_welcome.dart';
+import 'user_login_screen.dart';
 
 class WardrobeHomeScreen extends StatefulWidget {
   const WardrobeHomeScreen({super.key});
@@ -28,6 +31,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
 
   String? _profileImageBase64;
   String _username = "User";
+  DateTime? _lastPressedTime;
 
   final List<Widget> _pages = [
     Center(child: Text('Home Screen')),
@@ -59,14 +63,12 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
             _username = data['name'] ?? user.displayName ?? 'User';
 
             if (isGoogleUser) {
-              // Google user – use photoUrl
               if (data.containsKey('photoUrl') && data['photoUrl'] != null) {
                 _profileImageBase64 = "url::" + data['photoUrl'];
               } else {
                 _profileImageBase64 = null;
               }
             } else {
-              // Email/password user – use base64 image
               if (data.containsKey('image_base64') && data['image_base64'] != null) {
                 _profileImageBase64 = data['image_base64'];
               } else {
@@ -75,15 +77,13 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
             }
           });
         }
-      } else {
-        print("No user logged in.");
       }
     } catch (e) {
       print("Error fetching user profile: $e");
     }
   }
 
-  /// 🔹 Fetch the most recent wardrobe item
+  /// 🔹 Fetch most recent wardrobe item
   Future<DocumentSnapshot?> fetchRecentWardrobeItem() async {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -92,7 +92,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
           .collection('users')
           .doc(user.uid)
           .collection('wardrobe')
-          .orderBy('createdAt', descending: true) // latest first
+          .orderBy('createdAt', descending: true)
           .limit(1)
           .get();
 
@@ -103,33 +103,80 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
     return null;
   }
 
+  /// 🔹 Handle phone back button
+  Future<bool> _onWillPop() async {
+    // If not on home screen, go back to home
+    if (_currentIndex != 0) {
+      setState(() => _currentIndex = 0);
+      return false;
+    }
+
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text("Logout"),
+        content: const Text("Do you want to logout?"),
+        actions: [
+          TextButton(
+            child: const Text("No", style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          TextButton(
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const UserLoginScreen()),
+              (route) => false,
+        );
+      }
+      return false;
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: _currentIndex == 0 ? _buildDashboard() : _pages[_currentIndex],
-      bottomNavigationBar: CurvedNavigationBar(
-        key: _bottomNavKey,
-        index: _currentIndex,
-        height: 60.0,
-        items: const <Widget>[
-          Icon(Icons.home, size: 30, color: Colors.white),
-          FaIcon(FontAwesomeIcons.shirt, size: 24, color: Colors.white),
-          Icon(Icons.add, size: 30, color: Colors.white),
-          Icon(Icons.checkroom, size: 30, color: Colors.white),
-          Icon(Icons.person, size: 30, color: Colors.white),
-        ],
-        color: Colors.pink,
-        buttonBackgroundColor: Colors.pinkAccent,
-        backgroundColor: Colors.transparent,
-        animationCurve: Curves.easeInOut,
-        animationDuration: const Duration(milliseconds: 600),
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        letIndexChange: (index) => true,
+    return WillPopScope(
+      onWillPop: _onWillPop, // 👈 Intercept back button
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: _currentIndex == 0 ? _buildDashboard() : _pages[_currentIndex],
+        bottomNavigationBar: CurvedNavigationBar(
+          key: _bottomNavKey,
+          index: _currentIndex,
+          height: 60.0,
+          items: const <Widget>[
+            Icon(Icons.home, size: 30, color: Colors.white),
+            FaIcon(FontAwesomeIcons.shirt, size: 24, color: Colors.white),
+            Icon(Icons.add, size: 30, color: Colors.white),
+            Icon(Icons.checkroom, size: 30, color: Colors.white),
+            Icon(Icons.person, size: 30, color: Colors.white),
+          ],
+          color: Colors.pink,
+          buttonBackgroundColor: Colors.pinkAccent,
+          backgroundColor: Colors.transparent,
+          animationCurve: Curves.easeInOut,
+          animationDuration: const Duration(milliseconds: 600),
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          letIndexChange: (index) => true,
+        ),
       ),
     );
   }
@@ -138,7 +185,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 🔹 Header Section
+          // 🔹 Header
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -183,12 +230,9 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Text(
-                            'Hi, $_username',
-                            style: const TextStyle(color: Colors.white, fontSize: 18),
-                          ),
+                          Text('Hi, $_username',
+                              style: const TextStyle(color: Colors.white, fontSize: 18)),
                           const Spacer(),
-                          // Top-right Notification Icon with Red Dot
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collection('users')
@@ -197,10 +241,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                                 .where('read', isEqualTo: false)
                                 .snapshots(),
                             builder: (context, snapshot) {
-                              int unreadCount = 0;
-                              if (snapshot.hasData) {
-                                unreadCount = snapshot.data!.docs.length;
-                              }
+                              int unreadCount = snapshot.data?.docs.length ?? 0;
 
                               return Stack(
                                 children: [
@@ -208,10 +249,12 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                                     onPressed: () {
                                       Navigator.push(
                                         context,
-                                        MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                                        MaterialPageRoute(
+                                            builder: (context) => const NotificationScreen()),
                                       );
                                     },
-                                    icon: const Icon(Icons.notifications, color: Colors.white, size: 30),
+                                    icon: const Icon(Icons.notifications,
+                                        color: Colors.white, size: 30),
                                   ),
                                   if (unreadCount > 0)
                                     Positioned(
@@ -230,14 +273,14 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                               );
                             },
                           ),
-
                         ],
                       ),
                     ),
                     const SizedBox(height: 6),
                     const Text(
                       "Find Your Wardrobe\nItems here",
-                      style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w400),
+                      style:
+                      TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w400),
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -257,47 +300,46 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                   ],
                 ),
               ),
+
+              // 🔹 Feature Cards
               Positioned(
                 bottom: -60,
                 left: 20,
                 right: 20,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      FeatureCard(
-                        icon: Icons.favorite_border,
-                        label: 'Favorites',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => FavoritesScreen()),
-                          );
-                        },
-                      ),
-                      FeatureCard(
-                        icon: Icons.smart_toy_outlined,
-                        label: 'AI Assistant',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const SmartAssistantWelcomeScreen()),
-                          );
-                        },
-                      ),
-                      FeatureCard(
-                        icon: Icons.checkroom_outlined,
-                        label: 'Fashion Feed',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const FashionStylingContentScreen()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    FeatureCard(
+                      icon: Icons.favorite_border,
+                      label: 'Favorites',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => FavoritesScreen()),
+                        );
+                      },
+                    ),
+                    FeatureCard(
+                      icon: Icons.smart_toy_outlined,
+                      label: 'AI Assistant',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SmartAssistantWelcomeScreen()),
+                        );
+                      },
+                    ),
+                    FeatureCard(
+                      icon: Icons.checkroom_outlined,
+                      label: 'Fashion Feed',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const FashionStylingContentScreen()),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -310,13 +352,12 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(
-                "Select a Category",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              child: Text("Select a Category",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 12),
+
           SizedBox(
             height: 200,
             child: ListView(
@@ -353,15 +394,13 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
 
           const SizedBox(height: 20),
 
-          // 🔹 Recent Activity Section
+          // 🔹 Recent Activity
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text(
-                "Recent Activity",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
+              child:
+              Text("Recent Activity", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 12),
@@ -462,12 +501,7 @@ class FeatureCard extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
 
-  const FeatureCard({
-    super.key,
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
+  const FeatureCard({super.key, required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -496,11 +530,7 @@ class FeatureCard extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               padding: const EdgeInsets.all(16),
-              child: Icon(
-                icon,
-                color: Colors.pinkAccent,
-                size: 30,
-              ),
+              child: Icon(icon, color: Colors.pinkAccent, size: 30),
             ),
             const SizedBox(height: 12),
             Text(

@@ -237,37 +237,42 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 30),
                     child: ElevatedButton.icon(
-                      onPressed: () {
-                        showDialog(
+                      onPressed: () async {
+                        // Show confirmation dialog
+                        final shouldLogout = await showDialog<bool>(
                           context: context,
                           builder: (context) => AlertDialog(
-                            title: const Text("Confirm Logout"),
-                            content: const Text(
-                                "Are you sure you want to logout?"),
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            title: const Text(
+                              "Logout",
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            content: const Text("Do you want to logout?"),
                             actions: [
                               TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("No"),
+                                child: const Text("No", style: TextStyle(color: Colors.black)),
+                                onPressed: () => Navigator.pop(context, false),
                               ),
                               TextButton(
-                                onPressed: () {
-                                  FirebaseAuth.instance.signOut();
-                                  Navigator.of(context).pop();
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                      const UserLoginScreen(),
-                                    ),
-                                  );
-                                },
-                                child: const Text("Yes"),
+                                child: const Text("Yes", style: TextStyle(color: Colors.red)),
+                                onPressed: () => Navigator.pop(context, true),
                               ),
                             ],
                           ),
                         );
+
+                        // If confirmed, logout
+                        if (shouldLogout == true) {
+                          await FirebaseAuth.instance.signOut();
+                          if (context.mounted) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const UserLoginScreen()),
+                                  (route) => false,
+                            );
+                          }
+                        }
                       },
                       icon: const Icon(Icons.logout, color: Colors.white),
                       label: const Text(
@@ -279,12 +284,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        padding:
-                        const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                         minimumSize: const Size(double.infinity, 50),
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 16),
                   const Text(
                     "Version 1.1.1",

@@ -160,20 +160,27 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                   const SizedBox(height: 16),
 
                   // 🔹 Real-time Likes Counter
-                  StreamBuilder<QuerySnapshot>(
+                  StreamBuilder<DocumentSnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('users')
                         .doc(writerId)
                         .collection('articles')
                         .doc(widget.article['articleId'])
-                        .collection('likes')
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Text('0 Likes Received',
                             style: TextStyle(color: Colors.pink, fontSize: 14));
                       }
-                      final totalLikes = snapshot.data?.docs.length ?? 0;
+
+                      if (!snapshot.hasData || !snapshot.data!.exists) {
+                        return const Text('0 Likes Received',
+                            style: TextStyle(color: Colors.pink, fontSize: 14));
+                      }
+
+                      final data = snapshot.data!.data() as Map<String, dynamic>;
+                      final totalLikes = data['likes'] ?? 0;
+
                       return Row(
                         children: [
                           const Icon(Icons.favorite, color: Colors.pink, size: 20),
@@ -187,15 +194,43 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                     },
                   ),
 
+
                   const Divider(height: 30),
 
-                  const Text('Styling Tips',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
-                  Text(
-                    widget.article['description'] ?? '',
-                    style: const TextStyle(fontSize: 16, height: 1.5),
+
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(writerId)
+                        .collection('articles')
+                        .doc(widget.article['articleId'])
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      if (!snapshot.hasData || !snapshot.data!.exists) {
+                        return const Text(
+                          'No content available.',
+                          style: TextStyle(color: Colors.grey, fontSize: 14),
+                        );
+                      }
+
+                      final data = snapshot.data!.data() as Map<String, dynamic>;
+                      final content = data['content'] ?? widget.article['description'] ?? '';
+
+                      return Text(
+                        content,
+                        style: const TextStyle(fontSize: 16, height: 1.5),
+                      );
+                    },
                   ),
+
 
                   const Divider(height: 30),
 
