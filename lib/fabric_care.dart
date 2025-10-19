@@ -7,18 +7,18 @@ class FabricCareAdvisorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, String>> fabrics = [
-      {"name": "SILK", "id": "silk_doc_id"},
-      {"name": "COTTON", "id": "cotton_doc_id"},
-      {"name": "LAWN", "id": "lawn_doc_id"},
-      {"name": "LINEN", "id": "linen_doc_id"},
-      {"name": "CHIFFON", "id": "chiffon_doc_id"},
-      {"name": "KHADDAR", "id": "khaddar_doc_id"},
-      {"name": "VELVET", "id": "velvet_doc_id"},
-      {"name": "JERSEY", "id": "jersey_doc_id"},
-      {"name": "LEATHER", "id": "leather_doc_id"},
-      {"name": "CRINKLE", "id": "crinkle_doc_id"},
-      {"name": "WOOL", "id": "wool_doc_id"},
-      {"name": "MARINA", "id": "marina_doc_id"},
+      {"name": "SILK", "id": "silk_doc_id", "image": "assets/images/silk.png"},
+      {"name": "COTTON", "id": "cotton_doc_id", "image": "assets/images/cotton.png"},
+      {"name": "LAWN", "id": "lawn_doc_id", "image": "assets/images/lawn.png"},
+      {"name": "LINEN", "id": "linen_doc_id", "image": "assets/images/linen.png"},
+      {"name": "CHIFFON", "id": "chiffon_doc_id", "image": "assets/images/chiffon.png"},
+      {"name": "KHADDAR", "id": "khaddar_doc_id", "image": "assets/images/khaddar.png"},
+      {"name": "VELVET", "id": "velvet_doc_id", "image": "assets/images/velvet.png"},
+      {"name": "JERSEY", "id": "jersey_doc_id", "image": "assets/images/jersey.png"},
+      {"name": "LEATHER", "id": "leather_doc_id", "image": "assets/images/leather.png"},
+      {"name": "CRINKLE", "id": "crinkle_doc_id", "image": "assets/images/crinkle.png"},
+      {"name": "WOOL", "id": "wool_doc_id", "image": "assets/images/wool.png"},
+      {"name": "MARINA", "id": "marina_doc_id", "image": "assets/images/marina.png"},
     ];
 
     return Scaffold(
@@ -98,10 +98,10 @@ class FabricCareAdvisorScreen extends StatelessWidget {
                           children: [
                             Container(
                               height: 120,
-                              decoration: const BoxDecoration(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                              decoration: BoxDecoration(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                                 image: DecorationImage(
-                                  image: AssetImage('assets/images/fabric_placeholder.png'),
+                                  image: AssetImage(fabric['image']!), // ✅ Dynamic image
                                   fit: BoxFit.cover,
                                 ),
                               ),

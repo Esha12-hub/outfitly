@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class FabricDetailScreen extends StatelessWidget {
+class FabricDetailScreen extends StatefulWidget {
   final String fabricId;
   final String fabricName;
 
@@ -11,6 +11,29 @@ class FabricDetailScreen extends StatelessWidget {
     required this.fabricId,
     required this.fabricName,
   }) : super(key: key);
+
+  @override
+  State<FabricDetailScreen> createState() => _FabricDetailScreenState();
+}
+
+class _FabricDetailScreenState extends State<FabricDetailScreen> {
+  late Future<DocumentSnapshot> fabricFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    fabricFuture = _loadFabricData();
+  }
+
+  Future<DocumentSnapshot> _loadFabricData() {
+    return FirebaseFirestore.instance.collection('fabrics').doc(widget.fabricId).get();
+  }
+
+  void _refreshData() {
+    setState(() {
+      fabricFuture = _loadFabricData();
+    });
+  }
 
   String capitalizeFirstLetter(String text) {
     if (text.isEmpty) return text;
@@ -32,16 +55,14 @@ class FabricDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formattedName = capitalizeFirstLetter(fabricName);
+    final formattedName = capitalizeFirstLetter(widget.fabricName);
+    final localAssetPath = 'assets/images/${widget.fabricName.toLowerCase()}.png';
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance
-              .collection('fabrics')
-              .doc(fabricId)
-              .get(),
+          future: fabricFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator(color: Colors.pink));
@@ -54,6 +75,7 @@ class FabricDetailScreen extends StatelessWidget {
             }
 
             final data = snapshot.data!.data() as Map<String, dynamic>;
+            final imageUrl = data['imageUrl']?.toString() ?? '';
 
             return Column(
               children: [
@@ -81,7 +103,10 @@ class FabricDetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const Icon(Icons.favorite_border, color: Colors.white, size: 24),
+                      GestureDetector(
+                        onTap: _refreshData,
+                        child: const Icon(Icons.refresh, color: Colors.white, size: 24),
+                      ),
                     ],
                   ),
                 ),
@@ -107,12 +132,12 @@ class FabricDetailScreen extends StatelessWidget {
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20),
                                 color: Colors.pink.shade50,
-                                image: (data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty)
-                                    ? DecorationImage(
-                                  image: NetworkImage(data['imageUrl']),
+                                image: DecorationImage(
+                                  image: imageUrl.isNotEmpty
+                                      ? NetworkImage(imageUrl)
+                                      : AssetImage(localAssetPath) as ImageProvider,
                                   fit: BoxFit.cover,
-                                )
-                                    : null,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.grey.shade300,
@@ -121,11 +146,6 @@ class FabricDetailScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              child: (data['imageUrl'] == null || data['imageUrl'].toString().isEmpty)
-                                  ? const Center(
-                                child: Icon(Icons.image_not_supported, color: Colors.grey, size: 60),
-                              )
-                                  : null,
                             ),
                           ),
                           const SizedBox(height: 24),
@@ -178,22 +198,10 @@ class FabricDetailScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: const [
-                              _CareIcon(
-                                icon: FontAwesomeIcons.handSparkles,
-                                label: "Hand Wash",
-                              ),
-                              _CareIcon(
-                                icon: FontAwesomeIcons.wind,
-                                label: "Air Dry",
-                              ),
-                              _CareIcon(
-                                icon: FontAwesomeIcons.temperatureLow,
-                                label: "Low Iron",
-                              ),
-                              _CareIcon(
-                                icon: FontAwesomeIcons.box,
-                                label: "Fold Dry",
-                              ),
+                              _CareIcon(icon: FontAwesomeIcons.handSparkles, label: "Hand Wash"),
+                              _CareIcon(icon: FontAwesomeIcons.wind, label: "Air Dry"),
+                              _CareIcon(icon: FontAwesomeIcons.temperatureLow, label: "Low Iron"),
+                              _CareIcon(icon: FontAwesomeIcons.box, label: "Fold Dry"),
                             ],
                           ),
                           const SizedBox(height: 40),
