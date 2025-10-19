@@ -17,6 +17,7 @@ import 'ai_outfit_suggestions.dart';
 import 'fashion_content_screen.dart';
 import 'smart_assistant_welcome.dart';
 import 'user_login_screen.dart';
+import 'smart_shopping_screen.dart';
 
 class WardrobeHomeScreen extends StatefulWidget {
   const WardrobeHomeScreen({super.key});
@@ -380,7 +381,12 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                   );
                 }),
                 const SizedBox(width: 12),
-                categoryCard("Smart Shopping", 'assets/images/smart shopping.png'),
+                categoryCard("Smart Shopping", 'assets/images/smart shopping.png', onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SmartShoppingScreen()),
+                  );
+                }),
                 const SizedBox(width: 12),
                 categoryCard("Outfit Planner", 'assets/images/Outfit-Planner.jpg', onTap: () {
                   Navigator.push(

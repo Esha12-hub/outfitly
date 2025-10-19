@@ -12,7 +12,8 @@ import 'user_profile_screen.dart';
 import '../screens/content_approval_screen.dart';
 import '../screens/analytics_screen.dart';
 import '../screens/settings_screen.dart';
-import '../screens/admin_login_screen.dart';
+import '../../smart_shopping_screen.dart';
+import '../screens/admin_login_screen.dart'; // import admin login screen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,66 +24,73 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  final GlobalKey<CurvedNavigationBarState> _bottomNavKey = GlobalKey();
 
   final List<Widget> _pages = [
     _DashboardHomeContent(),
     const ContentApprovalScreen(),
     const AnalyticsScreen(),
     const ActiveUsersScreen(),
+    const SmartShoppingScreen(),
     const SettingsScreen(),
   ];
 
-  void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
-  }
+  // Intercept back button
+// inside _DashboardScreenState
 
-
+// Intercept back button
   Future<bool> _onWillPop() async {
-    // ✅ Styled logout confirmation dialog
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text("Logout"),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: const Text(
+          "Logout",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: const Text("Do you want to logout?"),
         actions: [
           TextButton(
-            child: const Text("No", style: TextStyle(color: Colors.black)),
+            child: const Text(
+              "No",
+              style: TextStyle(color: Colors.black),
+            ),
             onPressed: () => Navigator.pop(context, false),
           ),
           TextButton(
-            child: const Text("Yes", style: TextStyle(color: Colors.red)),
-            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "Yes",
+              style: TextStyle(color: Colors.red),
+            ),
+            onPressed: () {
+              Navigator.pop(context, true); // close dialog
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminLoginScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
 
-    if (shouldLogout == true) {
-      // If you use FirebaseAuth for admin, sign out
-      // await FirebaseAuth.instance.signOut();
-
-      // Navigate to AdminLoginScreen and remove all previous routes
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-      );
-      return false; // Prevent default back behavior
-    }
-
-    return false; // Stay on dashboard if No
+    return shouldLogout ?? false;
   }
-
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: _onWillPop, // 👈 Handles back press
+      onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: AppColors.darkBackground,
         body: SafeArea(child: _pages[_selectedIndex]),
         bottomNavigationBar: CurvedNavigationBar(
-          key: GlobalKey<CurvedNavigationBarState>(),
+          key: _bottomNavKey,
           index: _selectedIndex,
           height: 60.0,
           items: const <Widget>[
@@ -90,19 +98,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Icon(Icons.analytics_outlined, size: 30, color: Colors.white),
             Icon(Icons.area_chart, size: 30, color: Colors.white),
             Icon(Icons.person, size: 30, color: Colors.white),
+            Icon(Icons.shopping_bag, size: 30, color: Colors.white),
             Icon(Icons.settings, size: 30, color: Colors.white),
           ],
-          color: AppColors.primary,
-          buttonBackgroundColor: AppColors.primary.withOpacity(0.9),
-          backgroundColor: Colors.black, // ✅ solid black nav background
+          color: Colors.pink,
+          buttonBackgroundColor: Colors.pinkAccent,
+          backgroundColor: Colors.transparent,
           animationCurve: Curves.easeInOut,
-          animationDuration: const Duration(milliseconds: 400),
-          onTap: _onItemTapped,
+          animationDuration: const Duration(milliseconds: 600),
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
           letIndexChange: (index) => true,
         ),
       ),
     );
   }
+
 }
 
 class _DashboardHomeContent extends StatefulWidget {
@@ -227,7 +241,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                         },
                       ),
 
-                      // Wardrobe items count
+                      // Wardrobe items count for only users with role "user"
                       FutureBuilder<int>(
                         future: _getWardrobeItemCountForUsersWithRoleUser(),
                         builder: (context, snapshot) {
@@ -272,11 +286,9 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                   const SizedBox(height: 24),
                   const Text('Recent Activity', style: AppTextStyles.h3),
                   const SizedBox(height: 12),
-                  _buildRecentActivityItem(
-                      'Added new outfit', '2h ago', Icons.add),
+                  _buildRecentActivityItem('Added new outfit', '2h ago', Icons.add),
                   const SizedBox(height: 8),
-                  _buildRecentActivityItem(
-                      'Updated Profile', '5h ago', Icons.edit),
+                  _buildRecentActivityItem('Updated Profile', '5h ago', Icons.edit),
                 ],
               ),
             ),
