@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'writer_login_screen.dart'; // Make sure this import exists
+import 'writer_login_screen.dart';
 
 class WriteArticleScreen extends StatefulWidget {
   const WriteArticleScreen({super.key});
@@ -32,7 +32,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     super.dispose();
   }
 
-  // 🔹 Media picker
   Future<void> _pickMedia(ImageSource source, bool isImage) async {
     final picker = ImagePicker();
     final pickedFile = await (isImage
@@ -51,7 +50,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     });
   }
 
-  // 🔹 Submit article
   Future<void> _submitArticle() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -86,7 +84,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     }
   }
 
-  // 🔹 Show logout confirmation and return result
   Future<bool?> _showLogoutConfirmation() {
     return showDialog<bool>(
       context: context,
@@ -109,7 +106,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     );
   }
 
-  // 🔹 Handle logout
   Future<void> _handleLogout() async {
     final shouldLogout = await _showLogoutConfirmation();
     if (shouldLogout == true) {
@@ -126,9 +122,15 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Responsive metrics
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+    double basePadding = screenWidth * 0.04;
+    double sectionSpacing = screenHeight * 0.02;
+    double contentHeight = screenHeight * 0.25;
+
     return WillPopScope(
       onWillPop: () async {
-        // Intercept system back button
         final shouldLogout = await _showLogoutConfirmation();
         if (shouldLogout == true) {
           await FirebaseAuth.instance.signOut();
@@ -140,158 +142,126 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
             );
           }
         }
-        return false; // Prevent default pop
+        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
           child: Column(
             children: [
-              // 🔹 Top bar with back and logout buttons
+              // Top bar
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                padding: EdgeInsets.symmetric(horizontal: basePadding, vertical: basePadding),
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: _handleLogout, // Back icon now triggers logout dialog
-                      child: Image.asset(
-                        "assets/images/white_back_btn.png",
-                        height: 30,
-                        width: 30,
-                      ),
+                      onTap: _handleLogout,
+                      child: Icon(Icons.arrow_back, color: Colors.white, size: screenWidth * 0.07),
                     ),
-                    const SizedBox(width: 4),
-                    const Expanded(
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: Center(
                         child: Text(
                           "New Article",
                           style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 21,
-                              fontWeight: FontWeight.bold),
+                            color: Colors.white,
+                            fontSize: screenWidth * 0.05,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.logout, color: Colors.white),
+                      icon: Icon(Icons.logout, color: Colors.white, size: screenWidth * 0.07),
                       onPressed: _handleLogout,
                     ),
                   ],
                 ),
               ),
-              // 🔹 Main content
+              // Main content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(30)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                   ),
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  padding: EdgeInsets.fromLTRB(basePadding, basePadding, basePadding, basePadding),
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
                         _buildSection(
                           label: "Article Title",
-                          child:
-                          _buildTextField("Enter article title...", _titleController),
+                          child: _buildTextField("Enter article title...", _titleController),
                         ),
-                        const SizedBox(height: 16),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _buildSection(
-                                label: "Category",
-                                child: DropdownButtonFormField<String>(
-                                  decoration: _inputDecoration(),
-                                  value: _selectedCategory,
-                                  isExpanded: true,
-                                  items: [
-                                    'Styling Tips',
-                                    'Trends',
-                                    'Do\'s and Don\'ts'
-                                  ]
-                                      .map((e) =>
-                                      DropdownMenuItem(value: e, child: Text(e)))
-                                      .toList(),
-                                  onChanged: (val) {
-                                    setState(() => _selectedCategory = val!);
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildSection(
-                                label: "Tags",
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _buildTextField("Add Tag...", _tagController),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 6,
-                                      runSpacing: 6,
-                                      children: const [
-                                        Chip(label: Text("#casual")),
-                                        Chip(label: Text("#winter")),
-                                        Chip(label: Text("#outfit")),
-                                        Chip(label: Text("#longhashtag")),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                        SizedBox(height: sectionSpacing),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            if (constraints.maxWidth < 500) {
+                              // Small screens: stack vertically
+                              return Column(
+                                children: [
+                                  _buildSection(
+                                    label: "Category",
+                                    child: _buildDropdown(),
+                                  ),
+                                  SizedBox(height: sectionSpacing / 2),
+                                  _buildSection(
+                                    label: "Tags",
+                                    child: _buildTags(),
+                                  ),
+                                ],
+                              );
+                            } else {
+                              // Medium/Large screens: side by side
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: _buildSection(label: "Category", child: _buildDropdown())),
+                                  SizedBox(width: 16),
+                                  Expanded(child: _buildSection(label: "Tags", child: _buildTags())),
+                                ],
+                              );
+                            }
+                          },
                         ),
-                        const SizedBox(height: 16),
-                        _buildSection(label: "Content", child: _buildRichEditor()),
-                        const SizedBox(height: 16),
-                        _buildSection(label: "Insert Media", child: _buildMediaUpload()),
-                        const SizedBox(height: 24),
+                        SizedBox(height: sectionSpacing),
+                        _buildSection(label: "Content", child: _buildRichEditor(contentHeight)),
+                        SizedBox(height: sectionSpacing),
+                        _buildSection(label: "Insert Media", child: _buildMediaUpload(contentHeight)),
+                        SizedBox(height: sectionSpacing * 1.5),
                         Row(
                           children: [
                             Expanded(
                               child: OutlinedButton(
                                 onPressed: () {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content:
-                                        Text('Draft saved (not implemented)')),
+                                    const SnackBar(content: Text('Draft saved (not implemented)')),
                                   );
                                 },
                                 style: OutlinedButton.styleFrom(
-                                  padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
+                                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   side: const BorderSide(color: Colors.black),
                                   foregroundColor: Colors.black,
                                 ),
                                 child: const Text("Save a Draft"),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: _submitArticle,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.pink,
-                                  padding:
-                                  const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
+                                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
-                                child: const Text("Submit for Review",
-                                    style: TextStyle(color: Colors.white)),
+                                child: const Text("Submit for Review", style: TextStyle(color: Colors.white)),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 30),
+                        SizedBox(height: sectionSpacing * 2),
                       ],
                     ),
                   ),
@@ -303,6 +273,36 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       ),
     );
   }
+
+  Widget _buildDropdown() => DropdownButtonFormField<String>(
+    decoration: _inputDecoration(),
+    value: _selectedCategory,
+    isExpanded: true,
+    items: ['Styling Tips', 'Trends', 'Do\'s and Don\'ts']
+        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+        .toList(),
+    onChanged: (val) {
+      setState(() => _selectedCategory = val!);
+    },
+  );
+
+  Widget _buildTags() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildTextField("Add Tag...", _tagController),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: const [
+          Chip(label: Text("#casual")),
+          Chip(label: Text("#winter")),
+          Chip(label: Text("#outfit")),
+          Chip(label: Text("#longhashtag")),
+        ],
+      ),
+    ],
+  );
 
   Widget _buildSection({required String label, required Widget child}) {
     return Container(
@@ -322,8 +322,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(height: 8),
           child,
         ],
@@ -357,7 +356,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         decoration: _inputDecoration().copyWith(hintText: hint),
       );
 
-  Widget _buildRichEditor() => Column(
+  Widget _buildRichEditor(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Row(
@@ -379,7 +378,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       ),
       const SizedBox(height: 8),
       Container(
-        height: 150,
+        height: height,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -400,7 +399,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     ],
   );
 
-  Widget _buildMediaUpload() => Column(
+  Widget _buildMediaUpload(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Row(
@@ -429,7 +428,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       const SizedBox(height: 12),
       if (_selectedMediaBase64 != null)
         Container(
-          height: 150,
+          height: height,
           width: double.infinity,
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey),
@@ -439,16 +438,14 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
               ? const Center(child: Text("Video selected"))
               : ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.memory(base64Decode(_selectedMediaBase64!),
-                fit: BoxFit.cover),
+            child: Image.memory(base64Decode(_selectedMediaBase64!), fit: BoxFit.cover),
           ),
         ),
       const SizedBox(height: 8),
       TextField(
         controller: _captionController,
         style: const TextStyle(color: Colors.grey),
-        decoration:
-        _inputDecoration().copyWith(hintText: 'Add a caption...'),
+        decoration: _inputDecoration().copyWith(hintText: 'Add a caption...'),
       ),
     ],
   );

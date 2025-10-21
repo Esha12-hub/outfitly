@@ -17,7 +17,6 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // ========================= EMAIL/PASSWORD LOGIN =========================
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
@@ -41,15 +40,17 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     }
   }
 
-  // ========================= GOOGLE LOGIN =========================
   Future<void> _loginWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      final googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) {
-        setState(() => _isLoading = false);
-        return; // user canceled login
-      }
+      final googleSignIn = GoogleSignIn();
+
+      // Sign out first to allow choosing account again
+      await googleSignIn.signOut();
+
+      // Prompt account picker
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) return; // User cancelled
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -59,6 +60,7 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
 
       final userCredential =
       await FirebaseAuth.instance.signInWithCredential(credential);
+
       await _checkRoleAndNavigate(userCredential.user?.uid, googleUser);
     } catch (e) {
       _showErrorSnackBar(e.toString());
@@ -67,7 +69,8 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     }
   }
 
-  // ========================= CHECK ROLE =========================
+
+
   Future<void> _checkRoleAndNavigate(String? uid,
       [GoogleSignInAccount? googleUser]) async {
     if (uid == null) throw Exception('User ID is null.');
@@ -75,39 +78,43 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     final docRef = FirebaseFirestore.instance.collection('users').doc(uid);
     final doc = await docRef.get();
 
-    // Prepare user data for Google login
-    if (googleUser != null) {
+    final data = doc.data();
+
+    if (data != null) {
+      final role = data['role']?.toString().trim().toLowerCase();
+
+      if (role != 'content writer') {
+        await FirebaseAuth.instance.signOut();
+        throw Exception(
+            'Access denied: This account is registered as a User, not a Content Writer.');
+      }
+    } else if (googleUser != null) {
+      // New Google Content Writer
       final userData = {
         'uid': uid,
         'name': googleUser.displayName ?? 'Unknown',
         'email': googleUser.email,
         'photoUrl': googleUser.photoUrl,
-        'role': 'Content Writer', // force content writer
+        'role': 'Content Writer',
         'status': 'Active',
         'authProvider': 'google',
         'createdAt': FieldValue.serverTimestamp(),
       };
-
-      await docRef.set(userData, SetOptions(merge: true));
-    }
-
-    final updatedDoc = await docRef.get();
-    final data = updatedDoc.data();
-    final role = data?['role'];
-
-    if (role != null &&
-        role.toString().trim().toLowerCase() == 'content writer') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const WriterDashboardScreen()),
-      );
+      await docRef.set(userData);
     } else {
+      // No document exists for non-Google login
       await FirebaseAuth.instance.signOut();
-      throw Exception('Access denied: Not a content writer.');
+      throw Exception(
+          'Access denied: User not registered as a Content Writer.');
     }
+
+    // Navigate to dashboard
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const WriterDashboardScreen()),
+    );
   }
 
-  // ========================= ERROR SNACKBAR =========================
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
@@ -122,140 +129,126 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final paddingH = screenWidth * 0.06;
+    final spacingV = screenHeight * 0.02;
+    final avatarRadius = screenHeight * 0.07;
+    final inputFontSize = screenHeight * 0.018;
+    final titleFontSize = screenHeight * 0.03;
+    final buttonHeight = screenHeight * 0.065;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding:
+          EdgeInsets.symmetric(horizontal: paddingH, vertical: spacingV),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(height: 10),
+            children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Image.asset(
-                  "assets/images/back btn.png",
-                  height: 30,
-                  width: 30,
+                child: SizedBox(
+                  height: spacingV * 1.5,
+                  width: spacingV * 1.5,
+                  child: Image.asset("assets/images/back btn.png"),
                 ),
               ),
-              const SizedBox(height: 6),
-              const Center(
+              SizedBox(height: spacingV),
+              Center(
                 child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage('assets/images/writer_img1.png'),
+                  radius: avatarRadius,
+                  backgroundImage:
+                  const AssetImage('assets/images/writer_img1.png'),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Center(
+              SizedBox(height: spacingV),
+              Center(
                 child: Text(
                   'Content Writer',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      fontSize: titleFontSize, fontWeight: FontWeight.bold),
                 ),
               ),
-              const SizedBox(height: 4),
-              const Center(
+              Center(
                 child: Text(
                   'Sign in to continue',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(fontSize: inputFontSize, color: Colors.grey),
                 ),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'Enter your email',
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
+              SizedBox(height: spacingV),
+              _buildTextField(_emailController, 'Enter your email', inputFontSize),
+              SizedBox(height: spacingV),
+              _buildTextField(_passwordController, 'Password', inputFontSize,
+                  isPassword: true),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {},
-                  child: const Text(
+                  child: Text(
                     'Forget Password?',
-                    style: TextStyle(color: Colors.pink, fontSize: 13),
+                    style: TextStyle(color: Colors.pink, fontSize: inputFontSize),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: spacingV),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: buttonHeight,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Login',
-                      style: TextStyle(color: Colors.white)),
+                      : Text('Login',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: inputFontSize)),
                 ),
               ),
-              const SizedBox(height: 30),
-              const Center(child: Text("Or")),
-              const SizedBox(height: 20),
-
-              // ========================= GOOGLE BUTTON =========================
+              SizedBox(height: spacingV * 2),
+              Center(
+                  child: Text("Or", style: TextStyle(fontSize: inputFontSize))),
+              SizedBox(height: spacingV),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: buttonHeight,
                 child: OutlinedButton.icon(
                   onPressed: _isLoading ? null : _loginWithGoogle,
                   icon: Image.asset(
                     'assets/images/google icon.png',
-                    width: 25,
-                    height: 25,
+                    width: screenWidth * 0.07,
+                    height: screenWidth * 0.07,
                   ),
-                  label: const Text(
+                  label: Text(
                     "Continue with Google",
                     style: TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                        fontSize: inputFontSize),
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey.shade300),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                     backgroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: spacingV / 2),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 20),
+              SizedBox(height: spacingV * 2),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "Not a writer yet? ",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: inputFontSize),
                   ),
                   TextButton(
                     onPressed: () {
@@ -265,40 +258,58 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
                             builder: (context) => RegisterScreen()),
                       );
                     },
-                    child: const Text('Register now!',
-                        style: TextStyle(color: Colors.pink)),
+                    child: Text('Register now!',
+                        style:
+                        TextStyle(color: Colors.pink, fontSize: inputFontSize)),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-              const Center(
+              SizedBox(height: spacingV / 2),
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  padding: EdgeInsets.symmetric(horizontal: paddingH / 2),
                   child: Text.rich(
                     TextSpan(
                       text: "By clicking continue, you agree to our ",
-                      children: [
+                      children: const [
                         TextSpan(
-                          text: "Terms of Service",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                            text: "Terms of Service",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                         TextSpan(text: " and "),
                         TextSpan(
-                          text: "Privacy Policy",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
+                            text: "Privacy Policy",
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: inputFontSize * 0.8),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: spacingV),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(
+      TextEditingController controller, String hint, double fontSize,
+      {bool isPassword = false}) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.grey[200],
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        contentPadding:
+        EdgeInsets.symmetric(vertical: fontSize * 1.5, horizontal: fontSize),
+      ),
+      style: TextStyle(fontSize: fontSize),
     );
   }
 }
