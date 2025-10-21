@@ -43,9 +43,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
           .get();
 
       if (adminDoc.exists) {
-        setState(() {
-          isAdmin = true;
-        });
+        setState(() => isAdmin = true);
         return;
       }
 
@@ -56,10 +54,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
 
       if (userDoc.exists) {
         final data = userDoc.data()!;
-        final isAdminFromUser = data['isAdmin'] ?? false;
-        setState(() {
-          isAdmin = isAdminFromUser;
-        });
+        setState(() => isAdmin = data['isAdmin'] ?? false);
       }
     }
   }
@@ -88,26 +83,24 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
   void _showDeleteConfirmation(String itemId, String itemName) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Product'),
-          content: Text('Are you sure you want to delete "$itemName"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteClothingItem(itemId);
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Product'),
+        content: Text('Are you sure you want to delete "$itemName"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _deleteClothingItem(itemId);
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -195,6 +188,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
+  // ---------------- CATEGORY GRID ----------------
   Widget _buildCategoryGrid() {
     final categories = ClothingCategory.getDefaultCategories();
 
@@ -220,43 +214,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              _searchTimer?.cancel();
-              _searchTimer = Timer(const Duration(milliseconds: 500), () {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              });
-            },
-            onSubmitted: (value) {
-              _searchTimer?.cancel();
-              setState(() {
-                _searchQuery = value.toLowerCase();
-              });
-            },
-            decoration: InputDecoration(
-              hintText: 'Search all products...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                onPressed: () {
-                  setState(() {
-                    _searchQuery = '';
-                    _searchController.clear();
-                  });
-                },
-                icon: const Icon(Icons.clear),
-              )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.grey[100],
-            ),
-          ),
+          _buildSearchField(),
           const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
@@ -269,8 +227,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
             ),
             itemCount: categories.length,
             itemBuilder: (context, index) {
-              final category = categories[index];
-              return _buildCategoryCard(category);
+              return _buildCategoryCard(categories[index]);
             },
           ),
         ],
@@ -280,11 +237,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
 
   Widget _buildCategoryCard(ClothingCategory category) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedCategory = category.id;
-        });
-      },
+      onTap: () => setState(() => selectedCategory = category.id),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -307,11 +260,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey[300],
-                      child: const Icon(
-                        Icons.image,
-                        size: 50,
-                        color: Colors.grey,
-                      ),
+                      child: const Icon(Icons.image, size: 50, color: Colors.grey),
                     );
                   },
                 ),
@@ -363,54 +312,15 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
+  // ---------------- CLOTHING ITEMS GRID ----------------
   Widget _buildClothingItemsGrid() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              _searchTimer?.cancel();
-              _searchTimer = Timer(const Duration(milliseconds: 500), () {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              });
-            },
-            onSubmitted: (value) {
-              _searchTimer?.cancel();
-              setState(() {
-                _searchQuery = value.toLowerCase();
-              });
-            },
-            decoration: InputDecoration(
-              hintText: 'Search products...',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                onPressed: () {
-                  setState(() {
-                    _searchQuery = '';
-                    _searchController.clear();
-                  });
-                },
-                icon: const Icon(Icons.clear),
-              )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              filled: true,
-              fillColor: Colors.grey[100],
-            ),
-          ),
-        ),
+        Padding(padding: const EdgeInsets.all(16), child: _buildSearchField()),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('clothing_items')
-                .where('category', isEqualTo: selectedCategory)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -418,45 +328,20 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
               }
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shopping_bag_outlined,
-                        size: 80,
-                        color: Colors.grey[400],
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No items found in this category',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Check back later for new arrivals!',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
+                return _noItemsWidget('No items found in this category');
               }
 
               final items = snapshot.data!.docs
-                  .map((doc) =>
-                  ClothingItem.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-                  .toList()
+                  .map((doc) => ClothingItem.fromMap(doc.data() as Map<String, dynamic>, doc.id))
                   .where((item) {
-                if (_searchQuery.isEmpty) return true;
-                return item.name.toLowerCase().contains(_searchQuery) ||
+                final matchesSearch = _searchQuery.isEmpty ||
+                    item.name.toLowerCase().contains(_searchQuery) ||
                     item.description.toLowerCase().contains(_searchQuery);
+                return matchesSearch;
               }).toList();
+
+
+              if (items.isEmpty) return _noItemsWidget('No items found in this category');
 
               return Padding(
                 padding: const EdgeInsets.all(16),
@@ -468,10 +353,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                     childAspectRatio: 0.7,
                   ),
                   itemCount: items.length,
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return _buildClothingItemCard(item);
-                  },
+                  itemBuilder: (context, index) => _buildClothingItemCard(items[index]),
                 ),
               );
             },
@@ -481,16 +363,122 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
-  Widget _buildClothingItemCard(ClothingItem item) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ClothingItemDetailScreen(item: item),
+  // ---------------- GLOBAL SEARCH ----------------
+  Widget _buildGlobalSearchResults() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('clothing_items').snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text("No products found."));
+        }
+
+        final items = snapshot.data!.docs
+            .map((doc) => ClothingItem.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+            .where((item) =>
+        item.name.toLowerCase().contains(_searchQuery) ||
+            item.description.toLowerCase().contains(_searchQuery))
+            .toList();
+
+        if (items.isEmpty) {
+          return _noItemsWidget('No products found for "$_searchQuery"');
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.7,
+            ),
+            itemCount: items.length,
+            itemBuilder: (context, index) => _buildClothingItemCard(items[index]),
           ),
         );
       },
+    );
+  }
+
+  // ---------------- WIDGET HELPERS ----------------
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      onChanged: (value) {
+        _searchTimer?.cancel();
+        _searchTimer = Timer(const Duration(milliseconds: 500), () {
+          setState(() => _searchQuery = value.toLowerCase());
+        });
+      },
+      onSubmitted: (value) {
+        _searchTimer?.cancel();
+        setState(() => _searchQuery = value.toLowerCase());
+      },
+      decoration: InputDecoration(
+        hintText: 'Search products...',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+          onPressed: () {
+            setState(() {
+              _searchQuery = '';
+              _searchController.clear();
+            });
+          },
+          icon: const Icon(Icons.clear),
+        )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        filled: true,
+        fillColor: Colors.grey[100],
+      ),
+    );
+  }
+
+  Widget _noItemsWidget(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCategoryName(String categoryId) {
+    final categories = ClothingCategory.getDefaultCategories();
+    final category = categories.firstWhere(
+          (cat) => cat.id == categoryId,
+      orElse: () => ClothingCategory(
+        id: categoryId,
+        name: categoryId.toUpperCase(),
+        imageUrl: '',
+        description: '',
+      ),
+    );
+    return category.name;
+  }
+
+  Widget _buildClothingItemCard(ClothingItem item) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ClothingItemDetailScreen(item: item),
+        ),
+      ),
       child: Stack(
         children: [
           Container(
@@ -518,11 +506,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                           ? _buildImageWidget(item.imageUrls.first)
                           : Container(
                         color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.image,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
+                        child: const Icon(Icons.image, size: 40, color: Colors.grey),
                       ),
                     ),
                   ),
@@ -542,26 +526,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Rs. ${item.price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.pink,
-                            ),
-                          ),
-                          const Spacer(),
-                          if (item.sizes.isNotEmpty)
-                            Text(
-                              'Sizes: ${item.sizes.join(', ')}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
                         ],
                       ),
                     ),
@@ -582,11 +546,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                     color: Colors.red.withOpacity(0.8),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.delete,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+                  child: const Icon(Icons.delete, color: Colors.white, size: 16),
                 ),
               ),
             ),
@@ -595,108 +555,15 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
-  Widget _buildGlobalSearchResults() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('clothing_items').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text("No products found."));
-        }
-
-        final items = snapshot.data!.docs
-            .map((doc) => ClothingItem.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .toList()
-            .where((item) {
-          return item.name.toLowerCase().contains(_searchQuery) ||
-              item.description.toLowerCase().contains(_searchQuery) ||
-              item.category.toLowerCase().contains(_searchQuery);
-        }).toList();
-
-        if (items.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.search_off,
-                  size: 80,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No products found for "$_searchQuery"',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.7,
-            ),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return _buildClothingItemCard(item);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  String _getCategoryName(String categoryId) {
-    final categories = ClothingCategory.getDefaultCategories();
-    final category = categories.firstWhere(
-          (cat) => cat.id == categoryId,
-      orElse: () => ClothingCategory(
-        id: categoryId,
-        name: categoryId.toUpperCase(),
-        imageUrl: '',
-        description: '',
-      ),
-    );
-    return category.name;
-  }
-
   Widget _buildImageWidget(String imageUrl) {
     try {
       if (imageUrl.startsWith('data:image')) {
-        final base64String = imageUrl.split(',')[1];
-        final bytes = base64Decode(base64String);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: Colors.grey[300],
-            child: const Icon(Icons.image, size: 40, color: Colors.grey),
-          ),
-        );
+        final bytes = base64Decode(imageUrl.split(',')[1]);
+        return Image.memory(bytes, fit: BoxFit.cover);
       } else {
-        return Image.network(
-          imageUrl,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: Colors.grey[300],
-            child: const Icon(Icons.image, size: 40, color: Colors.grey),
-          ),
-        );
+        return Image.network(imageUrl, fit: BoxFit.cover);
       }
-    } catch (e) {
+    } catch (_) {
       return Container(
         color: Colors.grey[300],
         child: const Icon(Icons.image, size: 40, color: Colors.grey),

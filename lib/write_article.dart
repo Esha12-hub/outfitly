@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'writer_login_screen.dart'; // Make sure this import exists
 
 class WriteArticleScreen extends StatefulWidget {
   const WriteArticleScreen({super.key});
@@ -31,6 +32,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     super.dispose();
   }
 
+  // 🔹 Media picker
   Future<void> _pickMedia(ImageSource source, bool isImage) async {
     final picker = ImagePicker();
     final pickedFile = await (isImage
@@ -49,10 +51,12 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     });
   }
 
+  // 🔹 Submit article
   Future<void> _submitArticle() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please log in.")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Please log in.")));
       return;
     }
 
@@ -73,143 +77,228 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         'status': 'pending',
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Article submitted!")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Article submitted!")));
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
+  // 🔹 Show logout confirmation and return result
+  Future<bool?> _showLogoutConfirmation() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text("Logout"),
+        content: const Text("Do you want to logout?"),
+        actions: [
+          TextButton(
+            child: const Text("No", style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          TextButton(
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🔹 Handle logout
+  Future<void> _handleLogout() async {
+    final shouldLogout = await _showLogoutConfirmation();
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
+              (route) => false,
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Image.asset("assets/images/white_back_btn.png", height: 30, width: 30),
-                  ),
-                  const SizedBox(width: 4),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        "New Article",
-                        style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.bold),
+    return WillPopScope(
+      onWillPop: () async {
+        // Intercept system back button
+        final shouldLogout = await _showLogoutConfirmation();
+        if (shouldLogout == true) {
+          await FirebaseAuth.instance.signOut();
+          if (mounted) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
+                  (route) => false,
+            );
+          }
+        }
+        return false; // Prevent default pop
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // 🔹 Top bar with back and logout buttons
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _handleLogout, // Back icon now triggers logout dialog
+                      child: Image.asset(
+                        "assets/images/white_back_btn.png",
+                        height: 30,
+                        width: 30,
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                ),
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _buildSection(
-                        label: "Article Title",
-                        child: _buildTextField("Enter article title...", _titleController),
+                    const SizedBox(width: 4),
+                    const Expanded(
+                      child: Center(
+                        child: Text(
+                          "New Article",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 21,
+                              fontWeight: FontWeight.bold),
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: _buildSection(
-                              label: "Category",
-                              child: DropdownButtonFormField<String>(
-                                decoration: _inputDecoration(),
-                                value: _selectedCategory,
-                                isExpanded: true,
-                                items: ['Styling Tips', 'Trends', 'Do\'s and Don\'ts']
-                                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                                    .toList(),
-                                onChanged: (val) {
-                                  setState(() => _selectedCategory = val!);
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.logout, color: Colors.white),
+                      onPressed: _handleLogout,
+                    ),
+                  ],
+                ),
+              ),
+              // 🔹 Main content
+              Expanded(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(30)),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        _buildSection(
+                          label: "Article Title",
+                          child:
+                          _buildTextField("Enter article title...", _titleController),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _buildSection(
+                                label: "Category",
+                                child: DropdownButtonFormField<String>(
+                                  decoration: _inputDecoration(),
+                                  value: _selectedCategory,
+                                  isExpanded: true,
+                                  items: [
+                                    'Styling Tips',
+                                    'Trends',
+                                    'Do\'s and Don\'ts'
+                                  ]
+                                      .map((e) =>
+                                      DropdownMenuItem(value: e, child: Text(e)))
+                                      .toList(),
+                                  onChanged: (val) {
+                                    setState(() => _selectedCategory = val!);
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildSection(
+                                label: "Tags",
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildTextField("Add Tag...", _tagController),
+                                    const SizedBox(height: 8),
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: const [
+                                        Chip(label: Text("#casual")),
+                                        Chip(label: Text("#winter")),
+                                        Chip(label: Text("#outfit")),
+                                        Chip(label: Text("#longhashtag")),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSection(label: "Content", child: _buildRichEditor()),
+                        const SizedBox(height: 16),
+                        _buildSection(label: "Insert Media", child: _buildMediaUpload()),
+                        const SizedBox(height: 24),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                        Text('Draft saved (not implemented)')),
+                                  );
                                 },
+                                style: OutlinedButton.styleFrom(
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  side: const BorderSide(color: Colors.black),
+                                  foregroundColor: Colors.black,
+                                ),
+                                child: const Text("Save a Draft"),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildSection(
-                              label: "Tags",
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _buildTextField("Add Tag...", _tagController),
-                                  const SizedBox(height: 8),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: const [
-                                      Chip(label: Text("#casual")),
-                                      Chip(label: Text("#winter")),
-                                      Chip(label: Text("#outfit")),
-                                      Chip(label: Text("#longhashtag")),
-                                    ],
-                                  ),
-                                ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _submitArticle,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.pink,
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                ),
+                                child: const Text("Submit for Review",
+                                    style: TextStyle(color: Colors.white)),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildSection(label: "Content", child: _buildRichEditor()),
-                      const SizedBox(height: 16),
-                      _buildSection(label: "Insert Media", child: _buildMediaUpload()),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Draft saved (not implemented)')),
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                side: const BorderSide(color: Colors.black),
-                                foregroundColor: Colors.black,
-                              ),
-                              child: const Text("Save a Draft"),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _submitArticle,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.pink,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text("Submit for Review", style: TextStyle(color: Colors.white)),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 30),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -233,7 +322,8 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(label,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(height: 8),
           child,
         ],
@@ -260,11 +350,12 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     hintStyle: TextStyle(color: Colors.grey.shade400),
   );
 
-  Widget _buildTextField(String hint, TextEditingController controller) => TextField(
-    controller: controller,
-    style: const TextStyle(color: Colors.grey),
-    decoration: _inputDecoration().copyWith(hintText: hint),
-  );
+  Widget _buildTextField(String hint, TextEditingController controller) =>
+      TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.grey),
+        decoration: _inputDecoration().copyWith(hintText: hint),
+      );
 
   Widget _buildRichEditor() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +410,8 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
               onPressed: () => _pickMedia(ImageSource.gallery, true),
               icon: const Icon(Icons.photo),
               label: const Text("Pick Image"),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
             ),
           ),
           const SizedBox(width: 12),
@@ -328,7 +420,8 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
               onPressed: () => _pickMedia(ImageSource.gallery, false),
               icon: const Icon(Icons.videocam),
               label: const Text("Pick Video"),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
             ),
           ),
         ],
@@ -343,17 +436,19 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
             borderRadius: BorderRadius.circular(10),
           ),
           child: _isVideo
-              ? const Center(child: Text("Video selected")) // You can replace with a video thumbnail widget.
+              ? const Center(child: Text("Video selected"))
               : ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.memory(base64Decode(_selectedMediaBase64!), fit: BoxFit.cover),
+            child: Image.memory(base64Decode(_selectedMediaBase64!),
+                fit: BoxFit.cover),
           ),
         ),
       const SizedBox(height: 8),
       TextField(
         controller: _captionController,
         style: const TextStyle(color: Colors.grey),
-        decoration: _inputDecoration().copyWith(hintText: 'Add a caption...'),
+        decoration:
+        _inputDecoration().copyWith(hintText: 'Add a caption...'),
       ),
     ],
   );

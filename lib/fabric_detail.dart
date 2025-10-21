@@ -87,9 +87,9 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                      IconButton(
+                        icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                        onPressed: () => Navigator.pop(context),
                       ),
                       Flexible(
                         child: Text(

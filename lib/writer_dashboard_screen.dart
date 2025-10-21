@@ -35,7 +35,7 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: _onWillPop, // 👈 Handle back press
+      onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
@@ -65,15 +65,13 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
     );
   }
 
-  /// 🔹 Handle phone back button with logout confirmation
+  /// 🔹 Handle back press with logout confirmation
   Future<bool> _onWillPop() async {
-    // If user is on a tab other than home, navigate to home first
     if (_currentIndex != 0) {
       setState(() => _currentIndex = 0);
       return false;
     }
 
-    // ✅ Styled logout confirmation dialog
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -115,7 +113,9 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
             ),
             child: ListView(
               padding: const EdgeInsets.all(16),
@@ -136,7 +136,7 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
     );
   }
 
-  /// 🔹 TOP SECTION WITH PROFILE + NOTIFICATIONS
+  /// 🔹 TOP SECTION WITH PROFILE + NOTIFICATIONS + RED DOT
   Widget _buildTopSection() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -147,9 +147,7 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
       stream:
       FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return _defaultTopBar();
-        }
+        if (!snapshot.hasData) return _defaultTopBar();
 
         final data = snapshot.data!.data() as Map<String, dynamic>?;
         Uint8List? profileImageBytes;
@@ -184,15 +182,49 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
                   color: Colors.white,
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const WriterNotificationScreen()),
+
+              /// 🔴 Red Dot Notification Icon
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('notifications')
+                    .where('read', isEqualTo: false)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  bool hasUnread =
+                      snapshot.hasData && snapshot.data!.docs.isNotEmpty;
+
+                  return Stack(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                const WriterNotificationScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.notifications,
+                            color: Colors.white, size: 30),
+                      ),
+                      if (hasUnread)
+                        Positioned(
+                          right: 10,
+                          top: 10,
+                          child: Container(
+                            height: 10,
+                            width: 10,
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
                   );
                 },
-                icon: const Icon(Icons.notifications, color: Colors.white, size: 30),
               ),
             ],
           ),
@@ -214,7 +246,8 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
           ),
           Text(
             'Dashboard',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style:
+            TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           Icon(Icons.notifications_none, color: Colors.white),
         ],
@@ -243,7 +276,29 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
     return total;
   }
 
-  /// 🔹 Stats Grid (Live Firestore Data)
+  /// 🔹 Get total likes across all articles
+  Future<int> _getTotalLikesCount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return 0;
+
+    int totalLikes = 0;
+    final articlesSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('articles')
+        .get();
+
+    for (var doc in articlesSnapshot.docs) {
+      final data = doc.data();
+      if (data['likes'] != null && data['likes'] is int) {
+        totalLikes += data['likes'] as int;
+      }
+    }
+
+    return totalLikes;
+  }
+
+  /// 🔹 Stats Grid
   Widget _buildStatsGrid() {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -294,10 +349,16 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
                     );
                   },
                 ),
-                const _StatCard(
-                  title: 'Engagement Score',
-                  value: '82%',
-                  icon: Icons.bar_chart,
+                FutureBuilder<int>(
+                  future: _getTotalLikesCount(),
+                  builder: (context, snapshot) {
+                    final likesCount = snapshot.data?.toString() ?? '...';
+                    return _StatCard(
+                      title: 'Total Likes',
+                      value: likesCount,
+                      icon: Icons.favorite,
+                    );
+                  },
                 ),
               ],
             ),
@@ -369,7 +430,7 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
   }
 }
 
-/// 🔹 Individual Stat Card
+/// 🔹 Stat Card Widget
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -401,7 +462,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-/// 🔹 Article Submission Tile
+/// 🔹 Submission Tile Widget
 class _SubmissionTile extends StatelessWidget {
   final Uint8List? imageBytes;
   final String title;

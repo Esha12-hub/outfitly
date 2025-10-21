@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'content_detail_screen.dart';
+import 'writer_login_screen.dart';
 
 class WriterContentScreen extends StatefulWidget {
   const WriterContentScreen({super.key});
@@ -18,7 +19,7 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
   String? writerId;
 
   final List<String> filters = ['All', 'Casual', 'Formal', 'Streetwear', 'Trends'];
-  final List<String> statuses = ['Accepted', 'Pending', 'Rejected']; // ✅ for the white section
+  final List<String> statuses = ['Accepted', 'Pending', 'Rejected'];
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-// 🔹 HEADER + FILTER CHIPS
+          // 🔹 HEADER + FILTER CHIPS
           Container(
             padding: const EdgeInsets.only(top: 20, left: 16, right: 16, bottom: 8),
             color: Colors.black,
@@ -44,7 +45,7 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     GestureDetector(
-                      onTap: () => Navigator.pop(context),
+                      onTap: _handleLogout,
                       child: Image.asset(
                         "assets/images/white_back_btn.png",
                         height: 26,
@@ -66,7 +67,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-
                 // Filter chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -84,7 +84,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
             ),
           ),
 
-
           // 🔹 WHITE CONTENT AREA
           Expanded(
             child: Container(
@@ -98,7 +97,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 12),
-
                   // 🔸 STATUS SELECTOR (Accepted / Pending / Rejected)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -126,9 +124,7 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                       );
                     }).toList(),
                   ),
-
                   const SizedBox(height: 12),
-
                   // 🔸 CONTENT LIST
                   Expanded(
                     child: writerId == null
@@ -151,19 +147,13 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                         a['category']
                             ?.toString()
                             .toLowerCase()
-                            .contains(selectedFilter.toLowerCase()) ??
-                            false)
+                            .contains(selectedFilter.toLowerCase()) ?? false)
                             .toList();
 
-                        // Filter by selected status
                         final filtered = filteredByCategory.where((a) {
-                          if (selectedStatus == 'Accepted') {
-                            return a['status'] == 'approved';
-                          } else if (selectedStatus == 'Rejected') {
-                            return a['status'] == 'rejected';
-                          } else {
-                            return a['status'] != 'approved' && a['status'] != 'rejected';
-                          }
+                          if (selectedStatus == 'Accepted') return a['status'] == 'approved';
+                          if (selectedStatus == 'Rejected') return a['status'] == 'rejected';
+                          return a['status'] != 'approved' && a['status'] != 'rejected';
                         }).toList();
 
                         if (filtered.isEmpty) {
@@ -187,8 +177,7 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) =>
-                                            WriterContentDetailScreen(article: article),
+                                        builder: (_) => WriterContentDetailScreen(article: article),
                                       ),
                                     );
                                   },
@@ -215,6 +204,40 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
         ],
       ),
     );
+  }
+
+  // 🔹 Logout confirmation dialog
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text("Logout"),
+        content: const Text("Do you want to logout?"),
+        actions: [
+          TextButton(
+            child: const Text("No", style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          TextButton(
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
+              (route) => false,
+        );
+      }
+    }
   }
 
   // 🔹 Fetch current writer’s articles
@@ -345,8 +368,7 @@ class ContentCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Row(
                   children: [

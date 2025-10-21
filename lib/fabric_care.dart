@@ -31,24 +31,28 @@ class FabricCareAdvisorScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 28, 16, 14),
               color: Colors.black,
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
+                  IconButton(
+                    icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                  const Text(
-                    "Fabric Care Advisor",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        "Fabric Care Advisor",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
-                  const Icon(Icons.more_vert, color: Colors.white),
+                  const SizedBox(width: 48), // To balance the space of the back button
                 ],
               ),
+
             ),
 
             // White rounded section

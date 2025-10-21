@@ -17,28 +17,16 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _priceController = TextEditingController();
   final _productLinkController = TextEditingController();
 
-  String _selectedCategory = 'tops';
-  List<String> _selectedSizes = [];
   List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
-
-  final List<String> _availableSizes = [
-    'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'
-  ];
-
-  final List<String> _categories = [
-    'tops', 'bottoms', 'dresses', 'shoes', 'accessories', 'outerwear'
-  ];
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _priceController.dispose();
     _productLinkController.dispose();
     super.dispose();
   }
@@ -86,7 +74,6 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   Future<void> _saveClothingItem() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedImages.isEmpty) return _showError('Please select at least one image');
-    if (_selectedSizes.isEmpty) return _showError('Please select at least one size');
 
     setState(() => _isLoading = true);
 
@@ -98,15 +85,11 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
       }
 
       final imageUrls = await _uploadImages();
-      final price = double.tryParse(_priceController.text) ?? 0.0;
 
       final clothingItem = ClothingItem(
         id: '',
         name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        price: price,
-        sizes: _selectedSizes,
-        category: _selectedCategory,
+        description: _descriptionController.text.trim(), // optional
         imageUrls: imageUrls,
         productLink: _productLinkController.text.trim(),
         createdAt: DateTime.now(),
@@ -135,7 +118,7 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // outer background
+      backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
@@ -158,137 +141,122 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
           color: Colors.white,
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Product Images Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Product Images',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+              : Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Product Images Section
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Product Images',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (_selectedImages.isNotEmpty)
+                              TextButton(
+                                onPressed: _clearAllImages,
+                                child: const Text(
+                                  'Clear All',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                          ],
                         ),
-                      ),
-                      if (_selectedImages.isNotEmpty)
-                        TextButton(
-                          onPressed: _clearAllImages,
-                          child: const Text(
-                            'Clear All',
-                            style: TextStyle(color: Colors.red),
+                        Container(
+                          height: 120,
+                          child: _selectedImages.isEmpty
+                              ? GestureDetector(
+                            onTap: _pickImages,
+                            child: DottedBorderContainer(),
+                          )
+                              : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _selectedImages.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index == _selectedImages.length) {
+                                return AddMoreImageButton(onTap: _pickImages);
+                              }
+                              return SelectedImageThumbnail(
+                                image: _selectedImages[index],
+                                onRemove: () {
+                                  setState(() {
+                                    _selectedImages.removeAt(index);
+                                  });
+                                },
+                              );
+                            },
                           ),
                         ),
-                    ],
-                  ),
-                  Container(
-                    height: 120,
-                    child: _selectedImages.isEmpty
-                        ? GestureDetector(
-                      onTap: _pickImages,
-                      child: DottedBorderContainer(),
-                    )
-                        : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _selectedImages.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == _selectedImages.length) {
-                          return AddMoreImageButton(onTap: _pickImages);
-                        }
-                        return SelectedImageThumbnail(
-                          image: _selectedImages[index],
-                          onRemove: () {
-                            setState(() {
-                              _selectedImages.removeAt(index);
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 20),
+                        const SizedBox(height: 20),
 
-                  buildTextField(_nameController, 'Product Name', Icons.shopping_bag),
-                  const SizedBox(height: 12),
-                  buildTextField(_descriptionController, 'Description', Icons.description, maxLines: 3),
-                  const SizedBox(height: 12),
-                  buildTextField(_priceController, 'Price', Icons.attach_money, keyboardType: TextInputType.number),
-                  const SizedBox(height: 12),
-
-                  DropdownButtonFormField<String>(
-                    value: _selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Text(category.toUpperCase()),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setState(() => _selectedCategory = value!),
-                  ),
-                  const SizedBox(height: 16),
-
-                  const Text('Available Sizes', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Wrap(
-                    spacing: 8,
-                    children: _availableSizes.map((size) {
-                      final isSelected = _selectedSizes.contains(size);
-                      return FilterChip(
-                        label: Text(size),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            selected ? _selectedSizes.add(size) : _selectedSizes.remove(size);
-                          });
-                        },
-                        selectedColor: Colors.pink.withOpacity(0.3),
-                        checkmarkColor: Colors.pink,
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  buildTextField(_productLinkController, 'Product Link', Icons.link,
-                      hintText: 'https://example.com/product'),
-                  const SizedBox(height: 30),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _saveClothingItem,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        buildTextField(_nameController, 'Product Name', Icons.shopping_bag),
+                        const SizedBox(height: 12),
+                        buildTextField(
+                          _descriptionController,
+                          'Description',
+                          Icons.description,
+                          maxLines: 3,
+                          optional: true,
                         ),
-                      ),
-                      child: const Text(
-                        'Add Clothing Item',
-                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
+                        const SizedBox(height: 16),
+                        buildTextField(
+                          _productLinkController,
+                          'Product Link',
+                          Icons.link,
+                          hintText: 'https://example.com/product',
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _saveClothingItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.pink,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Add Clothing Item',
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget buildTextField(TextEditingController controller, String label, IconData icon,
-      {TextInputType keyboardType = TextInputType.text, String? hintText, int maxLines = 1}) {
+  Widget buildTextField(
+      TextEditingController controller,
+      String label,
+      IconData icon, {
+        TextInputType keyboardType = TextInputType.text,
+        String? hintText,
+        int maxLines = 1,
+        bool optional = false,
+      }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
@@ -300,14 +268,18 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
         prefixIcon: Icon(icon),
       ),
       validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Please enter $label.toLowerCase()';
+        if (!optional && (value == null || value.trim().isEmpty)) {
+          return 'Please enter ${label.toLowerCase()}';
         }
         return null;
       },
     );
   }
 }
+
+// --------------------------
+// Helper Widgets
+// --------------------------
 
 class DottedBorderContainer extends StatelessWidget {
   @override

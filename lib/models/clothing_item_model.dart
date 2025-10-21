@@ -2,9 +2,6 @@ class ClothingItem {
   final String id;
   final String name;
   final String description;
-  final double price;
-  final List<String> sizes;
-  final String category;
   final List<String> imageUrls;
   final String productLink;
   final DateTime createdAt;
@@ -14,9 +11,6 @@ class ClothingItem {
     required this.id,
     required this.name,
     required this.description,
-    required this.price,
-    required this.sizes,
-    required this.category,
     required this.imageUrls,
     required this.productLink,
     required this.createdAt,
@@ -28,9 +22,6 @@ class ClothingItem {
       id: id,
       name: map['name'] ?? '',
       description: map['description'] ?? '',
-      price: (map['price'] ?? 0.0).toDouble(),
-      sizes: List<String>.from(map['sizes'] ?? []),
-      category: map['category'] ?? '',
       imageUrls: List<String>.from(map['imageUrls'] ?? []),
       productLink: map['productLink'] ?? '',
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
@@ -42,9 +33,6 @@ class ClothingItem {
     return {
       'name': name,
       'description': description,
-      'price': price,
-      'sizes': sizes,
-      'category': category,
       'imageUrls': imageUrls,
       'productLink': productLink,
       'createdAt': createdAt.millisecondsSinceEpoch,
@@ -53,6 +41,7 @@ class ClothingItem {
   }
 }
 
+// Optional: keep ClothingCategory for reference or future use
 class ClothingCategory {
   final String id;
   final String name;

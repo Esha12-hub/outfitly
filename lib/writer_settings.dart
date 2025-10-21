@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'about_us_screen.dart';
 import 'writer_terms.dart';
 import 'writer_profile.dart';
+import 'seo_optimization.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -67,7 +68,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     /// Account Section
                     _buildSectionTitle('ACCOUNT SETTINGS'),
                     _buildTile(Icons.email, 'Email/Phone Number Details'),
-                    _buildTile(Icons.lock, 'Change Password'),
+                    _buildTile(Icons.lock, 'Change Password', onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SeoAnalyzerScreen()),
+                      );
+                    }),
                     _buildTile(Icons.delete, 'Delete Profile', onTap: _confirmDeleteProfile),
                     const SizedBox(height: 20),
 

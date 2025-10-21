@@ -95,17 +95,58 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   Future<void> toggleFavorite() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || itemData == null) return;
+    if (user == null) return;
 
-    setState(() => isFavorite = !isFavorite);
-
-    await FirebaseFirestore.instance
+    final userWardrobeRef = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('wardrobe')
-        .doc(widget.itemId)
-        .update({'isFavorite': isFavorite});
+        .doc(widget.itemId);
+
+    final userFavoritesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites')
+        .doc(widget.itemId);
+
+    setState(() {
+      isFavorite = !isFavorite; // Toggle UI immediately
+    });
+
+    try {
+      if (isFavorite) {
+        // ✅ Mark as favorite in wardrobe
+        await userWardrobeRef.update({'isFavorite': true});
+
+        // ✅ Add to favorites collection
+        await userFavoritesRef.set({
+          'itemData': {
+            'itemId': widget.itemId,
+            'item_name': itemData?['item_name'],
+            'image_base64': itemData?['image_base64'],
+            'subcategory': itemData?['subcategory'] ?? 'Other',
+            'type': itemData?['type'],
+          },
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
+      } else {
+        // ❌ Unfavorite in wardrobe
+        await userWardrobeRef.update({'isFavorite': false});
+
+        // ❌ Remove from favorites collection
+        await userFavoritesRef.delete();
+      }
+    } catch (e) {
+      // Revert UI if error occurs
+      setState(() {
+        isFavorite = !isFavorite;
+      });
+      print("Error updating favorites: $e");
+    }
   }
+
+
 
   Future<void> markAsWorn() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -359,52 +400,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              children: const [
-                                Icon(Icons.schedule,
-                                    size: 16, color: Colors.grey),
-                                SizedBox(width: 6),
-                                Text("Laundry due in 2 days",
-                                    style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
+
                           ],
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // Smart Suggestions
-                      Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F0F0),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Smart Suggestions",
-                                style: TextStyle(
-                                    fontWeight: FontWeight.bold)),
-                            SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(Icons.timelapse, size: 16),
-                                SizedBox(width: 8),
-                                Text("Not worn in 28 days."),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(Icons.checkroom, size: 16),
-                                SizedBox(width: 8),
-                                Text("Pairs well with White Sneakers"),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+
                       const SizedBox(height: 20),
 
                       // Buttons
