@@ -169,12 +169,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     // Account Settings
                     _sectionTitle("ACCOUNT SETTINGS"),
-                    _iconTile(Icons.verified_user, "Verify Email/Phone Number", onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const VerifyEmailScreen()),
-                      );
-                    }),
                     _iconTile(Icons.lock, "Change Password", onTap: () {
                       Navigator.push(
                         context,

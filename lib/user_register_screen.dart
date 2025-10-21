@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -23,7 +22,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   final TextEditingController _birthdayController = TextEditingController();
 
+  final TextEditingController _pinController = TextEditingController();
+  final TextEditingController _securityAnswerController = TextEditingController();
+
   String? _selectedRole;
+  String? _selectedSecurityOption;
   bool _agreeTerms = false;
   bool _isLoading = false;
   File? _selectedImage;
@@ -33,6 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final ImagePicker _picker = ImagePicker();
 
   final List<String> _roles = ['User', 'Content Writer'];
+  final List<String> _securityOptions = ['PIN', 'Security Question'];
 
   Future<void> _pickBirthday() async {
     DateTime? date = await showDatePicker(
@@ -41,7 +45,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
     );
-
     if (date != null) {
       _birthdayController.text = DateFormat('yyyy-MM-dd').format(date);
     }
@@ -49,33 +52,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _pickImage() async {
     final pickedImage = await _picker.pickImage(source: ImageSource.gallery);
-    if (pickedImage != null) {
-      setState(() {
-        _selectedImage = File(pickedImage.path);
-      });
-    }
+    if (pickedImage != null) setState(() => _selectedImage = File(pickedImage.path));
   }
 
   void _register() async {
     if (!_formKey.currentState!.validate()) return;
-
     if (!_agreeTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('You must agree to Terms & Conditions')),
       );
       return;
     }
-
-    if (_selectedRole == null) {
+    if (_selectedRole == null || _selectedSecurityOption == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a role')),
-      );
-      return;
-    }
-
-    if (_birthdayController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your birthday')),
+        const SnackBar(content: Text('Please select all options')),
       );
       return;
     }
@@ -89,13 +79,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       User? user = userCredential.user;
-
       String? imageBase64;
 
       if (_selectedImage != null) {
         final bytes = await _selectedImage!.readAsBytes();
-
-        // Prevent too large base64 image uploads
         if (bytes.lengthInBytes > 900000) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Image too large. Please pick a smaller image.')),
@@ -103,13 +90,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           setState(() => _isLoading = false);
           return;
         }
-
         imageBase64 = base64Encode(bytes);
       }
 
       if (user != null) {
         await user.updateDisplayName(_nameController.text.trim());
-
         await _firestore.collection('users').doc(user.uid).set({
           'name': _nameController.text.trim(),
           'email': _emailController.text.trim(),
@@ -118,6 +103,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'createdAt': FieldValue.serverTimestamp(),
           'image_base64': imageBase64 ?? '',
           'status': 'Active',
+          'securityMethod': _selectedSecurityOption,
+          'pin': _selectedSecurityOption == 'PIN' ? _pinController.text.trim() : '',
+          'securityAnswer': _selectedSecurityOption == 'Security Question'
+              ? _securityAnswerController.text.trim()
+              : '',
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -125,12 +115,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
         Navigator.pop(context);
       }
-    } on FirebaseAuthException catch (e) {
-      String message = 'Registration failed';
-      if (e.code == 'email-already-in-use') message = 'Email is already in use.';
-      else if (e.code == 'weak-password') message = 'Password is too weak.';
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
@@ -138,7 +122,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  /// Custom input field (Login-style)
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -157,175 +140,254 @@ class _RegisterScreenState extends State<RegisterScreen> {
         hintText: hint,
         filled: true,
         fillColor: Colors.grey[200],
-        border: OutlineInputBorder(
-          borderSide: BorderSide.none,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              // Profile Image Picker
-              Center(
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey[300],
-                      backgroundImage:
-                      _selectedImage != null ? FileImage(_selectedImage!) : null,
-                      child: _selectedImage == null
-                          ? const Icon(Icons.person, size: 50, color: Colors.white)
-                          : null,
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            SizedBox(height: screenHeight * 0.03),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Image.asset(
+                      "assets/images/white_back_btn.png",
+                      height: screenHeight * 0.035,
+                      width: screenHeight * 0.035,
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _pickImage,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.black,
-                          ),
-                          child: const Icon(Icons.camera_alt, size: 20, color: Colors.white),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        "Create Account",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: screenHeight * 0.028,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Name
-              _buildTextField(
-                controller: _nameController,
-                hint: 'Name',
-                validator: (value) =>
-                value == null || value.trim().isEmpty ? 'Enter name' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Email
-              _buildTextField(
-                controller: _emailController,
-                hint: 'Email',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) return 'Enter email';
-                  if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
-                      .hasMatch(value.trim())) {
-                    return 'Enter a valid email';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Birthday
-              _buildTextField(
-                controller: _birthdayController,
-                hint: 'Birthday',
-                readOnly: true,
-                onTap: _pickBirthday,
-              ),
-              const SizedBox(height: 16),
-
-              // Role Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedRole,
-                items: _roles
-                    .map((role) =>
-                    DropdownMenuItem(value: role, child: Text(role)))
-                    .toList(),
-                onChanged: (value) => setState(() => _selectedRole = value),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  hintText: 'Select Role',
-                ),
-                validator: (value) => value == null ? 'Select a role' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Password
-              _buildTextField(
-                controller: _passwordController,
-                hint: 'Password',
-                isPassword: true,
-                validator: (value) =>
-                value == null || value.trim().length < 6 ? 'Min 6 chars' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Confirm Password
-              _buildTextField(
-                controller: _confirmPasswordController,
-                hint: 'Confirm Password',
-                isPassword: true,
-                validator: (value) =>
-                value != _passwordController.text ? 'Passwords do not match' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // Terms & Conditions
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreeTerms,
-                    onChanged: (value) =>
-                        setState(() => _agreeTerms = value ?? false),
-                  ),
-                  const Expanded(
-                    child: Text.rich(
-                      TextSpan(
-                        text: 'Agree with ',
-                        children: [
-                          TextSpan(
-                            text: 'Terms & Conditions',
-                            style: TextStyle(color: Colors.pink),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  SizedBox(width: screenWidth * 0.1), // placeholder
                 ],
               ),
-              const SizedBox(height: 24),
-
-              // Register Button
-              SizedBox(
+            ),
+            SizedBox(height: screenHeight * 0.02),
+            Expanded(
+              child: Container(
                 width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Register',
-                      style: TextStyle(color: Colors.white)),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.06,
+                  vertical: screenHeight * 0.03,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    double formWidth = constraints.maxWidth > 600 ? 500 : constraints.maxWidth;
+                    return Center(
+                      child: SingleChildScrollView(
+                        child: Container(
+                          width: formWidth,
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              children: [
+                                // Profile Image Picker
+                                Center(
+                                  child: Stack(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: screenHeight * 0.07,
+                                        backgroundColor: Colors.grey[300],
+                                        backgroundImage: _selectedImage != null ? FileImage(_selectedImage!) : null,
+                                        child: _selectedImage == null
+                                            ? Icon(Icons.person, size: screenHeight * 0.07, color: Colors.white)
+                                            : null,
+                                      ),
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: GestureDetector(
+                                          onTap: _pickImage,
+                                          child: Container(
+                                            padding: EdgeInsets.all(screenHeight * 0.01),
+                                            decoration: const BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: Colors.black,
+                                            ),
+                                            child: Icon(Icons.camera_alt, size: screenHeight * 0.025, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: screenHeight * 0.03),
+                                _buildTextField(
+                                  controller: _nameController,
+                                  hint: 'Name',
+                                  validator: (value) => value!.isEmpty ? 'Enter name' : null,
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                _buildTextField(
+                                  controller: _emailController,
+                                  hint: 'Email',
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) return 'Enter email';
+                                    if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                      return 'Enter a valid email';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                _buildTextField(
+                                  controller: _birthdayController,
+                                  hint: 'Birthday',
+                                  readOnly: true,
+                                  onTap: _pickBirthday,
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedRole,
+                                  items: _roles.map((role) => DropdownMenuItem(value: role, child: Text(role))).toList(),
+                                  onChanged: (value) => setState(() => _selectedRole = value),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.grey[200],
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
+                                    hintText: 'Select Role',
+                                  ),
+                                  validator: (value) => value == null ? 'Select a role' : null,
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                DropdownButtonFormField<String>(
+                                  value: _selectedSecurityOption,
+                                  items: _securityOptions
+                                      .map((option) => DropdownMenuItem(value: option, child: Text(option)))
+                                      .toList(),
+                                  onChanged: (value) => setState(() => _selectedSecurityOption = value),
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.grey[200],
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                    contentPadding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
+                                    hintText: 'Select Security Option',
+                                  ),
+                                  validator: (value) => value == null ? 'Please select a security option' : null,
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                if (_selectedSecurityOption == 'PIN')
+                                  _buildTextField(
+                                    controller: _pinController,
+                                    hint: 'Enter 4-digit PIN',
+                                    isPassword: true,
+                                    validator: (value) {
+                                      if (_selectedSecurityOption == 'PIN' && (value == null || value.length != 4)) {
+                                        return 'PIN must be 4 digits';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                if (_selectedSecurityOption == 'Security Question') ...[
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'Security Question: Favorite teacher\'s name?',
+                                      style: TextStyle(fontSize: screenHeight * 0.022, fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
+                                  SizedBox(height: screenHeight * 0.01),
+                                  _buildTextField(
+                                    controller: _securityAnswerController,
+                                    hint: 'Enter Answer',
+                                    isPassword: true,
+                                    validator: (value) => value!.isEmpty ? 'Enter answer' : null,
+                                  ),
+                                ],
+                                SizedBox(height: screenHeight * 0.02),
+                                _buildTextField(
+                                  controller: _passwordController,
+                                  hint: 'Password',
+                                  isPassword: true,
+                                  validator: (value) => value!.length < 6 ? 'Min 6 chars' : null,
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                _buildTextField(
+                                  controller: _confirmPasswordController,
+                                  hint: 'Confirm Password',
+                                  isPassword: true,
+                                  validator: (value) => value != _passwordController.text ? 'Passwords do not match' : null,
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                                Row(
+                                  children: [
+                                    Checkbox(
+                                      value: _agreeTerms,
+                                      onChanged: (value) => setState(() => _agreeTerms = value!),
+                                    ),
+                                    Expanded(
+                                      child: Text.rich(
+                                        TextSpan(
+                                          text: 'Agree with ',
+                                          children: [
+                                            TextSpan(
+                                              text: 'Terms & Conditions',
+                                              style: TextStyle(color: Colors.pink.shade600),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: screenHeight * 0.03),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: screenHeight * 0.065,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _register,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.pink.shade600,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    child: _isLoading
+                                        ? const CircularProgressIndicator(color: Colors.white)
+                                        : Text(
+                                      'Register',
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: screenHeight * 0.022),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(height: screenHeight * 0.02),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

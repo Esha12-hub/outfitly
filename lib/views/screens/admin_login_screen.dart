@@ -95,9 +95,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             children: [
               Row(
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Image.asset(
+                      "assets/images/back btn.png",
+                      height: 30,
+                      width: 30,
+                    ),
                   ),
                   const Expanded(
                     child: Center(

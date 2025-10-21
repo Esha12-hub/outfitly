@@ -8,10 +8,26 @@ class ContinueAsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Responsive sizing
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final horizontalPadding = screenWidth * 0.05;
+    final verticalPadding = screenHeight * 0.06;
+    final spacingLarge = screenHeight * 0.05;
+    final spacingMedium = screenHeight * 0.03;
+    final spacingSmall = screenHeight * 0.015;
+
+    final titleFontSize = screenHeight * 0.035;
+    final subtitleFontSize = screenHeight * 0.02;
+    final roleTitleFontSize = screenHeight * 0.025;
+    final roleSubtitleFontSize = screenHeight * 0.017;
+    final iconSize = screenHeight * 0.045;
+
     return Scaffold(
       body: Stack(
         children: [
-          // ✅ Background image
+          // Background image
           SizedBox.expand(
             child: Image.asset(
               "assets/images/background.png",
@@ -19,47 +35,47 @@ class ContinueAsScreen extends StatelessWidget {
             ),
           ),
 
-          // ✅ Foreground content
+          // Foreground content
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Back button
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: Image.asset(
-                      "assets/images/back btn.png",
-                      height: 30,
-                      width: 30,
+                    child: SizedBox(
+                      height: screenHeight * 0.04,
+                      width: screenHeight * 0.04,
+                      child: Image.asset("assets/images/back btn.png"),
                     ),
                   ),
 
-                  const SizedBox(height: 70),
+                  SizedBox(height: spacingLarge),
 
                   // Title & subtitle
-                  const Center(
+                  Center(
                     child: Column(
                       children: [
                         Text(
                           "Continue As",
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: titleFontSize,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
-                        SizedBox(height: 6),
+                        SizedBox(height: spacingSmall),
                         Text(
                           "Choose your role to proceed",
-                          style: TextStyle(fontSize: 14, color: Colors.black),
+                          style: TextStyle(fontSize: subtitleFontSize, color: Colors.black),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  SizedBox(height: spacingMedium),
 
                   // User tile
                   _roleOptionTile(
@@ -67,6 +83,9 @@ class ContinueAsScreen extends StatelessWidget {
                     icon: Icons.person,
                     title: "User",
                     subtitle: "Explore your wardrobe and get AI outfit suggestions",
+                    iconSize: iconSize,
+                    titleFontSize: roleTitleFontSize,
+                    subtitleFontSize: roleSubtitleFontSize,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -75,7 +94,7 @@ class ContinueAsScreen extends StatelessWidget {
                     },
                   ),
 
-                  const SizedBox(height: 20),
+                  SizedBox(height: spacingMedium),
 
                   // Content Writer tile
                   _roleOptionTile(
@@ -83,6 +102,9 @@ class ContinueAsScreen extends StatelessWidget {
                     icon: Icons.edit,
                     title: "Content Writer",
                     subtitle: "Contribute articles, tips, and style advice.",
+                    iconSize: iconSize,
+                    titleFontSize: roleTitleFontSize,
+                    subtitleFontSize: roleSubtitleFontSize,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -90,7 +112,6 @@ class ContinueAsScreen extends StatelessWidget {
                       );
                     },
                   ),
-
                 ],
               ),
             ),
@@ -100,21 +121,33 @@ class ContinueAsScreen extends StatelessWidget {
     );
   }
 
-  Widget _roleOptionTile(BuildContext context,
-      {required IconData icon,
+  Widget _roleOptionTile(
+      BuildContext context, {
+        required IconData icon,
         required String title,
         required String subtitle,
-        required VoidCallback onTap}) {
+        required double iconSize,
+        required double titleFontSize,
+        required double subtitleFontSize,
+        required VoidCallback onTap,
+      }) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final verticalPadding = screenHeight * 0.025;
+    final horizontalPadding = screenWidth * 0.04;
+    final borderRadius = screenHeight * 0.015;
+    final spacing = screenHeight * 0.015;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(borderRadius),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+        padding: EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9), // semi-transparent background
+          color: Colors.white.withOpacity(0.9),
           border: Border.all(color: Colors.black, width: 1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(borderRadius),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.2),
@@ -125,19 +158,18 @@ class ContinueAsScreen extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 36, color: Colors.black),
-            const SizedBox(width: 16),
+            Icon(icon, size: iconSize, color: Colors.black),
+            SizedBox(width: spacing),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
+                      style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold)),
+                  SizedBox(height: spacing / 2),
                   Text(
                     subtitle,
-                    style: const TextStyle(fontSize: 13, color: Colors.black54),
+                    style: TextStyle(fontSize: subtitleFontSize, color: Colors.black54),
                   ),
                 ],
               ),

@@ -1,18 +1,21 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
+  const ChangePasswordScreen({Key? key}) : super(key: key);
+
   @override
   State<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
-  final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscureOld = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +30,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               children: [
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: Image.asset("assets/images/white_back_btn.png", height: 30, width: 30),
+                  icon: Image.asset(
+                    "assets/images/white_back_btn.png",
+                    height: 30,
+                    width: 30,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 const Text(
@@ -42,7 +49,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
@@ -56,49 +62,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   children: [
                     const Text(
                       "Set a new password",
-                      style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      "Create a new password ensures it differs from previous ones for security.",
-                      style:
-                      TextStyle(fontSize: 13, color: Colors.black54),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 24),
-
-                    _buildPasswordField(
-                      label: "Old Password",
-                      hint: "Enter your current password",
-                      controller: _oldPasswordController,
-                      obscure: _obscureOld,
-                      toggle: () =>
-                          setState(() => _obscureOld = !_obscureOld),
-                    ),
-                    const SizedBox(height: 16),
-
                     _buildPasswordField(
                       label: "New Password",
                       hint: "Enter your new password",
                       controller: _newPasswordController,
                       obscure: _obscureNew,
-                      toggle: () =>
-                          setState(() => _obscureNew = !_obscureNew),
+                      toggle: () => setState(() => _obscureNew = !_obscureNew),
                     ),
                     const SizedBox(height: 16),
-
                     _buildPasswordField(
                       label: "Confirm Password",
                       hint: "Re-enter your new password",
                       controller: _confirmPasswordController,
                       obscure: _obscureConfirm,
-                      toggle: () =>
-                          setState(() => _obscureConfirm = !_obscureConfirm),
+                      toggle: () => setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
                     const SizedBox(height: 32),
-
                     ElevatedButton(
-                      onPressed: _confirmPasswordChange,
+                      onPressed: _isLoading ? null : _confirmPasswordChange,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.pink.shade600,
                         minimumSize: const Size.fromHeight(48),
@@ -106,30 +90,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text(
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
                         "Confirm Change",
                         style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        side: const BorderSide(color: Colors.black),
-                      ),
-                      child: const Text(
-                        "Cancel Change",
-                        style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -184,9 +152,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     );
   }
 
-  void _confirmPasswordChange() {
-    final newPass = _newPasswordController.text;
-    final confirmPass = _confirmPasswordController.text;
+  Future<void> _confirmPasswordChange() async {
+    final newPass = _newPasswordController.text.trim();
+    final confirmPass = _confirmPasswordController.text.trim();
+
+    if (newPass.isEmpty || confirmPass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill all fields")),
+      );
+      return;
+    }
 
     if (newPass != confirmPass) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -195,5 +170,41 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       return;
     }
 
+    setState(() => _isLoading = true);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No user is logged in")),
+        );
+        return;
+      }
+
+      // Update password in Firebase Auth
+      await user.updatePassword(newPass);
+
+      // Update Firestore document if needed
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'password': newPass}); // If storing (hashed preferred)
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password changed successfully")),
+      );
+
+      Navigator.pop(context); // go back
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? "Error changing password")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Unexpected error: $e")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 }

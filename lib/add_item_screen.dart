@@ -7,6 +7,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'manage_permissions_screen.dart';
+import 'user_dashboard.dart';
 
 class AddItemScreen extends StatefulWidget {
   @override
@@ -397,7 +398,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => WardrobeHomeScreen()),
+                            );
+                          },
+
                           child: Image.asset(
                             "assets/images/white_back_btn.png",
                             height: 30,
@@ -407,12 +414,12 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       ),
                       SizedBox(width: 10),
                       Padding(
-                        padding: const EdgeInsets.only(left: 70),
+                        padding: const EdgeInsets.only(left: 50),
                         child: Text(
                           "Add Item",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

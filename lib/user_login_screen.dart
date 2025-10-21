@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'user_dashboard.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'forgot_password.dart';
+import 'continue_as_screen.dart';
 
 class UserLoginScreen extends StatefulWidget {
   const UserLoginScreen({Key? key}) : super(key: key);
@@ -20,14 +22,38 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   Future<void> _login() async {
     setState(() => _isLoading = true);
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
+
+      final user = userCredential.user;
+      if (user == null) {
+        _showErrorSnackBar("Login failed: user not found");
+        return;
+      }
+
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+
+      if (!userDoc.exists) {
+        _showErrorSnackBar("User data not found");
+        await FirebaseAuth.instance.signOut();
+        return;
+      }
+
+      final role = userDoc['role']?.toString().toLowerCase() ?? 'user';
+
+      if (role != 'admin' && role != 'user') {
+        _showErrorSnackBar("You are not allowed to login");
+        await FirebaseAuth.instance.signOut();
+        return;
+      }
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const WardrobeHomeScreen()),
       );
+
     } on FirebaseAuthException catch (e) {
       _showErrorSnackBar(e.message ?? 'Login failed.');
     } catch (e) {
@@ -39,51 +65,54 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
 
   // ========================= GOOGLE LOGIN =========================
   Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
     try {
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        scopes: ['email'],
-        signInOption: SignInOption.standard,
-      );
-
-      // Force sign out to show account picker
+      final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
       await googleSignIn.signOut();
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       if (googleUser == null) return;
 
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final OAuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
         accessToken: googleAuth.accessToken,
       );
 
-      final userCredential =
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
       final user = userCredential.user;
+      if (user == null) return;
 
-      if (user != null) {
-        final userDoc =
-        FirebaseFirestore.instance.collection('users').doc(user.uid);
-        final docSnapshot = await userDoc.get();
-        if (!docSnapshot.exists) {
-          await userDoc.set({
-            'uid': user.uid,
-            'email': user.email,
-            'name': user.displayName,
-            'photoURL': user.photoURL,
-            'createdAt': FieldValue.serverTimestamp(),
-          });
-        }
+      final userDocRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final docSnapshot = await userDocRef.get();
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const WardrobeHomeScreen()),
-        );
+      if (!docSnapshot.exists) {
+        await userDocRef.set({
+          'uid': user.uid,
+          'email': user.email,
+          'name': user.displayName,
+          'photoURL': user.photoURL,
+          'role': 'user',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
       }
+
+      final role = (docSnapshot['role'] ?? 'user').toString().toLowerCase();
+      if (role != 'admin' && role != 'user') {
+        _showErrorSnackBar("You are not allowed to login");
+        await FirebaseAuth.instance.signOut();
+        return;
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const WardrobeHomeScreen()),
+      );
     } catch (e) {
       _showErrorSnackBar("Google sign-in failed: $e");
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -102,107 +131,119 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // MediaQuery for responsive sizing
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final buttonHeight = screenHeight * 0.07;
+    final spacing = screenHeight * 0.02;
+    final titleFontSize = screenHeight * 0.035;
+    final inputFontSize = screenHeight * 0.02;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth * 0.06,
+            vertical: screenHeight * 0.03,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 onTap: () => Navigator.pop(context),
-                child: Image.asset(
-                  "assets/images/back btn.png",
-                  height: 30,
-                  width: 30,
+                child: SizedBox(
+                  height: screenHeight * 0.04,
+                  width: screenHeight * 0.04,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ContinueAsScreen()),
+                      );
+                    },
+                    child: SizedBox(
+                      height: screenHeight * 0.04,
+                      width: screenHeight * 0.04,
+                      child: Image.asset("assets/images/back btn.png"),
+                    ),
+                  ),
+
                 ),
               ),
-              const SizedBox(height: 10),
-              const Text(
+              SizedBox(height: spacing),
+              Text(
                 'Welcome back! Glad to\nSee you, Again!',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: titleFontSize,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 30),
-              TextField(
+              SizedBox(height: spacing * 1.5),
+              _buildTextField(
                 controller: _emailController,
-                decoration: InputDecoration(
-                  hintText: 'Enter your email',
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                hint: 'Enter your email',
+                fontSize: inputFontSize,
               ),
-              const SizedBox(height: 16),
-              TextField(
+              SizedBox(height: spacing),
+              _buildTextField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                hint: 'Password',
+                fontSize: inputFontSize,
+                isPassword: true,
               ),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => ForgotPasswordScreen()));
+                  },
                   child: const Text(
                     'Forget Password?',
                     style: TextStyle(color: Colors.pink),
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              SizedBox(height: spacing / 2),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: buttonHeight,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
+                      : Text(
                     'Login',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.white, fontSize: inputFontSize),
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
-              const Center(child: Text("Or")),
-              const SizedBox(height: 20),
-
-              // ========================= GOOGLE BUTTON =========================
+              SizedBox(height: spacing * 2),
+              Center(child: Text("Or", style: TextStyle(fontSize: inputFontSize))),
+              SizedBox(height: spacing),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: buttonHeight,
                 child: OutlinedButton.icon(
                   onPressed: _signInWithGoogle,
                   icon: Image.asset(
                     'assets/images/google icon.png',
-                    width: 25,
-                    height: 25,
+                    width: screenWidth * 0.07,
+                    height: screenWidth * 0.07,
                   ),
-                  label: const Text(
+                  label: Text(
                     "Continue with Google",
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.w600,
+                      fontSize: inputFontSize,
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -211,12 +252,11 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     backgroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: EdgeInsets.symmetric(vertical: spacing / 2),
                   ),
                 ),
               ),
-
-              const SizedBox(height: 40),
+              SizedBox(height: spacing * 3),
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -234,14 +274,14 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
-              const Center(
+              SizedBox(height: spacing / 2),
+              Center(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
                   child: Text.rich(
                     TextSpan(
                       text: "By clicking continue, you agree to our ",
-                      children: [
+                      children: const [
                         TextSpan(
                           text: "Terms of Service",
                           style: TextStyle(fontWeight: FontWeight.bold),
@@ -254,7 +294,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                       ],
                     ),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: inputFontSize * 0.8),
                   ),
                 ),
               ),
@@ -262,6 +302,29 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    double fontSize = 16,
+    bool isPassword = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isPassword,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.grey[200],
+        border: OutlineInputBorder(
+          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: EdgeInsets.symmetric(vertical: fontSize * 1.2, horizontal: fontSize),
+      ),
+      style: TextStyle(fontSize: fontSize),
     );
   }
 }
