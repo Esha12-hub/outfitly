@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
-
+import 'admin_login_screen.dart';
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
 
@@ -21,10 +22,49 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<String> xLabels = [];
   bool isLoading = true;
 
+  // Real metrics
+  int dailyActiveUsers = 0; // Latest day's value
+  int totalNewSignups = 0;
+  String sessionDuration = '0m 0s';
+
   @override
   void initState() {
     super.initState();
     fetchAnalytics();
+  }
+
+  // ✅ Logout confirmation dialog
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text("Logout"),
+        content: const Text("Do you want to logout?"),
+        actions: [
+          TextButton(
+            child: const Text("No", style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          TextButton(
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+              (route) => false,
+        );
+      }
+    }
   }
 
   Future<void> fetchAnalytics() async {
@@ -41,46 +81,55 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final rows = data['rows'] as List<dynamic>;
+        final rows = data['rows'] as List<dynamic>? ?? [];
 
         List<int> values = [];
         List<String> dates = [];
+        int latestActiveUsers = 0;
 
-        for (var row in rows) {
-          String date = row['dimensionValues'][0]['value']; // e.g., "20250808"
-          String formattedDate =
-              "${date.substring(6, 8)}/${date.substring(4, 6)}"; // DD/MM
-          int activeUsers = int.tryParse(row['metricValues'][0]['value']) ?? 0;
+        for (int i = 0; i < rows.length; i++) {
+          try {
+            final date = rows[i]['dimensionValues']?[0]?['value'] ?? '';
+            final formattedDate = date.isNotEmpty && date.length == 8
+                ? "${date.substring(6, 8)}/${date.substring(4, 6)}"
+                : date;
 
-          dates.add(formattedDate);
-          values.add(activeUsers);
+            final metricValue = rows[i]['metricValues']?[0]?['value'] ?? '0';
+            final activeUsers = int.tryParse(metricValue) ?? 0;
+
+            if (i == rows.length - 1) {
+              latestActiveUsers = activeUsers;
+            }
+
+            dates.add(formattedDate);
+            values.add(activeUsers);
+          } catch (e) {
+            debugPrint("Error parsing row: ${rows[i]}, error: $e");
+          }
         }
 
-        final maxValRaw =
-        values.isEmpty ? 1 : values.reduce((a, b) => a > b ? a : b);
-        final minValRaw =
-        values.isEmpty ? 0 : values.reduce((a, b) => a < b ? a : b);
-
-        bool allSame = maxValRaw == minValRaw;
+        final maxValRaw = values.isEmpty ? 1 : values.reduce((a, b) => a > b ? a : b);
+        final minValRaw = values.isEmpty ? 0 : values.reduce((a, b) => a < b ? a : b);
+        final allSame = maxValRaw == minValRaw;
         final maxVal = allSame ? maxValRaw + 1 : maxValRaw;
 
         List<Offset> points = [];
         for (int i = 0; i < values.length; i++) {
           double dx = values.length > 1 ? i / (values.length - 1) : 0;
           double dy = 1 - (values[i] / maxVal);
-
-          // Add slight variation if all values are the same
           if (allSame) {
             double fakeVariation = (i % 2 == 0 ? 0.02 : -0.02);
             dy = (0.5 + fakeVariation).clamp(0.0, 1.0);
           }
-
           points.add(Offset(dx, dy));
         }
 
         setState(() {
           chartPoints = points;
           xLabels = dates;
+          dailyActiveUsers = latestActiveUsers; // Latest day's active users
+          totalNewSignups = 0;
+          sessionDuration = '0m 0s';
           isLoading = false;
         });
       } else {
@@ -96,12 +145,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
+            _buildHeader(context, width),
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -112,15 +164,15 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 ),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(width * 0.05),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildMetricCards(),
-                      const SizedBox(height: 24),
-                      _buildFilters(),
-                      const SizedBox(height: 24),
-                      _buildChartSection(context),
+                      _buildMetricCards(width, height),
+                      SizedBox(height: height * 0.03),
+                      _buildFilters(width),
+                      SizedBox(height: height * 0.03),
+                      _buildChartSection(context, width, height),
                     ],
                   ),
                 ),
@@ -132,144 +184,80 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, double width) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(width * 0.04),
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
+            onPressed: _handleLogout, // ✅ Added logout dialog trigger
+            icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'Monitor App Analytics',
               textAlign: TextAlign.center,
-              style: AppTextStyles.whiteHeading,
+              style: AppTextStyles.whiteHeading.copyWith(fontSize: width * 0.05),
             ),
           ),
-          const SizedBox(width: 48),
+          SizedBox(width: width * 0.12),
         ],
       ),
     );
   }
 
-  Widget _buildMetricCards() {
+  Widget _buildMetricCards(double width, double height) {
     return Row(
       children: [
         Expanded(
           child: _buildMetricCard(
-            '1,2k',
+            dailyActiveUsers.toString(),
             'Active Users',
             Icons.trending_up,
             AppColors.primary,
+            width,
+            height,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: width * 0.03),
         Expanded(
           child: _buildMetricCard(
-            '500+',
+            totalNewSignups.toString(),
             'New Signups',
             Icons.person_add,
             AppColors.success,
+            width,
+            height,
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: width * 0.03),
         Expanded(
           child: _buildMetricCard(
-            '3m 20s',
+            sessionDuration,
             'Session Duration',
             Icons.timer,
             AppColors.info,
+            width,
+            height,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildFilters() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildFilterDropdown(
-            'Date Range',
-            selectedDateRange,
-            ['Last 7 Days', 'Last 30 Days', 'Last 3 Months'],
-                (value) {
-              setState(() => selectedDateRange = value);
-              fetchAnalytics();
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildFilterDropdown(
-            'User Role',
-            selectedUserRole,
-            ['All Users', 'Regular Users', 'Content Writers', 'Admins'],
-                (value) {
-              setState(() => selectedUserRole = value);
-              fetchAnalytics();
-            },
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildFilterDropdown(
-            'Platform',
-            selectedPlatform,
-            ['All Platforms', 'iOS', 'Android', 'Web'],
-                (value) {
-              setState(() => selectedPlatform = value);
-              fetchAnalytics();
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChartSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'User Activity Trend',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 200,
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : CustomPaint(
-              size: Size(MediaQuery.of(context).size.width, 200),
-              painter: LineChartPainter(chartPoints, xLabels),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildMetricCard(
-      String value, String label, IconData icon, Color color) {
+      String value,
+      String label,
+      IconData icon,
+      Color color,
+      double width,
+      double height,
+      ) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(width * 0.04),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(width * 0.03),
         border: Border.all(color: Colors.grey[300]!),
         boxShadow: [
           BoxShadow(
@@ -290,22 +278,22 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 child: Text(
                   value,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: width * 0.05,
                     fontWeight: FontWeight.bold,
                     color: color,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(icon, color: color, size: 20),
+              SizedBox(width: width * 0.02),
+              Icon(icon, color: color, size: width * 0.05),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: height * 0.01),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: width * 0.035,
               color: Colors.grey[600],
               fontWeight: FontWeight.w500,
             ),
@@ -315,26 +303,72 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
 
+  Widget _buildFilters(double width) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildFilterDropdown(
+            'Date Range',
+            selectedDateRange,
+            ['Last 7 Days', 'Last 30 Days', 'Last 3 Months'],
+                (value) {
+              setState(() => selectedDateRange = value);
+              fetchAnalytics();
+            },
+            width,
+          ),
+        ),
+        SizedBox(width: width * 0.03),
+        Expanded(
+          child: _buildFilterDropdown(
+            'User Role',
+            selectedUserRole,
+            ['All Users', 'Regular Users', 'Content Writers', 'Admins'],
+                (value) {
+              setState(() => selectedUserRole = value);
+              fetchAnalytics();
+            },
+            width,
+          ),
+        ),
+        SizedBox(width: width * 0.03),
+        Expanded(
+          child: _buildFilterDropdown(
+            'Platform',
+            selectedPlatform,
+            ['All Platforms', 'iOS', 'Android', 'Web'],
+                (value) {
+              setState(() => selectedPlatform = value);
+              fetchAnalytics();
+            },
+            width,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFilterDropdown(
       String label,
       String value,
       List<String> options,
       Function(String) onChanged,
+      double width,
       ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: width * 0.03, vertical: width * 0.02),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(width * 0.02),
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          icon: const Icon(Icons.keyboard_arrow_down, size: 16),
-          style: const TextStyle(
-            fontSize: 14,
+          icon: Icon(Icons.keyboard_arrow_down, size: width * 0.04),
+          style: TextStyle(
+            fontSize: width * 0.035,
             color: Colors.black87,
             fontWeight: FontWeight.w500,
           ),
@@ -344,7 +378,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               child: Text(
                 option,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12),
+                style: TextStyle(fontSize: width * 0.032),
               ),
             );
           }).toList(),
@@ -355,10 +389,44 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       ),
     );
   }
+
+  Widget _buildChartSection(BuildContext context, double width, double height) {
+    return Container(
+      padding: EdgeInsets.all(width * 0.04),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(width * 0.03),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'User Activity Trend',
+            style: TextStyle(
+              fontSize: width * 0.04,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          SizedBox(height: height * 0.02),
+          SizedBox(
+            height: height * 0.25,
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : CustomPaint(
+              size: Size(width, height * 0.25),
+              painter: LineChartPainter(chartPoints, xLabels),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // -----------------------
-// Chart Painter
+// Chart Painter with Y-axis labels
 // -----------------------
 class LineChartPainter extends CustomPainter {
   final List<Offset> points;
@@ -387,12 +455,27 @@ class LineChartPainter extends CustomPainter {
     // Draw horizontal grid lines
     for (int i = 0; i <= 4; i++) {
       final y = size.height * i / 4;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      canvas.drawLine(Offset(30, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Draw Y-axis labels
+    final textStyle = TextStyle(fontSize: 10, color: Colors.grey[600]);
+    final textPainter = TextPainter(
+      textAlign: TextAlign.right,
+      textDirection: TextDirection.ltr,
+    );
+
+    int maxVal = (points.map((p) => ((1 - p.dy) * 4).round()).reduce((a, b) => a > b ? a : b));
+    for (int i = 0; i <= 4; i++) {
+      textPainter.text = TextSpan(text: ((maxVal * i / 4).round()).toString(), style: textStyle);
+      textPainter.layout();
+      final dy = size.height - (size.height * i / 4) - textPainter.height / 2;
+      textPainter.paint(canvas, Offset(0, dy));
     }
 
     // Scale points
     List<Offset> scaledPoints =
-    points.map((p) => Offset(p.dx * size.width, p.dy * size.height)).toList();
+    points.map((p) => Offset(30 + p.dx * (size.width - 30), p.dy * size.height)).toList();
 
     // Draw lines
     for (int i = 0; i < scaledPoints.length - 1; i++) {
@@ -405,12 +488,6 @@ class LineChartPainter extends CustomPainter {
     }
 
     // Draw X-axis labels
-    final textStyle = TextStyle(fontSize: 10, color: Colors.grey[600]);
-    final textPainter = TextPainter(
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-
     for (int i = 0; i < xLabels.length; i++) {
       textPainter.text = TextSpan(text: xLabels[i], style: textStyle);
       textPainter.layout();

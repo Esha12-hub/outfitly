@@ -1,12 +1,11 @@
+import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
-import 'dashboard_screen.dart';
-import 'manage_users_screen.dart';
-import '../../controllers/navigation_controller.dart';
 
 class UserProfileScreen extends StatefulWidget {
+  final String uid; // User UID
   final String name;
   final String email;
   final String role;
@@ -16,6 +15,7 @@ class UserProfileScreen extends StatefulWidget {
 
   const UserProfileScreen({
     super.key,
+    required this.uid,
     required this.name,
     required this.email,
     required this.role,
@@ -29,19 +29,131 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
-  final Map<String, List<String>> categories = {
-    'Tops': ['Shirts', 'T-shirts', 'Frocks', 'Jackets', 'Long Shirts'],
-    'Bottoms': ['Jeans', 'Trousers', 'Plazo', 'Lehnga', 'Skirts'],
-    'Outerwear': ['Upper', 'Hoodie', 'Puffer Jackets', 'Coats', 'Denim Jackets'],
-    'Dresses': ['Casual Dresses', 'Formal Dresses', 'Evening Dresses', 'Summer Dresses', 'Party Dresses'],
-    'Shoes': ['Heels', 'Block Heels', 'Pumps', 'Sandals', 'Joggers'],
-    'Accessories': ['Jewelry', 'Scarfs', 'Bags', 'Belts', 'Dupatta'],
-  };
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  Map<String, List<String>> wardrobeItems = {};
+  int totalArticles = 0;
+  bool _isLoadingMetric = true;
+  late String _status;
+  ImageProvider? profileImage;
 
-  final Set<String> expandedCategories = <String>{};
+  @override
+  void initState() {
+    super.initState();
+    _status = widget.status.toLowerCase();
+    fetchProfileImage();
+    if (widget.role.toLowerCase() == 'content writer') {
+      fetchTotalArticles();
+    } else {
+      fetchWardrobeItems();
+    }
+  }
+
+  Future<void> fetchProfileImage() async {
+    try {
+      final doc = await _firestore.collection('users').doc(widget.uid).get();
+      if (!doc.exists) return;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final imageBase64 = data['image_base64'];
+      final imageUrl = data['imageUrl'];
+      final photoUrl = data['photoUrl'];
+
+      ImageProvider? fetchedImage;
+
+      if (imageBase64 != null && imageBase64.toString().isNotEmpty) {
+        try {
+          final bytes = base64Decode(imageBase64.toString().split(',').last);
+          fetchedImage = MemoryImage(bytes);
+        } catch (_) {
+          fetchedImage = null;
+        }
+      } else if (imageUrl != null && imageUrl.toString().isNotEmpty) {
+        fetchedImage = NetworkImage(imageUrl);
+      } else if (photoUrl != null && photoUrl.toString().isNotEmpty) {
+        fetchedImage = NetworkImage(photoUrl);
+      }
+
+      setState(() => profileImage = fetchedImage);
+    } catch (e) {
+      debugPrint('Error fetching profile image: $e');
+    }
+  }
+
+  Future<void> fetchWardrobeItems() async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(widget.uid)
+          .collection('wardrobe')
+          .get();
+
+      Map<String, List<String>> fetched = {};
+      for (var doc in snapshot.docs) {
+        final category = doc['category'] ?? 'Uncategorized';
+        final itemName = doc['item_name'] ?? '';
+        if (fetched.containsKey(category)) {
+          fetched[category]!.add(itemName);
+        } else {
+          fetched[category] = [itemName];
+        }
+      }
+
+      setState(() {
+        wardrobeItems = fetched;
+        _isLoadingMetric = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching wardrobe items: $e');
+      setState(() => _isLoadingMetric = false);
+    }
+  }
+
+  Future<void> fetchTotalArticles() async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(widget.uid)
+          .collection('articles')
+          .get();
+
+      setState(() {
+        totalArticles = snapshot.docs.length;
+        _isLoadingMetric = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching articles: $e');
+      setState(() => _isLoadingMetric = false);
+    }
+  }
+
+  Future<void> _updateUserStatus(String newStatus) async {
+    try {
+      await _firestore.collection('users').doc(widget.uid).update({'status': newStatus});
+      setState(() {
+        _status = newStatus.toLowerCase();
+      });
+      _showMessage('User status updated to $newStatus');
+    } catch (e) {
+      _showMessage('Failed to update status: $e');
+    }
+  }
+
+  Future<void> _deleteUser() async {
+    try {
+      await _firestore.collection('users').doc(widget.uid).delete();
+      _showMessage('User deleted successfully');
+      Navigator.pop(context);
+    } catch (e) {
+      _showMessage('Failed to delete user: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final totalWardrobeItems = wardrobeItems.values.fold(0, (prev, list) => prev + list.length);
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: SafeArea(
@@ -49,41 +161,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(screenWidth * 0.04),
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () async {
-                      final controller = Get.find<NavigationController>();
-                      // Check if we came from dashboard (admin profile) or users screen
-                      if (widget.name == 'Admin User' && widget.email == 'admin@aiwardrobe.com') {
-                        // Admin profile - go back to dashboard
-                        await controller.changeIndex(0); // Set to Home tab
-                        Get.offAll(() => const DashboardScreen());
-                      } else {
-                        // Regular user profile - go back to users screen
-                        await controller.changeIndex(1); // Set to Users tab
-                        Get.offAll(() => const ManageUsersScreen());
-                      }
-                    },
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: AppColors.textWhite,
+                    onPressed: () => Navigator.pop(context),
+                    icon: Image.asset(
+                      'assets/images/white_back_btn.png',
+                      width: screenWidth * 0.07,
+                      height: screenWidth * 0.07,
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'User Profile',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.whiteHeading,
+                      style: AppTextStyles.whiteHeading.copyWith(fontSize: screenWidth * 0.05),
                     ),
                   ),
-                  // Placeholder to balance the layout
-                  const SizedBox(width: 48), // Same width as IconButton
+
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        // Just rebuild to refresh the stream
+                      });
+                    },
+                    icon: const Icon(Icons.refresh, color: AppColors.textWhite),
+                  ),
                 ],
               ),
             ),
-
             // Main Content
             Expanded(
               child: Container(
@@ -95,263 +202,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   ),
                 ),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(screenWidth * 0.05),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // User Information Card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            // Profile Picture
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: widget.avatarColor.withOpacity(0.3),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: widget.avatarColor,
-                                    width: 3,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 47,
-                                  backgroundColor: widget.avatarColor,
-                                  child: Icon(
-                                    widget.avatarIcon ?? Icons.person,
-                                    color: AppColors.textWhite,
-                                    size: 40,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // User Name & Email
-                            Text(
-                              widget.name,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              widget.email,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // User Status
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    widget.role,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[200],
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    widget.status,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Key Metrics
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildMetric('145', 'Wardrobe Items'),
-                                _buildMetric('43', 'Outfits Created'),
-                                _buildMetric('89', 'Try-Ons'),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Account Action Buttons
-                      Column(
-                        children: [
-                          _buildActionButton(
-                            'Reset Password',
-                            Icons.key,
-                            AppColors.primary,
-                            AppColors.textWhite,
-                            () {
-                              Get.snackbar(
-                                'Reset Password',
-                                'Password reset link sent to user email!',
-                                backgroundColor: AppColors.primary,
-                                colorText: AppColors.textWhite,
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          _buildActionButton(
-                            'Block User',
-                            Icons.block,
-                            Colors.white,
-                            Colors.black87,
-                            () {
-                              Get.snackbar(
-                                'Block User',
-                                'User has been blocked successfully!',
-                                backgroundColor: AppColors.error,
-                                colorText: AppColors.textWhite,
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          _buildActionButton(
-                            'Delete Account',
-                            Icons.delete,
-                            Colors.white,
-                            Colors.black87,
-                            () {
-                              Get.snackbar(
-                                'Delete Account',
-                                'Account deletion request sent!',
-                                backgroundColor: AppColors.error,
-                                colorText: AppColors.textWhite,
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Recent Activity Section
-                      const Text(
-                        'Recent Activity',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildActivityItem('Added new outfit', '2h ago'),
-                      const SizedBox(height: 8),
-                      _buildActivityItem('Updated Profile', '5h ago'),
-                      const SizedBox(height: 24),
-
-                      // View Activity Log Buttons
-                      _buildActionButton(
-                        'View Activity Log',
-                        Icons.person,
-                        AppColors.primary,
-                        AppColors.textWhite,
-                        () {
-                          Get.snackbar(
-                            'Activity Log',
-                            'Opening detailed activity log...',
-                            backgroundColor: AppColors.primary,
-                            colorText: AppColors.textWhite,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      _buildActionButton(
-                        'View Activity Log',
-                        Icons.person,
-                        Colors.grey[300]!,
-                        Colors.grey[600]!,
-                        null, // Disabled button
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Category Management Section
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Category Management',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: _expandAllCategories,
-                                  icon: const Icon(Icons.expand_more),
-                                  label: const Text('Expand All'),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: _collapseAllCategories,
-                                  icon: const Icon(Icons.expand_less),
-                                  label: const Text('Collapse All'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Category List
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: categories.length,
-                        itemBuilder: (context, index) {
-                          final category = categories.keys.elementAt(index);
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _buildCategoryCard(category),
-                          );
-                        },
-                      ),
+                      _buildUserInfoCard(totalWardrobeItems, screenWidth, screenHeight),
+                      SizedBox(height: screenHeight * 0.03),
+                      _buildActionButtons(),
+                      SizedBox(height: screenHeight * 0.03),
                     ],
                   ),
                 ),
@@ -363,270 +221,146 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Widget _buildMetric(String value, String label) {
+  Widget _buildUserInfoCard(int totalItems, double screenWidth, double screenHeight) {
+    final isContentWriter = widget.role.toLowerCase() == 'content writer';
+    final metricValue = isContentWriter ? totalArticles.toString() : totalItems.toString();
+    final metricLabel = isContentWriter ? 'Articles' : 'Wardrobe Items';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(screenWidth * 0.06),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: screenWidth * 0.15,
+            backgroundColor: widget.avatarColor.withOpacity(0.3),
+            backgroundImage: profileImage, // ✅ Display fetched image
+            child: profileImage == null
+                ? Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: widget.avatarColor, width: 3),
+              ),
+              child: CircleAvatar(
+                radius: screenWidth * 0.143,
+                backgroundColor: widget.avatarColor,
+                child: Icon(widget.avatarIcon ?? Icons.person,
+                    color: Colors.white, size: screenWidth * 0.1),
+              ),
+            )
+                : null,
+          ),
+          SizedBox(height: screenHeight * 0.02),
+          Text(widget.name,
+              style: TextStyle(
+                  fontSize: screenWidth * 0.06,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87)),
+          SizedBox(height: screenHeight * 0.005),
+          Text(widget.email,
+              style: TextStyle(fontSize: screenWidth * 0.04, color: Colors.grey[600])),
+          SizedBox(height: screenHeight * 0.02),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildStatusChip(widget.role, screenWidth),
+              SizedBox(width: screenWidth * 0.02),
+              _buildStatusChip(_status, screenWidth),
+            ],
+          ),
+          SizedBox(height: screenHeight * 0.03),
+          _isLoadingMetric
+              ? const CircularProgressIndicator()
+              : Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildMetric(metricValue, metricLabel, screenWidth),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String text, double screenWidth) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(text,
+          style: TextStyle(
+              fontSize: screenWidth * 0.03,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87)),
+    );
+  }
+
+  Widget _buildMetric(String value, String label, double screenWidth) {
     return Column(
       children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
+        Text(value,
+            style: TextStyle(
+                fontSize: screenWidth * 0.06,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87)),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
-        ),
+        Text(label,
+            style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[600])),
       ],
     );
   }
 
-  Widget _buildActionButton(
-    String text,
-    IconData icon,
-    Color backgroundColor,
-    Color textColor,
-    VoidCallback? onPressed,
-  ) {
+  Widget _buildActionButton(String text, IconData icon, Color backgroundColor, Color textColor,
+      VoidCallback? onPressed) {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 20, color: textColor),
-        label: Text(
-          text,
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        label: Text(text,
+            style: TextStyle(color: textColor, fontWeight: FontWeight.w600)),
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           elevation: 0,
         ),
       ),
     );
   }
 
-  Widget _buildActivityItem(String activity, String time) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          activity,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-        Text(
-          time,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryCard(String category) {
-    final isExpanded = expandedCategories.contains(category);
-    final items = categories[category] ?? [];
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!, width: 1),
-      ),
-      child: Column(
+  Widget _buildActionButtons() {
+    if (_status == 'blocked') {
+      return Column(
         children: [
-          // Category Header
-          Container(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    category,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _editCategory(category),
-                  child: const Icon(Icons.edit, size: 18, color: AppColors.primary),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _deleteCategory(category),
-                  child: const Icon(Icons.delete, size: 18, color: Colors.red),
-                ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _toggleCategoryExpansion(category),
-                  child: Icon(
-                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                    size: 20,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Category Items
-          if (isExpanded)
-            Container(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Column(
-                children: items.map((item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.grey[200]!, width: 1),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text('• ', style: TextStyle(color: Colors.black)),
-                        Expanded(
-                          child: Text(
-                            item,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => _editItem(category, item),
-                          child: const Icon(Icons.edit, size: 16, color: AppColors.primary),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () => _deleteItem(category, item),
-                          child: const Icon(Icons.delete, size: 16, color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                )).toList(),
-              ),
-            ),
+          _buildActionButton('Unblock User', Icons.lock_open, Colors.grey[200]!,
+              Colors.black, () => _updateUserStatus('Active')),
+          const SizedBox(height: 12),
+          _buildActionButton('Delete Account', Icons.delete, Colors.pink, Colors.white,
+              _deleteUser),
         ],
-      ),
-    );
-  }
-
-  void _toggleCategoryExpansion(String category) {
-    setState(() {
-      if (expandedCategories.contains(category)) {
-        expandedCategories.remove(category);
-      } else {
-        expandedCategories.add(category);
-      }
-    });
-  }
-
-  void _expandAllCategories() {
-    setState(() {
-      expandedCategories.addAll(categories.keys);
-    });
-  }
-
-  void _collapseAllCategories() {
-    setState(() {
-      expandedCategories.clear();
-    });
-  }
-
-  void _editCategory(String category) {
-    Get.snackbar(
-      'Edit Category',
-      'Editing $category...',
-      backgroundColor: AppColors.primary,
-      colorText: AppColors.textWhite,
-    );
-  }
-
-  void _deleteCategory(String category) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text('Are you sure you want to delete "$category"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              Get.snackbar(
-                'Category Deleted',
-                '$category has been deleted.',
-                backgroundColor: AppColors.success,
-                colorText: AppColors.textWhite,
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
+      );
+    } else {
+      return Column(
+        children: [
+          _buildActionButton('Block User', Icons.block, Colors.grey[200]!,
+              Colors.black87, () => _updateUserStatus('Blocked')),
+          const SizedBox(height: 12),
+          _buildActionButton('Delete Account', Icons.delete, Colors.pink, Colors.white,
+              _deleteUser),
         ],
-      ),
-    );
+      );
+    }
   }
 
-  void _editItem(String category, String item) {
-    Get.snackbar(
-      'Edit Item',
-      'Editing $item in $category...',
-      backgroundColor: AppColors.primary,
-      colorText: AppColors.textWhite,
-    );
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
-
-  void _deleteItem(String category, String item) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Delete Item'),
-        content: Text('Are you sure you want to delete "$item"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Get.back();
-              Get.snackbar(
-                'Item Deleted',
-                '$item has been deleted from $category.',
-                backgroundColor: AppColors.success,
-                colorText: AppColors.textWhite,
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-} 
+}

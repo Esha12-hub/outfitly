@@ -1,27 +1,35 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'writer_login_screen.dart';
 
-class WriteArticleScreen extends StatefulWidget {
-  const WriteArticleScreen({super.key});
+class ArticleEditScreen extends StatefulWidget {
+  final String articleId;
+  const ArticleEditScreen({Key? key, required this.articleId}) : super(key: key);
 
   @override
-  State<WriteArticleScreen> createState() => _WriteArticleScreenState();
+  State<ArticleEditScreen> createState() => _ArticleEditScreenState();
 }
 
-class _WriteArticleScreenState extends State<WriteArticleScreen> {
-  String _selectedCategory = 'Styling Tips';
-  String? _selectedMediaBase64;
-  bool _isVideo = false;
-
+class _ArticleEditScreenState extends State<ArticleEditScreen> {
   final _titleController = TextEditingController();
   final _tagController = TextEditingController();
   final _contentController = TextEditingController();
   final _captionController = TextEditingController();
+  String _selectedCategory = 'Styling Tips';
+  String? _selectedMediaBase64;
+  bool _isVideo = false;
+  bool _loading = true;
+  bool _updating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArticleData();
+  }
 
   @override
   void dispose() {
@@ -32,88 +40,116 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     super.dispose();
   }
 
+  Future<void> _loadArticleData() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('articles')
+          .doc(widget.articleId)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        setState(() {
+          _titleController.text = data['title'] ?? '';
+          _selectedCategory = data['category'] ?? 'Styling Tips';
+          _tagController.text = data['tags'] ?? '';
+          _contentController.text = data['content'] ?? '';
+          _captionController.text = data['caption'] ?? '';
+          String? media = data['mediaBase64'];
+          if (media != null && media.contains(',')) media = media.split(',').last;
+          _selectedMediaBase64 = media;
+          _isVideo = data['isVideo'] ?? false;
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Article not found')));
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error loading article: $e')));
+    }
+  }
+
   Future<void> _pickMedia(ImageSource source, bool isImage) async {
     final picker = ImagePicker();
     final pickedFile = await (isImage
         ? picker.pickImage(source: source)
         : picker.pickVideo(source: source));
-
     if (pickedFile == null) return;
 
     final file = File(pickedFile.path);
     final bytes = await file.readAsBytes();
-    final base64String = base64Encode(bytes);
-
     setState(() {
-      _selectedMediaBase64 = base64String;
+      _selectedMediaBase64 = base64Encode(bytes);
       _isVideo = !isImage;
     });
   }
 
-  Future<void> _submitArticle() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Please log in.")));
-      return;
-    }
+  Future<void> _updateArticle() async {
+    if (_titleController.text.trim().isEmpty) return;
+
+    setState(() => _updating = true);
 
     try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(user.uid)
+          .doc(userId)
           .collection('articles')
-          .add({
+          .doc(widget.articleId)
+          .update({
         'title': _titleController.text.trim(),
         'category': _selectedCategory,
         'tags': _tagController.text.trim(),
         'content': _contentController.text.trim(),
-        'mediaBase64': _selectedMediaBase64 ?? '',
-        'isVideo': _isVideo,
         'caption': _captionController.text.trim(),
-        'timestamp': Timestamp.now(),
+        'mediaBase64': _selectedMediaBase64,
+        'isVideo': _isVideo,
         'status': 'pending',
+        'updatedAt': FieldValue.serverTimestamp(),
+        'rejectionReason': FieldValue.delete(),
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Article submitted!")));
+      setState(() => _updating = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Article updated successfully!')));
       Navigator.pop(context);
     } catch (e) {
+      setState(() => _updating = false);
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+          .showSnackBar(SnackBar(content: Text('Error updating article: $e')));
     }
   }
 
-  Future<bool?> _showLogoutConfirmation() {
-    return showDialog<bool>(
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+      builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text("Logout"),
-        content: const Text("Do you want to logout?"),
+        title: const Text('Logout'),
+        content: const Text('Do you want to logout?'),
         actions: [
-          TextButton(
-            child: const Text("No", style: TextStyle(color: Colors.black)),
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          TextButton(
-            child: const Text("Yes", style: TextStyle(color: Colors.red)),
-            onPressed: () => Navigator.pop(context, true),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yes", style: TextStyle(color: Colors.red))),
         ],
       ),
     );
-  }
-
-  Future<void> _handleLogout() async {
-    final shouldLogout = await _showLogoutConfirmation();
-    if (shouldLogout == true) {
+    if (confirm == true) {
       await FirebaseAuth.instance.signOut();
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
+          MaterialPageRoute(builder: (_) => const WriterLoginScreen()),
               (route) => false,
         );
       }
@@ -122,7 +158,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Responsive metrics
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
     double basePadding = screenWidth * 0.04;
@@ -131,43 +166,34 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
 
     return WillPopScope(
       onWillPop: () async {
-        final shouldLogout = await _showLogoutConfirmation();
-        if (shouldLogout == true) {
-          await FirebaseAuth.instance.signOut();
-          if (mounted) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
-                  (route) => false,
-            );
-          }
-        }
+        await _handleLogout();
         return false;
       },
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
-          child: Column(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
             children: [
-              // Top bar
+              // Top Bar
               Container(
                 padding: EdgeInsets.symmetric(horizontal: basePadding, vertical: basePadding),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: _handleLogout,
-                      child: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                    IconButton(
+                      icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                      onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Center(
                         child: Text(
-                          "New Article",
+                          "Edit Article",
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: screenWidth * 0.05,
-                            fontWeight: FontWeight.bold,
-                          ),
+                              color: Colors.white,
+                              fontSize: screenWidth * 0.05,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -178,66 +204,31 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
                   ],
                 ),
               ),
-              // Main content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                   ),
-                  padding: EdgeInsets.fromLTRB(basePadding, basePadding, basePadding, basePadding),
+                  padding: EdgeInsets.all(basePadding),
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        _buildSection(
-                          label: "Article Title",
-                          child: _buildTextField("Enter article title...", _titleController),
-                        ),
+                        _buildSection("Article Title", _buildTextField("Enter title...", _titleController)),
                         SizedBox(height: sectionSpacing),
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth < 500) {
-                              // Small screens: stack vertically
-                              return Column(
-                                children: [
-                                  _buildSection(
-                                    label: "Category",
-                                    child: _buildDropdown(),
-                                  ),
-                                  SizedBox(height: sectionSpacing / 2),
-                                  _buildSection(
-                                    label: "Tags",
-                                    child: _buildTags(),
-                                  ),
-                                ],
-                              );
-                            } else {
-                              // Medium/Large screens: side by side
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(child: _buildSection(label: "Category", child: _buildDropdown())),
-                                  SizedBox(width: 16),
-                                  Expanded(child: _buildSection(label: "Tags", child: _buildTags())),
-                                ],
-                              );
-                            }
-                          },
-                        ),
+                        _buildSection("Category", _buildDropdown()),
                         SizedBox(height: sectionSpacing),
-                        _buildSection(label: "Content", child: _buildRichEditor(contentHeight)),
+                        _buildSection("Tags", _buildTags()),
                         SizedBox(height: sectionSpacing),
-                        _buildSection(label: "Insert Media", child: _buildMediaUpload(contentHeight)),
+                        _buildSection("Content", _buildRichEditor(contentHeight)),
+                        SizedBox(height: sectionSpacing),
+                        _buildSection("Insert Media", _buildMediaUpload(contentHeight)),
                         SizedBox(height: sectionSpacing * 1.5),
                         Row(
                           children: [
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Draft saved (not implemented)')),
-                                  );
-                                },
+                                onPressed: () {},
                                 style: OutlinedButton.styleFrom(
                                   padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -250,13 +241,15 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
                             SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: _submitArticle,
+                                onPressed: _updating ? null : _updateArticle,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.pink,
                                   padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
-                                child: const Text("Submit for Review", style: TextStyle(color: Colors.white)),
+                                child: _updating
+                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    : const Text("Update Article", style: TextStyle(color: Colors.white)),
                               ),
                             ),
                           ],
@@ -281,9 +274,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     items: ['Styling Tips', 'Trends', 'Do\'s and Don\'ts']
         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
         .toList(),
-    onChanged: (val) {
-      setState(() => _selectedCategory = val!);
-    },
+    onChanged: (val) => setState(() => _selectedCategory = val!),
   );
 
   Widget _buildTags() => Column(
@@ -304,7 +295,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     ],
   );
 
-  Widget _buildSection({required String label, required Widget child}) {
+  Widget _buildSection(String label, Widget child) {
     return Container(
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 4),
@@ -312,11 +303,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
+          BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
@@ -334,69 +321,33 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     filled: true,
     fillColor: Colors.white,
     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-    border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Colors.grey),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Colors.grey),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Colors.black),
-    ),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.grey)),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.grey)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
     hintStyle: TextStyle(color: Colors.grey.shade400),
   );
 
   Widget _buildTextField(String hint, TextEditingController controller) =>
-      TextField(
-        controller: controller,
-        style: const TextStyle(color: Colors.grey),
-        decoration: _inputDecoration().copyWith(hintText: hint),
-      );
+      TextField(controller: controller, style: const TextStyle(color: Colors.grey), decoration: _inputDecoration().copyWith(hintText: hint));
 
-  Widget _buildRichEditor(double height) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: const [
-          Icon(Icons.format_bold),
-          SizedBox(width: 8),
-          Icon(Icons.format_italic),
-          SizedBox(width: 8),
-          Icon(Icons.format_underline),
-          SizedBox(width: 8),
-          Icon(Icons.format_list_bulleted),
-          SizedBox(width: 8),
-          Icon(Icons.format_align_left),
-          Spacer(),
-          Icon(Icons.lightbulb),
-          SizedBox(width: 4),
-          Text("Add Style Tip"),
-        ],
+  Widget _buildRichEditor(double height) => Container(
+    height: height,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border.all(color: Colors.grey.shade300),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: TextField(
+      controller: _contentController,
+      maxLines: null,
+      expands: true,
+      style: const TextStyle(color: Colors.black),
+      decoration: const InputDecoration.collapsed(
+        hintText: 'Start writing your article...',
+        hintStyle: TextStyle(color: Colors.grey),
       ),
-      const SizedBox(height: 8),
-      Container(
-        height: height,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: TextField(
-          controller: _contentController,
-          maxLines: null,
-          expands: true,
-          style: const TextStyle(color: Colors.black),
-          decoration: const InputDecoration.collapsed(
-            hintText: 'Start writing your article...',
-            hintStyle: TextStyle(color: Colors.grey),
-          ),
-        ),
-      ),
-    ],
+    ),
   );
 
   Widget _buildMediaUpload(double height) => Column(
@@ -409,8 +360,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
               onPressed: () => _pickMedia(ImageSource.gallery, true),
               icon: const Icon(Icons.photo),
               label: const Text("Pick Image"),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
             ),
           ),
           const SizedBox(width: 12),
@@ -419,8 +369,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
               onPressed: () => _pickMedia(ImageSource.gallery, false),
               icon: const Icon(Icons.videocam),
               label: const Text("Pick Video"),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
             ),
           ),
         ],
@@ -442,11 +391,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
           ),
         ),
       const SizedBox(height: 8),
-      TextField(
-        controller: _captionController,
-        style: const TextStyle(color: Colors.grey),
-        decoration: _inputDecoration().copyWith(hintText: 'Add a caption...'),
-      ),
+      _buildTextField('Add a caption...', _captionController),
     ],
   );
 }

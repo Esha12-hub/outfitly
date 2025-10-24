@@ -5,106 +5,127 @@ class AboutUsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
+    double fontScale(double base) => base * (width / 390).clamp(0.8, 1.4);
+    double spacing(double base) => base * (height / 844).clamp(0.8, 1.3);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Padding(
-          padding: const EdgeInsets.only(left: 80),
-          child: const Text(
+          padding: EdgeInsets.only(left: spacing(80)),
+          child: Text(
             'About Us',
-            style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: fontScale(20)),
           ),
         ),
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Image.asset("assets/images/white_back_btn.png", height: 30, width: 30),
+          icon: Image.asset(
+            "assets/images/white_back_btn.png",
+            height: spacing(30),
+            width: spacing(30),
+          ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        padding:
+        EdgeInsets.symmetric(horizontal: spacing(20), vertical: spacing(24)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const CircleAvatar(
-              radius: 40,
+            CircleAvatar(
+              radius: spacing(40),
               backgroundColor: Colors.grey,
-              backgroundImage: AssetImage("assets/images/logo_icon.png"),
+              backgroundImage: const AssetImage("assets/images/logo_icon.png"),
             ),
-            const SizedBox(height: 12),
-            const Text(
+            SizedBox(height: spacing(12)),
+            Text(
               'Outfitly',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: fontScale(24),
                 fontWeight: FontWeight.bold,
                 color: Colors.pink,
               ),
             ),
-            const SizedBox(height: 20),
-            const Align(
+            SizedBox(height: spacing(20)),
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'About Outfitly',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: fontScale(16)),
               ),
             ),
-            const SizedBox(height: 6),
-            const Text(
+            SizedBox(height: spacing(6)),
+            Text(
               'Outfitly is a smart fashion assistant app that helps you digitize your wardrobe, get personalized outfit suggestions, and manage your fashion preferences with ease. Whether you\'re planning your next look or tracking your laundry, Outfitly makes style effortless.',
-              style: TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: fontScale(14)),
               textAlign: TextAlign.justify,
             ),
-            const SizedBox(height: 20),
-            const Align(
+            SizedBox(height: spacing(20)),
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Core Features',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: fontScale(16)),
               ),
             ),
-            const SizedBox(height: 8),
-            const FeatureBullet(text: 'Wardrobe Digitization'),
-            const FeatureBullet(text: 'AI Outfit Suggestions'),
-            const FeatureBullet(text: 'Usage & Laundry Tracker'),
-            const FeatureBullet(text: 'AI Fashion Assistant'),
-            const FeatureBullet(text: 'Smart Shopping Recommendations'),
-            const SizedBox(height: 20),
-            const Align(
+            SizedBox(height: spacing(8)),
+            FeatureBullet(text: 'Wardrobe Digitization', fontScale: fontScale),
+            FeatureBullet(text: 'AI Outfit Suggestions', fontScale: fontScale),
+            FeatureBullet(text: 'Usage & Laundry Tracker', fontScale: fontScale),
+            FeatureBullet(text: 'AI Fashion Assistant', fontScale: fontScale),
+            FeatureBullet(
+                text: 'Smart Shopping Recommendations', fontScale: fontScale),
+            SizedBox(height: spacing(20)),
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Version Information',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: fontScale(16)),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: spacing(8)),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text('App Version: v1.0.0'),
-                Text('Last Updated: May 2025'),
+              children: [
+                Text('App Version: v1.0.0', style: TextStyle(fontSize: fontScale(14))),
+                Text('Last Updated: May 2025', style: TextStyle(fontSize: fontScale(14))),
               ],
             ),
-            const SizedBox(height: 20),
-            const Align(
+            SizedBox(height: spacing(20)),
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Connect With Us',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: fontScale(16)),
               ),
             ),
-            const SizedBox(height: 6),
-            const Align(
+            SizedBox(height: spacing(6)),
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 'Email: support@outfitlyapp.com',
-                style: TextStyle(fontSize: 14),
+                style: TextStyle(fontSize: fontScale(14)),
               ),
             ),
-            const SizedBox(height: 30),
-            const Center(
+            SizedBox(height: spacing(30)),
+            Center(
               child: Text(
                 'Thank you for styling with Outfitly!',
-                style: TextStyle(fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    fontStyle: FontStyle.italic, fontSize: fontScale(14)),
               ),
             ),
           ],
@@ -116,21 +137,22 @@ class AboutUsScreen extends StatelessWidget {
 
 class FeatureBullet extends StatelessWidget {
   final String text;
+  final double Function(double) fontScale;
 
-  const FeatureBullet({super.key, required this.text});
+  const FeatureBullet({super.key, required this.text, required this.fontScale});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: EdgeInsets.symmetric(vertical: fontScale(2)),
       child: Row(
         children: [
-          const Icon(Icons.check, size: 18, color: Colors.black87),
-          const SizedBox(width: 6),
+          Icon(Icons.check, size: fontScale(18), color: Colors.black87),
+          SizedBox(width: fontScale(6)),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 14),
+              style: TextStyle(fontSize: fontScale(14)),
             ),
           ),
         ],

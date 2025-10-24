@@ -34,6 +34,13 @@ class _TermsOfUseScreenState extends State<TermsOfUseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
+    double fontScale(double base) => base * (width / 390).clamp(0.8, 1.4);
+    double spacing(double base) => base * (height / 844).clamp(0.8, 1.3);
+
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -50,14 +57,15 @@ class _TermsOfUseScreenState extends State<TermsOfUseScreen> {
           // Header
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: EdgeInsets.symmetric(
+                  horizontal: spacing(16), vertical: spacing(20)),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "Terms of Use",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: fontScale(20),
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -68,8 +76,8 @@ class _TermsOfUseScreenState extends State<TermsOfUseScreen> {
                       onTap: () => Navigator.pop(context),
                       child: Image.asset(
                         "assets/images/white_back_btn.png",
-                        height: 30,
-                        width: 30,
+                        height: spacing(30),
+                        width: spacing(30),
                       ),
                     ),
                   ),
@@ -82,119 +90,119 @@ class _TermsOfUseScreenState extends State<TermsOfUseScreen> {
           Expanded(
             child: Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(spacing(24))),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(spacing(20)),
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 10),
-                      const Text(
+                      SizedBox(height: spacing(10)),
+                      Text(
                         "Welcome to Our App!",
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: fontScale(18),
                           fontWeight: FontWeight.bold,
                           color: Colors.pink,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
+                      SizedBox(height: spacing(12)),
+                      Text(
                         "Please read these Terms of Use carefully before using this application. "
                             "By accessing or using the app, you agree to be bound by these terms. "
                             "If you do not agree, please do not use the app.",
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.5),
+                            fontSize: fontScale(14), color: Colors.black87, height: 1.5),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: spacing(20)),
 
-                      const Text(
+                      Text(
                         "1. Acceptance of Terms",
                         style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        TextStyle(fontSize: fontScale(16), fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: spacing(8)),
+                      Text(
                         "By using this app, you acknowledge that you have read, understood, "
                             "and agree to comply with these Terms of Use and all applicable laws and regulations.",
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.5),
+                            fontSize: fontScale(14), color: Colors.black87, height: 1.5),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing(16)),
 
-                      const Text(
+                      Text(
                         "2. User Responsibilities",
                         style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        TextStyle(fontSize: fontScale(16), fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: spacing(8)),
+                      Text(
                         "• You agree not to misuse or abuse any features of the app.\n"
                             "• You will not attempt to gain unauthorized access to our servers or networks.\n"
                             "• You are responsible for keeping your login credentials secure.",
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.5),
+                            fontSize: fontScale(14), color: Colors.black87, height: 1.5),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing(16)),
 
-                      const Text(
+                      Text(
                         "3. Privacy & Data Usage",
                         style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        TextStyle(fontSize: fontScale(16), fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: spacing(8)),
+                      Text(
                         "Your privacy is important to us. We only collect minimal data necessary for app functionality. "
                             "Please review our Privacy Policy for more information on how we handle your data.",
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.5),
+                            fontSize: fontScale(14), color: Colors.black87, height: 1.5),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing(16)),
 
-                      const Text(
+                      Text(
                         "4. Intellectual Property",
                         style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        TextStyle(fontSize: fontScale(16), fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: spacing(8)),
+                      Text(
                         "All content, including text, graphics, logos, and icons, is the property of the app developers "
                             "and protected under copyright law. Unauthorized use is prohibited.",
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.5),
+                            fontSize: fontScale(14), color: Colors.black87, height: 1.5),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing(16)),
 
-                      const Text(
+                      Text(
                         "5. Limitation of Liability",
                         style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        TextStyle(fontSize: fontScale(16), fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: spacing(8)),
+                      Text(
                         "We are not liable for any damages resulting from the use or inability to use the app, "
                             "including data loss, device damage, or performance issues.",
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.5),
+                            fontSize: fontScale(14), color: Colors.black87, height: 1.5),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: spacing(16)),
 
-                      const Text(
+                      Text(
                         "6. Modifications to Terms",
                         style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        TextStyle(fontSize: fontScale(16), fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: spacing(8)),
+                      Text(
                         "We may update these terms from time to time. You are encouraged to review this page periodically "
                             "for any changes. Continued use of the app indicates acceptance of the new terms.",
                         style: TextStyle(
-                            fontSize: 14, color: Colors.black87, height: 1.5),
+                            fontSize: fontScale(14), color: Colors.black87, height: 1.5),
                       ),
-                      const SizedBox(height: 30),
+                      SizedBox(height: spacing(30)),
 
                       // Checkbox for Acceptance
                       Row(
@@ -209,16 +217,16 @@ class _TermsOfUseScreenState extends State<TermsOfUseScreen> {
                               await _saveAcceptanceStatus(_isAccepted);
                             },
                           ),
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               "I have read and agree to the Terms of Use.",
                               style: TextStyle(
-                                  fontSize: 14, color: Colors.black87),
+                                  fontSize: fontScale(14), color: Colors.black87),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: spacing(20)),
 
                       // Continue Button
                       Center(
@@ -231,19 +239,20 @@ class _TermsOfUseScreenState extends State<TermsOfUseScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor:
                             _isAccepted ? Colors.pink : Colors.grey,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: spacing(32), vertical: spacing(12)),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(spacing(20)),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             "Continue",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
+                            style: TextStyle(
+                                fontSize: fontScale(16), color: Colors.white),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: spacing(10)),
                     ],
                   ),
                 ),

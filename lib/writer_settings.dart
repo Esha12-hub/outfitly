@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'about_us_screen.dart';
 import 'writer_terms.dart';
 import 'writer_profile.dart';
-import 'seo_optimization.dart';
+import 'writer_change_password.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -28,7 +28,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _loadNotificationSettings();
   }
 
-  /// Load saved notification states
   Future<void> _loadNotificationSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -38,7 +37,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  /// Save specific notification setting
   Future<void> _saveNotificationSetting(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setBool(key, value);
@@ -46,130 +44,161 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final screenWidth = size.width;
+    final screenHeight = size.height;
+    final fontSize = screenWidth * 0.045;
+    final padding = screenWidth * 0.05;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildAppBar(context),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: ListView(
-                  children: [
-                    _buildSearchBar(),
-                    _buildUserProfileTile(),
-                    const SizedBox(height: 20),
-
-                    /// Account Section
-                    _buildSectionTitle('ACCOUNT SETTINGS'),
-                    _buildTile(Icons.email, 'Email/Phone Number Details'),
-                    _buildTile(Icons.lock, 'Change Password', onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SeoAnalyzerScreen()),
-                      );
-                    }),
-                    _buildTile(Icons.delete, 'Delete Profile', onTap: _confirmDeleteProfile),
-                    const SizedBox(height: 20),
-
-                    /// Notifications
-                    _buildSectionTitle('NOTIFICATIONS'),
-                    _buildToggleTile(Icons.feedback, 'Feedback Notifications', feedbackNotifications, (val) {
-                      setState(() => feedbackNotifications = val);
-                      _saveNotificationSetting('feedbackNotifications', val);
-                    }),
-                    _buildToggleTile(Icons.notifications_active, 'Submission Alerts', submissionAlerts, (val) {
-                      setState(() => submissionAlerts = val);
-                      _saveNotificationSetting('submissionAlerts', val);
-                    }),
-                    const SizedBox(height: 20),
-
-
-                    /// About
-                    _buildSectionTitle('ABOUT APP'),
-                    _buildTile(Icons.menu_book, 'Terms of Use', onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const WriterTermsOfUseScreen()),
-                      );
-                    }),
-                    _buildTile(Icons.info_outline, 'About App', onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AboutUsScreen()),
-                      );
-                    }),
-
-
-                    /// Logout
-                    const SizedBox(height: 5),
-                    Center(
-                      child: ElevatedButton.icon(
-                        onPressed: _confirmLogout,
-                        icon: const Icon(
-                          Icons.logout,
-                          color: Colors.white, // White icon
-                        ),
-                        label: const Text(
-                          "Logout",
-                          style: TextStyle(
-                            color: Colors.white, // White text
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD71D5C), // Pink background
-                          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30), // Rounded corners
-                          ),
-                        ),
-                      ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              children: [
+                _buildAppBar(screenWidth, fontSize),
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(padding),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                     ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                            child: IntrinsicHeight(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildUserProfileTile(fontSize),
+                                  SizedBox(height: screenHeight * 0.02),
 
-                    const SizedBox(height: 20),
-                    const Center(
-                      child: Text(
-                        "Version 1.1.1",
-                        style: TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
+                                  /// ACCOUNT SETTINGS
+                                  _buildSectionTitle('ACCOUNT SETTINGS', fontSize),
+                                  Padding(
+                                    padding: EdgeInsets.only(left: fontSize * 0.2),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildTile(Icons.lock, 'Change Password', fontSize, onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const WriterChangePasswordScreen()),
+                                          );
+                                        }),
+                                        _buildTile(Icons.delete, 'Delete Profile', fontSize, onTap: _confirmDeleteProfile),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: screenHeight * 0.02),
+
+                                  /// NOTIFICATIONS
+                                  _buildSectionTitle('NOTIFICATIONS', fontSize),
+                                  Padding(
+                                    padding: EdgeInsets.only(left: fontSize * 0.2),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildToggleTile(Icons.feedback, 'Feedback Notifications', feedbackNotifications, fontSize, (val) {
+                                          setState(() => feedbackNotifications = val);
+                                          _saveNotificationSetting('feedbackNotifications', val);
+                                        }),
+                                        _buildToggleTile(Icons.notifications_active, 'Submission Alerts', submissionAlerts, fontSize, (val) {
+                                          setState(() => submissionAlerts = val);
+                                          _saveNotificationSetting('submissionAlerts', val);
+                                        }),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: screenHeight * 0.02),
+
+                                  /// ABOUT
+                                  _buildSectionTitle('ABOUT APP', fontSize),
+                                  Padding(
+                                    padding: EdgeInsets.only(left: fontSize * 0.2),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildTile(Icons.menu_book, 'Terms of Use', fontSize, onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const WriterTermsOfUseScreen()),
+                                          );
+                                        }),
+                                        _buildTile(Icons.info_outline, 'About App', fontSize, onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const AboutUsScreen()),
+                                          );
+                                        }),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: screenHeight * 0.01),
+
+                                  /// LOGOUT BUTTON
+                                  Center(
+                                    child: Container(
+                                      width: screenWidth * 0.6,
+                                      margin: EdgeInsets.only(top: screenHeight * 0.02),
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.pink,
+                                          padding: EdgeInsets.symmetric(vertical: fontSize * 0.5),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                        ),
+                                        onPressed: _confirmLogout,
+                                        icon: Icon(Icons.logout, color: Colors.white, size: fontSize * 0.9),
+                                        label: Text(
+                                          'Logout',
+                                          style: TextStyle(
+                                            fontSize: fontSize * 0.9,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 20),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  /// ------------------ UI COMPONENTS ------------------ ///
-
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildAppBar(double width, double fontSize) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 30),
+      padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: width * 0.07),
       child: Stack(
         alignment: Alignment.center,
         children: [
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: const Icon(Icons.arrow_back, color: Colors.white),
+              onTap: _handleLogout,
+              child: Image.asset('assets/images/white_back_btn.png', width: fontSize * 1.5, height: fontSize * 1.5),
             ),
           ),
-          const Center(
+          Center(
             child: Text(
               "Settings",
-              style: TextStyle(fontSize: 20, color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: fontSize * 1.1, color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -177,25 +206,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const TextField(
-        decoration: InputDecoration(
-          icon: Icon(Icons.search),
-          hintText: "Search...",
-          border: InputBorder.none,
-        ),
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text("Logout"),
+        content: const Text("Do you want to logout?"),
+        actions: [
+          TextButton(
+            child: const Text("No", style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          TextButton(
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
       ),
     );
+
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
+              (route) => false,
+        );
+      }
+    }
   }
 
-  Widget _buildUserProfileTile() {
+  Widget _buildUserProfileTile(double fontSize) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const SizedBox.shrink();
 
@@ -206,37 +250,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Text("User data not found");
+        String name = user.displayName ?? 'User Name';
+        String role = 'Writer';
+        String? imageBase64;
+        String? photoUrl;
+
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          name = data['name'] ?? name;
+          role = data['role'] ?? role;
+          imageBase64 = data['image_base64'];
         }
 
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-        final name = data['name'] ?? 'User Name';
-        final role = data['role'] ?? 'Writer';
-        final imageBase64 = data['image_base64'];
+        photoUrl = user.photoURL;
 
-        // Profile picture
         Widget avatar;
+
         if (imageBase64 != null && imageBase64.isNotEmpty) {
           try {
             final bytes = base64Decode(imageBase64.split(',').last);
-            avatar = CircleAvatar(radius: 26, backgroundImage: MemoryImage(bytes));
+            avatar = CircleAvatar(radius: fontSize * 1.3, backgroundImage: MemoryImage(bytes));
           } catch (_) {
-            avatar = _buildFallbackAvatar(name);
+            avatar = _buildFallbackAvatar(name, fontSize);
           }
+        } else if (photoUrl != null && photoUrl.isNotEmpty) {
+          avatar = CircleAvatar(radius: fontSize * 1.3, backgroundImage: NetworkImage(photoUrl));
         } else {
-          avatar = _buildFallbackAvatar(name);
+          avatar = _buildFallbackAvatar(name, fontSize);
         }
 
         return GestureDetector(
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const WriterProfileScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const WriterProfileScreen()));
           },
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 10),
+            margin: EdgeInsets.symmetric(vertical: 10),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.grey.shade200,
@@ -245,17 +293,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Row(
               children: [
                 avatar,
-                const SizedBox(width: 12),
+                SizedBox(width: fontSize),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 4),
-                    Text(role, style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                    Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize)),
+                    SizedBox(height: fontSize * 0.3),
+                    Text(role, style: TextStyle(fontSize: fontSize * 0.8, color: Colors.black54)),
                   ],
                 ),
                 const Spacer(),
-                const Icon(Icons.arrow_forward_ios, size: 16),
+                Icon(Icons.arrow_forward_ios, size: fontSize * 0.8),
               ],
             ),
           ),
@@ -264,49 +312,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-
-
-  Widget _buildFallbackAvatar(String name) {
+  Widget _buildFallbackAvatar(String name, double fontSize) {
     return CircleAvatar(
-      radius: 26,
+      radius: fontSize * 1.3,
       backgroundColor: Colors.grey.shade400,
-      child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?'),
+      child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: TextStyle(fontSize: fontSize)),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, double fontSize) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      padding: EdgeInsets.only(bottom: fontSize * 0.5),
+      child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize * 0.9)),
     );
   }
 
-  Widget _buildTile(IconData icon, String title, {VoidCallback? onTap}) {
+  Widget _buildTile(IconData icon, String title, double fontSize, {VoidCallback? onTap}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: fontSize * 0.8),
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(16),
       ),
       child: ListTile(
-        leading: Icon(icon, color: Colors.black),
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        leading: Icon(icon, color: Colors.black, size: fontSize),
+        title: Text(title, style: TextStyle(fontSize: fontSize * 0.9)),
+        trailing: Icon(Icons.arrow_forward_ios, size: fontSize * 0.7),
         onTap: onTap,
       ),
     );
   }
 
-  Widget _buildToggleTile(IconData icon, String title, bool value, Function(bool) onChanged) {
+  Widget _buildToggleTile(IconData icon, String title, bool value, double fontSize, Function(bool) onChanged) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: EdgeInsets.only(bottom: fontSize * 0.8),
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(16),
       ),
       child: SwitchListTile(
-        secondary: Icon(icon, color: Colors.black),
-        title: Text(title),
+        secondary: Icon(icon, color: Colors.black, size: fontSize),
+        title: Text(title, style: TextStyle(fontSize: fontSize * 0.9)),
         value: value,
         onChanged: onChanged,
         activeColor: Colors.pink,
@@ -314,17 +360,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// ------------------ DELETE PROFILE ------------------ ///
   Future<void> _confirmDeleteProfile() async {
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Profile"),
-        content: const Text("Are you sure you want to permanently delete your account?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yes, Delete")),
-        ],
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 60, color: Colors.pink),
+              const SizedBox(height: 15),
+              const Text(
+                "Delete Profile?",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Are you sure you want to permanently delete your account? This action cannot be undone.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+              ),
+              const SizedBox(height: 25),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Delete",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
 
@@ -335,15 +437,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await user.delete();
 
         if (mounted) {
-          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const WriterLoginScreen()));
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
+          );
         }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error deleting profile: $e")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error deleting profile: $e")),
+        );
       }
     }
   }
 
-  /// ------------------ LOGOUT ------------------ ///
   Future<void> _confirmLogout() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -357,17 +462,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: const Text("Do you want to logout?"),
         actions: [
           TextButton(
-            child: const Text(
-              "No",
-              style: TextStyle(color: Colors.black),
-            ),
+            child: const Text("No", style: TextStyle(color: Colors.black)),
             onPressed: () => Navigator.pop(context, false),
           ),
           TextButton(
-            child: const Text(
-              "Yes",
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
             onPressed: () => Navigator.pop(context, true),
           ),
         ],

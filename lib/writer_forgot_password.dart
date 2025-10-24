@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'change_password_screen.dart';
-import 'user_dashboard.dart';
+import 'writer_dashboard_screen.dart';
+import 'writer_change_password.dart'; // create or reuse existing
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({Key? key}) : super(key: key);
+class WriterForgotPasswordScreen extends StatefulWidget {
+  const WriterForgotPasswordScreen({Key? key}) : super(key: key);
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<WriterForgotPasswordScreen> createState() => _WriterForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
   final TextEditingController _securityAnswerController = TextEditingController();
@@ -23,7 +23,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Verify email exists in Firestore
+  // Verify email exists and role = Content Writer
   Future<void> _verifyEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -40,10 +40,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           .get();
 
       if (userSnapshot.docs.isEmpty) {
-        _showSnackBar("No user found with this email");
+        _showSnackBar("No account found with this email");
       } else {
         final userDoc = userSnapshot.docs.first;
-        _showVerificationOptions(userDoc);
+        final role = userDoc['role'] ?? '';
+
+        if (role != 'Content Writer') {
+          _showSnackBar("Access denied — this is not a Content Writer account");
+        } else {
+          _showVerificationOptions(userDoc);
+        }
       }
     } catch (e) {
       _showSnackBar("Error: $e");
@@ -52,7 +58,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  // Show bottom sheet with verification options
+  // Verification method sheet
   void _showVerificationOptions(DocumentSnapshot userDoc) {
     showModalBottomSheet(
       context: context,
@@ -83,7 +89,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               ),
               const SizedBox(height: 24),
               _verificationOption(
-                icon: Icons.lock,
+                icon: Icons.lock_outline,
                 color: Colors.pink,
                 text: "Verify using PIN",
                 onTap: () {
@@ -122,13 +128,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
         ),
         child: Row(
           children: [
@@ -144,7 +143,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Verify PIN
+  // Verify with PIN
   Future<void> _verifyWithPin(DocumentSnapshot userDoc) async {
     if (!userDoc.exists || userDoc['pin'] == null || userDoc['pin'].toString().isEmpty) {
       _showSnackBar("PIN not added for this account", bg: Colors.orange);
@@ -168,7 +167,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Verify Security Question
+  // Verify with Security Question
   Future<void> _verifyWithSecurityQuestion(DocumentSnapshot userDoc) async {
     if (!userDoc.exists || userDoc['securityAnswer'] == null || userDoc['securityAnswer'].toString().isEmpty) {
       _showSnackBar("Security question not added for this account", bg: Colors.orange);
@@ -194,7 +193,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Input Dialog
+  // Common input dialog
   void _showInputDialog({
     required String title,
     required String hint,
@@ -206,152 +205,102 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }) {
     showDialog(
       context: context,
-      barrierDismissible: false,
       builder: (_) {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           elevation: 5,
           backgroundColor: Colors.transparent,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: SingleChildScrollView( // ✅ Prevent overflow when keyboard opens
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(24),
-                      width: MediaQuery.of(context).size.width * 0.9,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: color,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 16),
-                          if (questionText != null)
-                            Text(
-                              questionText,
-                              style: const TextStyle(fontSize: 16, color: Colors.black87),
-                              textAlign: TextAlign.center,
-                            ),
-                          if (questionText != null) const SizedBox(height: 16),
-                          TextField(
-                            controller: controller,
-                            obscureText: obscureText,
-                            keyboardType: title.contains("PIN")
-                                ? TextInputType.number
-                                : TextInputType.text,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 18, letterSpacing: 2),
-                            decoration: InputDecoration(
-                              hintText: hint,
-                              filled: true,
-                              fillColor: Colors.grey.shade100,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 20,
-                                horizontal: 20,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide(color: color, width: 2),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: onVerify,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: color,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                elevation: 5,
-                              ),
-                              child: const Text(
-                                "Verify",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text(
-                              "Cancel",
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+                  const SizedBox(height: 16),
+                  if (questionText != null)
+                    Text(
+                      questionText,
+                      style: const TextStyle(fontSize: 16, color: Colors.black87),
+                      textAlign: TextAlign.center,
+                    ),
+                  if (questionText != null) const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    obscureText: obscureText,
+                    keyboardType: title.contains("PIN") ? TextInputType.number : TextInputType.text,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 18, letterSpacing: 2),
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: BorderSide.none,
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: onVerify,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: color,
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                    child: const Text("Verify",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Cancel",
+                        style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500)),
+                  )
+                ],
+              ),
+            ),
           ),
         );
       },
     );
   }
 
-
-
-
+  // Log in and redirect
   Future<void> _loginUser(DocumentSnapshot userDoc) async {
     try {
       String email = userDoc['email'];
-      String password = userDoc['password']; // Must match Firebase Auth password
+      String password = userDoc['password'];
 
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      _promptChangePassword(); // Optional prompt
-
+      _promptChangePassword();
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const WardrobeHomeScreen()),
+        MaterialPageRoute(builder: (_) => const WriterDashboardScreen()),
       );
     } on FirebaseAuthException catch (e) {
       _showSnackBar("Login failed: ${e.message}");
     }
   }
 
-  // Optional: Prompt to change password
+  // Prompt for change password
   void _promptChangePassword() {
     showDialog(
       context: context,
@@ -369,7 +318,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 Navigator.pop(context);
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                  MaterialPageRoute(builder: (_) => const WriterChangePasswordScreen()),
                 );
               },
               child: const Text("Yes"),
@@ -396,27 +345,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Image.asset(
-                      "assets/images/white_back_btn.png",
-                      height: 30,
-                      width: 30,
-                    ),
+                    icon: Image.asset("assets/images/white_back_btn.png", height: 30, width: 30),
                   ),
                 ),
                 const Center(
                   child: Text(
-                    "Forgot Password",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    "Writer Forgot Password",
+                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 16),
           Expanded(
             child: Container(
@@ -456,19 +396,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         onPressed: _isLoading ? null : _verifyEmail,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.pink.shade600,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
                           "Continue",
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
                     ),

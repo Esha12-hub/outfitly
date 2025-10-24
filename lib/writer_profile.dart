@@ -16,10 +16,11 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
   String name = 'Loading...';
   String role = 'Writer';
   String birthday = 'Loading...';
-  String password = ''; // password from Firestore
+  String email = 'Loading...';
+  String createdAt = 'Loading...';
+  String status = 'Loading...';
   String? base64Image;
   bool isLoading = true;
-  bool isPasswordVisible = false;
 
   @override
   void initState() {
@@ -32,8 +33,7 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
     if (user == null) return;
 
     try {
-      final doc =
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
       if (doc.exists) {
         final data = doc.data()!;
@@ -41,9 +41,13 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
           name = data['name'] ?? 'No name';
           role = data['role'] ?? 'Writer';
           birthday = data['birthday'] ?? 'No birthday';
-          password = data.containsKey('password')
-              ? data['password'] ?? ''
-              : 'Not stored';
+          email = user.email ?? 'No email';
+          createdAt = data.containsKey('createdAt')
+              ? (data['createdAt'] is Timestamp
+              ? (data['createdAt'] as Timestamp).toDate().toString().split(' ')[0]
+              : data['createdAt'].toString())
+              : 'N/A';
+          status = data['status'] ?? 'N/A';
           base64Image = data['image_base64'];
           isLoading = false;
         });
@@ -51,6 +55,9 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
         setState(() {
           isLoading = false;
           name = 'Profile not found';
+          email = user.email ?? 'No email';
+          createdAt = 'N/A';
+          status = 'N/A';
         });
       }
     } catch (e) {
@@ -58,6 +65,9 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
       setState(() {
         isLoading = false;
         name = 'Error loading profile';
+        email = user.email ?? 'No email';
+        createdAt = 'N/A';
+        status = 'N/A';
       });
     }
   }
@@ -65,8 +75,7 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
   Uint8List? _decodeBase64(String? base64String) {
     if (base64String == null) return null;
     try {
-      return base64Decode(
-          base64String.contains(',') ? base64String.split(',').last : base64String);
+      return base64Decode(base64String.contains(',') ? base64String.split(',').last : base64String);
     } catch (_) {
       return null;
     }
@@ -74,9 +83,20 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profileImage = base64Image != null
-        ? MemoryImage(_decodeBase64(base64Image!)!)
-        : const AssetImage("assets/images/user (1).png") as ImageProvider;
+    final user = FirebaseAuth.instance.currentUser;
+    final media = MediaQuery.of(context);
+    final width = media.size.width;
+    final height = media.size.height;
+
+    ImageProvider profileImage;
+    if (base64Image != null && base64Image!.isNotEmpty) {
+      final bytes = _decodeBase64(base64Image!);
+      profileImage = MemoryImage(bytes!);
+    } else if (user?.photoURL != null && user!.photoURL!.isNotEmpty) {
+      profileImage = NetworkImage(user.photoURL!);
+    } else {
+      profileImage = const AssetImage("assets/images/user (1).png");
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -86,8 +106,7 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
         centerTitle: true,
         title: const Text(
           "Account Details",
-          style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         leading: IconButton(
           icon: Image.asset(
@@ -102,11 +121,14 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          const SizedBox(height: 20),
+          SizedBox(height: height * 0.02),
           Expanded(
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.symmetric(
+                horizontal: width * 0.04,
+                vertical: height * 0.02,
+              ),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -118,43 +140,31 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
                 child: Column(
                   children: [
                     CircleAvatar(
-                      radius: 50,
+                      radius: width * 0.15,
                       backgroundImage: profileImage,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    SizedBox(height: height * 0.015),
+                    FittedBox(
+                      child: Text(
+                        name,
+                        style: TextStyle(fontSize: width * 0.06, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      role,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
+                    SizedBox(height: height * 0.005),
+                    FittedBox(
+                      child: Text(
+                        role,
+                        style: TextStyle(fontSize: width * 0.04, color: Colors.black54),
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    _profileField("Name", name),
-                    _profileField("Birthday", birthday),
-                    _profileField("Role", role),
-                    _profileField(
-                      "Password",
-                      password,
-                      obscureText: !isPasswordVisible,
-                      onToggleVisibility: () {
-                        setState(() {
-                          isPasswordVisible = !isPasswordVisible;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: 30),
-
+                    SizedBox(height: height * 0.025),
+                    _profileField("Name", name, width: width),
+                    _profileField("Birthday", birthday, width: width),
+                    _profileField("Email", email, width: width),
+                    _profileField("Role", role, width: width),
+                    _profileField("Created At", createdAt, width: width),
+                    _profileField("Status", status, width: width),
+                    SizedBox(height: height * 0.03),
                     ElevatedButton.icon(
                       onPressed: _confirmLogout,
                       icon: const Icon(Icons.logout, color: Colors.white),
@@ -164,12 +174,14 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.pink,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 40),
+                        padding: EdgeInsets.symmetric(
+                          vertical: height * 0.018,
+                          horizontal: width * 0.08,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        minimumSize: const Size(double.infinity, 50),
+                        minimumSize: Size(double.infinity, height * 0.065),
                       ),
                     ),
                   ],
@@ -182,11 +194,10 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
     );
   }
 
-  static Widget _profileField(String title, String value,
-      {bool obscureText = false, VoidCallback? onToggleVisibility}) {
+  static Widget _profileField(String title, String value, {required double width}) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      margin: EdgeInsets.symmetric(vertical: width * 0.02),
+      padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: width * 0.035),
       decoration: BoxDecoration(
         color: Colors.grey[300],
         borderRadius: BorderRadius.circular(20),
@@ -197,31 +208,22 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
         children: [
           Expanded(
             flex: 2,
-            child: Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
             ),
           ),
           Expanded(
             flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Flexible(
-                  child: Text(
-                    obscureText ? "********" : value,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (onToggleVisibility != null)
-                  IconButton(
-                    icon: Icon(
-                      obscureText ? Icons.visibility_off : Icons.visibility,
-                      size: 20,
-                    ),
-                    onPressed: onToggleVisibility,
-                  ),
-              ],
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: width * 0.04),
             ),
           ),
         ],
@@ -236,12 +238,8 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
         title: const Text("Logout"),
         content: const Text("Are you sure you want to log out?"),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancel")),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Logout")),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Logout")),
         ],
       ),
     );

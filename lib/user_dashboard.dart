@@ -32,13 +32,12 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
 
   String? _profileImageBase64;
   String _username = "User";
-  DateTime? _lastPressedTime;
 
   final List<Widget> _pages = [
-    Center(child: Text('Home Screen')),
-    WardrobeScreen(),
+    const Center(child: Text('Home Screen')),
+    const WardrobeScreen(),
     AddItemScreen(),
-    AiOutfitSuggestionsScreen(),
+    const AiOutfitSuggestionsScreen(),
     const UserProfileScreen(),
   ];
 
@@ -51,43 +50,29 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
   Future<void> fetchUserProfile() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-
       if (user != null) {
         final uid = user.uid;
         final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
         if (doc.exists && doc.data() != null) {
           final data = doc.data()!;
           final isGoogleUser = user.providerData.any((info) => info.providerId == 'google.com');
-
           setState(() {
             _username = data['name'] ?? user.displayName ?? 'User';
-
             if (isGoogleUser) {
-              if (data.containsKey('photoUrl') && data['photoUrl'] != null) {
-                _profileImageBase64 = "url::" + data['photoUrl'];
-              } else {
-                _profileImageBase64 = null;
-              }
+              _profileImageBase64 = data['photoUrl'] != null ? "url::${data['photoUrl']}" : null;
             } else {
-              if (data.containsKey('image_base64') && data['image_base64'] != null) {
-                _profileImageBase64 = data['image_base64'];
-              } else {
-                _profileImageBase64 = null;
-              }
+              _profileImageBase64 = data['image_base64'];
             }
           });
         }
       }
     } catch (e) {
-      print("Error fetching user profile: $e");
+      debugPrint("Error fetching user profile: $e");
     }
   }
 
-  /// 🔹 Fetch most recent wardrobe item
   Future<DocumentSnapshot?> fetchRecentWardrobeItem() async {
     final user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
@@ -96,7 +81,6 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
           .orderBy('createdAt', descending: true)
           .limit(1)
           .get();
-
       if (snapshot.docs.isNotEmpty) {
         return snapshot.docs.first;
       }
@@ -104,15 +88,11 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
     return null;
   }
 
-  /// 🔹 Handle phone back button
   Future<bool> _onWillPop() async {
-    // If not on home screen, go back to home
     if (_currentIndex != 0) {
       setState(() => _currentIndex = 0);
       return false;
     }
-
-    // Show confirmation dialog
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -142,24 +122,26 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
               (route) => false,
         );
       }
-      return false;
     }
-
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final height = size.height;
+    final width = size.width;
+
     return WillPopScope(
-      onWillPop: _onWillPop, // 👈 Intercept back button
+      onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: _currentIndex == 0 ? _buildDashboard() : _pages[_currentIndex],
+        body: _currentIndex == 0 ? _buildDashboard(height, width) : _pages[_currentIndex],
         bottomNavigationBar: CurvedNavigationBar(
           key: _bottomNavKey,
           index: _currentIndex,
-          height: 60.0,
-          items: const <Widget>[
+          height: height * 0.075,
+          items: const [
             Icon(Icons.home, size: 30, color: Colors.white),
             FaIcon(FontAwesomeIcons.shirt, size: 24, color: Colors.white),
             Icon(Icons.add, size: 30, color: Colors.white),
@@ -171,28 +153,22 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
           backgroundColor: Colors.transparent,
           animationCurve: Curves.easeInOut,
           animationDuration: const Duration(milliseconds: 600),
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          letIndexChange: (index) => true,
+          onTap: (index) => setState(() => _currentIndex = index),
         ),
       ),
     );
   }
 
-  Widget _buildDashboard() {
+  Widget _buildDashboard(double height, double width) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 🔹 Header
           Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
-                height: 380,
-                padding: const EdgeInsets.all(16),
+                height: height * 0.45,
+                padding: EdgeInsets.all(width * 0.04),
                 decoration: const BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
@@ -201,38 +177,38 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      height: 120,
+                      height: height * 0.14,
                       child: Row(
                         children: [
                           CircleAvatar(
-                            radius: 25,
+                            radius: width * 0.07,
                             backgroundColor: Colors.white,
                             child: ClipOval(
                               child: _profileImageBase64 != null
                                   ? (_profileImageBase64!.startsWith("url::")
                                   ? Image.network(
                                 _profileImageBase64!.substring(5),
-                                width: 50,
-                                height: 50,
+                                width: width * 0.14,
+                                height: width * 0.14,
                                 fit: BoxFit.cover,
                               )
                                   : Image.memory(
                                 base64Decode(_profileImageBase64!.split(',').last),
-                                width: 50,
-                                height: 50,
+                                width: width * 0.14,
+                                height: width * 0.14,
                                 fit: BoxFit.cover,
                               ))
                                   : Image.asset(
                                 "assets/images/user (1).png",
-                                width: 50,
-                                height: 50,
+                                width: width * 0.14,
+                                height: width * 0.14,
                                 fit: BoxFit.cover,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          SizedBox(width: width * 0.03),
                           Text('Hi, $_username',
-                              style: const TextStyle(color: Colors.white, fontSize: 18)),
+                              style: TextStyle(color: Colors.white, fontSize: width * 0.045)),
                           const Spacer(),
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
@@ -243,7 +219,6 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                                 .snapshots(),
                             builder: (context, snapshot) {
                               int unreadCount = snapshot.data?.docs.length ?? 0;
-
                               return Stack(
                                 children: [
                                   IconButton(
@@ -251,19 +226,20 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                            builder: (context) => const NotificationScreen()),
+                                            builder: (context) =>
+                                            const NotificationScreen()),
                                       );
                                     },
-                                    icon: const Icon(Icons.notifications,
-                                        color: Colors.white, size: 30),
+                                    icon: Icon(Icons.notifications,
+                                        color: Colors.white, size: width * 0.07),
                                   ),
                                   if (unreadCount > 0)
                                     Positioned(
-                                      right: 12,
-                                      top: 6,
+                                      right: width * 0.04,
+                                      top: height * 0.012,
                                       child: Container(
-                                        width: 10,
-                                        height: 10,
+                                        width: width * 0.025,
+                                        height: width * 0.025,
                                         decoration: const BoxDecoration(
                                           color: Colors.red,
                                           shape: BoxShape.circle,
@@ -277,18 +253,21 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
+                    SizedBox(height: height * 0.001),
+                    Text(
                       "Find Your Wardrobe\nItems here",
-                      style:
-                      TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w400),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: width * 0.07,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: height * 0.015),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(width * 0.05),
                       ),
                       child: const TextField(
                         decoration: InputDecoration(
@@ -301,141 +280,113 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                   ],
                 ),
               ),
-
-              // 🔹 Feature Cards
               Positioned(
-                bottom: -60,
-                left: 20,
-                right: 20,
+                bottom: -height * 0.09,
+                left: width * 0.05,
+                right: width * 0.05,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     FeatureCard(
                       icon: Icons.favorite_border,
                       label: 'Favorites',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => FavoritesScreen()),
-                        );
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => FavoritesScreen()),
+                      ),
                     ),
                     FeatureCard(
                       icon: Icons.smart_toy_outlined,
                       label: 'AI Assistant',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const SmartAssistantWelcomeScreen()),
-                        );
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const SmartAssistantWelcomeScreen()),
+                      ),
                     ),
                     FeatureCard(
                       icon: Icons.checkroom_outlined,
                       label: 'Fashion Feed',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const FashionStylingContentScreen()),
-                        );
-                      },
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                            const FashionStylingContentScreen()),
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-
-          const SizedBox(height: 80),
-
-          // 🔹 Category Section
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Align(
+          SizedBox(height: height * 0.12),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+            child: const Align(
               alignment: Alignment.centerLeft,
               child: Text("Select a Category",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
-          const SizedBox(height: 12),
-
+          SizedBox(height: height * 0.015),
           SizedBox(
-            height: 200,
+            height: height * 0.26,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: width * 0.04),
               children: [
-                categoryCard("Add Items to Wardrobe", 'assets/images/wardrobe1.png', onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AddItemScreen()),
-                  );
-                }),
-                const SizedBox(width: 12),
+                categoryCard("Add Items to Wardrobe", 'assets/images/wardrobe1.png',
+                    onTap: () => Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => AddItemScreen()))),
+                SizedBox(width: width * 0.03),
                 categoryCard("AI Outfit Suggestions", 'assets/images/outfit.png'),
-                const SizedBox(width: 12),
-                categoryCard("Weather based Suggestions", 'assets/images/weather.png', onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => WeatherPage()),
-                  );
-                }),
-                const SizedBox(width: 12),
-                categoryCard("Smart Shopping", 'assets/images/smart shopping.png', onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => SmartShoppingScreen()),
-                  );
-                }),
-                const SizedBox(width: 12),
-                categoryCard("Outfit Planner", 'assets/images/Outfit-Planner.jpg', onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => OutfitCalendarScreen()),
-                  );
-                }),
+                SizedBox(width: width * 0.03),
+                categoryCard("Weather based Suggestions", 'assets/images/weather.png',
+                    onTap: () => Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => const WeatherPage()))),
+                SizedBox(width: width * 0.03),
+                categoryCard("Smart Shopping", 'assets/images/smart shopping.png',
+                    onTap: () => Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => const SmartShoppingScreen()))),
+                SizedBox(width: width * 0.03),
+                categoryCard("Outfit Planner", 'assets/images/Outfit-Planner.jpg',
+                    onTap: () => Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => OutfitCalendarScreen()))),
               ],
             ),
           ),
-
-          const SizedBox(height: 20),
-
-          // 🔹 Recent Activity
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Align(
+          SizedBox(height: height * 0.02),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+            child: const Align(
               alignment: Alignment.centerLeft,
-              child:
-              Text("Recent Activity", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text("Recent Activity",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
-          const SizedBox(height: 12),
-
+          SizedBox(height: height * 0.015),
           FutureBuilder<DocumentSnapshot?>(
             future: fetchRecentWardrobeItem(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-
               if (!snapshot.hasData || snapshot.data == null) {
                 return const Padding(
                   padding: EdgeInsets.all(16.0),
                   child: Text("No item added recently."),
                 );
               }
-
               final item = snapshot.data!.data() as Map<String, dynamic>;
               final itemName = item['item_name'] ?? 'Unknown Item';
               final imageBase64 = item['image_base64'];
-
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                 child: Row(
                   children: [
                     Container(
-                      width: 80,
-                      height: 90,
+                      width: width * 0.2,
+                      height: height * 0.12,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         image: DecorationImage(
@@ -446,58 +397,60 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Text("Recently Added: $itemName", style: const TextStyle(fontSize: 14)),
+                    SizedBox(width: width * 0.03),
+                    Expanded(
+                      child: Text("Recently Added: $itemName",
+                          style: TextStyle(fontSize: width * 0.035)),
+                    ),
                   ],
                 ),
               );
             },
           ),
-
-          const SizedBox(height: 70),
+          SizedBox(height: height * 0.08),
         ],
       ),
     );
   }
 
   static Widget categoryCard(String title, String imagePath, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.black12, width: 1.5),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.3),
-              blurRadius: 6,
-              offset: const Offset(7, 7),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 220,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.black12, width: 1.5),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.3),
+                  blurRadius: 6,
+                  offset: const Offset(7, 7),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 220,
-              height: 140,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(imagePath, fit: BoxFit.cover),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(imagePath, height: 140, width: 220, fit: BoxFit.cover),
+                ),
+                const SizedBox(height: 8),
+                Text(title,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                    textAlign: TextAlign.center),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -511,14 +464,15 @@ class FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 90,
-        height: 140,
+        width: width * 0.25,
+        height: width * 0.4,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(width * 0.05),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.shade300,
@@ -531,23 +485,18 @@ class FeatureCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                shape: BoxShape.circle,
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Icon(icon, color: Colors.pinkAccent, size: 30),
+              decoration:
+              BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle),
+              padding: EdgeInsets.all(width * 0.05),
+              child: Icon(icon, color: Colors.pinkAccent, size: width * 0.08),
             ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            SizedBox(height: width * 0.03),
+            Text(label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: width * 0.035,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w500)),
           ],
         ),
       ),

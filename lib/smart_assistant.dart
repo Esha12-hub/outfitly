@@ -8,23 +8,26 @@ import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
-
 class ChatbotScreen extends StatefulWidget {
   @override
   _ChatbotScreenState createState() => _ChatbotScreenState();
 }
+
 bool _isListening = false;
+
 class ChatMessage {
   final String text;
   final bool isUser;
   final String? imageBase64;
   final bool isLoading;
+  final bool isAudio;
 
   ChatMessage({
     required this.text,
     required this.isUser,
     this.imageBase64,
     this.isLoading = false,
+    this.isAudio = false,
   });
 }
 
@@ -32,22 +35,22 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   List<ChatMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final AudioPlayer _audioPlayer = AudioPlayer();
-
   bool _isLoading = false;
 
   final String apiUrl = 'https://esha89-fashion-chat-api.hf.space/chatbot';
   final String speakUrl = 'https://esha89-fashion-chat-api.hf.space/speak';
   final String listenUrl = 'https://esha89-fashion-chat-api.hf.space/voicebot';
 
-
   Future<void> sendMessage(String message) async {
     if (message.trim().isEmpty) return;
 
+    // Add typed message and clear input
     setState(() {
       _messages.add(ChatMessage(text: message, isUser: true));
+      _controller.clear();
       _isLoading = true;
       _messages.add(ChatMessage(
-        text: "Generating response...",
+        text: "Thinking...",
         isUser: false,
         isLoading: true,
       ));
@@ -75,7 +78,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ));
         });
 
-      //  _playBotSpeech(botReply);
+        // Optional: play bot speech
+        //_playBotSpeech(botReply);
       } else {
         setState(() {
           _messages.add(ChatMessage(
@@ -92,7 +96,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       });
     } finally {
       _isLoading = false;
-      _controller.clear();
     }
   }
 
@@ -154,16 +157,17 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       final dir = await getTemporaryDirectory();
       final path = '${dir.path}/recorded_audio.wav';
 
+      // Show voice message bubble immediately
       setState(() {
         _isListening = true;
         _messages.add(ChatMessage(
-          text: "🎙️ Listening...",
-          isUser: false,
+          text: "🎤 Voice message sent",
+          isUser: true,
+          isAudio: true,
           isLoading: true,
         ));
       });
 
-      // Start recording to a file
       await record.start(
         RecordConfig(
           encoder: AudioEncoder.wav,
@@ -174,14 +178,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         path: path,
       );
 
-      // Record for fixed duration (or implement silence detection)
       await Future.delayed(Duration(seconds: 7));
-
       await record.stop();
 
       setState(() {
         _isListening = false;
-        _messages.removeWhere((msg) => msg.text == "🎙️ Listening...");
+        _messages.removeWhere((msg) => msg.isLoading && msg.isAudio);
       });
 
       File audioFile = File(path);
@@ -196,11 +198,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       var request = http.MultipartRequest('POST', Uri.parse(listenUrl));
       request.files.add(await http.MultipartFile.fromPath('audio', audioFile.path));
 
+      // Add "Thinking..." bubble
+      setState(() {
+        _messages.add(ChatMessage(
+          text: "Thinking...",
+          isUser: false,
+          isLoading: true,
+        ));
+      });
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
-      print("Response: ${response.statusCode}");
-      print("Body: ${response.body}");
+      _messages.removeWhere((msg) => msg.isLoading && !msg.isAudio);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -230,17 +240,13 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     }
   }
 
-
-  Widget buildMessage(ChatMessage msg) {
-    return Align(
-      alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: msg.isUser ? Colors.pink[100] : Colors.grey[300],
-          borderRadius: BorderRadius.circular(12),
-        ),
+  Widget buildMessage(ChatMessage msg, double width) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: width * 0.015),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: msg.isUser ? Colors.pink[100] : Colors.grey[200],
+      child: Padding(
+        padding: EdgeInsets.all(width * 0.04),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -248,12 +254,12 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               Row(
                 children: [
                   SizedBox(
-                    width: 18,
-                    height: 18,
+                    width: width * 0.04,
+                    height: width * 0.04,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
-                  SizedBox(width: 10),
-                  Text("Thinking..."),
+                  SizedBox(width: width * 0.02),
+                  Text("Thinking...", style: TextStyle(fontSize: width * 0.035)),
                 ],
               )
             else ...[
@@ -266,25 +272,28 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                           Uint8List bytes = base64Decode(msg.imageBase64!);
                           return Image.memory(
                             bytes,
-                            height: 200,
-                            width: 200,
+                            height: width * 0.5,
+                            width: width * 0.5,
                             fit: BoxFit.cover,
                           );
                         } catch (e) {
-                          return Text("⚠️ Failed to decode image.");
+                          return Text("⚠️ Failed to decode image.", style: TextStyle(fontSize: width * 0.035));
                         }
                       },
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(height: width * 0.02),
                   ],
                 ),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(child: Text(msg.text)),
+                  if (msg.isAudio)
+                    Icon(Icons.mic, size: width * 0.06, color: Colors.black54),
+                  SizedBox(width: msg.isAudio ? width * 0.02 : 0),
+                  Expanded(child: Text(msg.text, style: TextStyle(fontSize: width * 0.035))),
                   if (!msg.isUser)
                     IconButton(
-                      icon: Icon(Icons.volume_up),
+                      icon: Icon(Icons.volume_up, size: width * 0.06),
                       onPressed: () => _playBotSpeech(msg.text),
                     ),
                 ],
@@ -304,42 +313,91 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final screenWidth = media.size.width;
+    final screenHeight = media.size.height;
+    final fontSize = screenWidth * 0.045;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Fashion Chatbot')),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) => buildMessage(_messages[index]),
-            ),
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Image.asset(
+            "assets/images/white_back_btn.png",
+            height: 28,
+            width: 28,
           ),
-          Divider(height: 1),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.mic),
-                  onPressed: listenAndSend,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          "Fashion Chatbot",
+          style: TextStyle(
+            fontSize: fontSize,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+
+      body: Center(
+        child: Container(
+          width: screenWidth * 0.99,
+          height: screenHeight * 0.99,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.05, vertical: screenHeight * 0.02),
+          child: Column(
+            children: [
+              Expanded(
+                child: _messages.isEmpty
+                    ? Center(
+                    child: Text("Your chat will appear here",
+                        style: TextStyle(fontSize: fontSize)))
+                    : ListView.builder(
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) =>
+                      buildMessage(_messages[index], screenWidth),
                 ),
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    onSubmitted: sendMessage,
-                    decoration: InputDecoration.collapsed(
-                      hintText: "Ask me about fashion...",
+              ),
+              Divider(),
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.mic, size: screenWidth * 0.08),
+                    onPressed: listenAndSend,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      onSubmitted: sendMessage,
+                      decoration: InputDecoration(
+                        hintText: "Ask me about fashion...",
+                        filled: true,
+                        fillColor: Colors.grey.shade200,
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: fontSize * 0.8,
+                            vertical: fontSize * 0.8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.send),
-                  onPressed: () => sendMessage(_controller.text),
-                ),
-              ],
-            ),
+                  IconButton(
+                    icon: Icon(Icons.send, size: screenWidth * 0.08),
+                    onPressed: () => sendMessage(_controller.text),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

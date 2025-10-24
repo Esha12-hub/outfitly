@@ -1,4 +1,3 @@
-// ✅ IMPORTS
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,12 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'writer_login_screen.dart';
-// ✅ LOCAL SCREENS
+
 import 'writer_content.dart';
 import 'write_article.dart';
 import 'seo_optimization.dart';
 import 'writer_settings.dart';
 import 'writer_notification.dart';
+import 'writer_profile.dart';
 
 class WriterDashboardScreen extends StatefulWidget {
   const WriterDashboardScreen({super.key});
@@ -163,21 +163,32 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              CircleAvatar(
-                radius: size.width * 0.06,
-                backgroundColor: Colors.grey,
-                backgroundImage: profileImageBytes != null
-                    ? MemoryImage(profileImageBytes)
-                    : (data != null &&
-                    data['photoUrl'] != null &&
-                    data['photoUrl'] is String
-                    ? NetworkImage(data['photoUrl'])
-                    : null),
-                child: (profileImageBytes == null &&
-                    (data == null || data['photoUrl'] == null))
-                    ? const Icon(Icons.person, color: Colors.white)
-                    : null,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const WriterProfileScreen(),
+                    ),
+                  );
+                },
+                child: CircleAvatar(
+                  radius: size.width * 0.06,
+                  backgroundColor: Colors.grey,
+                  backgroundImage: profileImageBytes != null
+                      ? MemoryImage(profileImageBytes)
+                      : (data != null &&
+                      data['photoUrl'] != null &&
+                      data['photoUrl'] is String
+                      ? NetworkImage(data['photoUrl'])
+                      : null),
+                  child: (profileImageBytes == null &&
+                      (data == null || data['photoUrl'] == null))
+                      ? const Icon(Icons.person, color: Colors.white)
+                      : null,
+                ),
               ),
+
               Text(
                 'Dashboard',
                 style: TextStyle(
@@ -460,7 +471,6 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-/// 🔹 Submission Tile Widget
 class _SubmissionTile extends StatelessWidget {
   final Uint8List? imageBytes;
   final String title;
@@ -505,13 +515,31 @@ class _SubmissionTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: height * 0.25)),
+                /// 🔹 Reduced Title Font Size
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: height * 0.22, // Previously 0.25
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
                 SizedBox(height: height * 0.05),
-                Text(status, style: TextStyle(color: statusColor, fontSize: height * 0.18)),
+
+                /// 🔹 Reduced Status Font Size
+                Text(
+                  status,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: height * 0.16, // Previously 0.18
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right, size: height * 0.3),
+          Icon(Icons.chevron_right, size: height * 0.25), // Slightly smaller arrow
         ],
       ),
     );

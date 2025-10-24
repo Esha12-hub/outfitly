@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
@@ -10,6 +11,7 @@ import 'blocked_users_screen.dart';
 import 'manage_users_screen.dart';
 import 'regular_users_screen.dart';
 import 'content_writer_screen.dart';
+import 'admin_login_screen.dart';
 
 class ActiveUsersScreen extends StatefulWidget {
   const ActiveUsersScreen({super.key});
@@ -29,8 +31,46 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
     ContentWriterScreen(),
   ];
 
+  // ✅ Logout Handler
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text("Logout"),
+        content: const Text("Do you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("No", style: TextStyle(color: Colors.black)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+              (route) => false,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final screenWidth = media.size.width;
+    final screenHeight = media.size.height;
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: SafeArea(
@@ -38,23 +78,33 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(screenWidth * 0.04),
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back, color: AppColors.textWhite),
+                    onPressed: _handleLogout, // ✅ Logout on back press
+                    icon: Image.asset(
+                      'assets/images/white_back_btn.png',
+                      width: screenWidth * 0.07,
+                      height: screenWidth * 0.07,
+                    ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Users',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.whiteHeading,
+                      style: AppTextStyles.whiteHeading.copyWith(
+                        fontSize: screenWidth * 0.05,
+                      ),
                     ),
                   ),
                   IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.filter_list, color: AppColors.textWhite),
+                    onPressed: () {
+                      setState(() {
+                        // Just rebuild to refresh the stream
+                      });
+                    },
+                    icon: const Icon(Icons.refresh, color: AppColors.textWhite),
                   ),
                 ],
               ),
@@ -62,36 +112,36 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
 
             // Filter Tabs
             Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              height: screenHeight * 0.065,
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
                     _buildFilterTab('All Users', selectedTabIndex == 0, () {
                       setState(() => selectedTabIndex = 0);
-                    }),
-                    const SizedBox(width: 8),
+                    }, screenWidth),
+                    SizedBox(width: screenWidth * 0.02),
                     _buildFilterTab('Active', selectedTabIndex == 1, () {
                       setState(() => selectedTabIndex = 1);
-                    }),
-                    const SizedBox(width: 8),
+                    }, screenWidth),
+                    SizedBox(width: screenWidth * 0.02),
                     _buildFilterTab('Blocked', selectedTabIndex == 2, () {
                       setState(() => selectedTabIndex = 2);
-                    }),
-                    const SizedBox(width: 8),
+                    }, screenWidth),
+                    SizedBox(width: screenWidth * 0.02),
                     _buildFilterTab('Regular User', selectedTabIndex == 3, () {
                       setState(() => selectedTabIndex = 3);
-                    }),
-                    const SizedBox(width: 8),
+                    }, screenWidth),
+                    SizedBox(width: screenWidth * 0.02),
                     _buildFilterTab('Content Writer', selectedTabIndex == 4, () {
                       setState(() => selectedTabIndex = 4);
-                    }),
+                    }, screenWidth),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: screenHeight * 0.02),
 
             // Main Content
             Expanded(
@@ -115,12 +165,12 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
     );
   }
 
-  Widget _buildFilterTab(String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildFilterTab(String label, bool isSelected, VoidCallback onTap, double screenWidth) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05, vertical: screenWidth * 0.025),
+        margin: EdgeInsets.symmetric(vertical: screenWidth * 0.01),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(25),
@@ -137,7 +187,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
             style: TextStyle(
               color: AppColors.textWhite,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 13,
+              fontSize: screenWidth * 0.033,
             ),
           ),
         ),
@@ -159,11 +209,15 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final screenWidth = media.size.width;
+    final screenHeight = media.size.height;
+
     return Column(
       children: [
         // 🔍 Search Bar
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(screenWidth * 0.04),
           child: CustomSearchField(
             hint: 'Search...',
             onChanged: (value) {
@@ -187,8 +241,9 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
               }
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(
-                  child: Text('No active users found.', style: AppTextStyles.h3),
+                return Center(
+                  child: Text('No active users found.',
+                      style: AppTextStyles.h3.copyWith(fontSize: screenWidth * 0.04)),
                 );
               }
 
@@ -202,17 +257,17 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
               }).toList();
 
               if (filteredUsers.isEmpty) {
-                return const Center(
-                  child: Text('No matching users.', style: AppTextStyles.h3),
+                return Center(
+                  child: Text('No matching users.',
+                      style: AppTextStyles.h3.copyWith(fontSize: screenWidth * 0.04)),
                 );
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: screenHeight * 0.015),
                 itemCount: filteredUsers.length,
                 itemBuilder: (context, index) {
-                  final data =
-                  filteredUsers[index].data() as Map<String, dynamic>;
+                  final data = filteredUsers[index].data() as Map<String, dynamic>;
 
                   final name = data['name'] ?? 'Unknown';
                   final email = data['email'] ?? '';
@@ -227,8 +282,7 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
 
                   if (imageBase64 != null && imageBase64.toString().isNotEmpty) {
                     try {
-                      final bytes =
-                      base64Decode(imageBase64.toString().split(',').last);
+                      final bytes = base64Decode(imageBase64.toString().split(',').last);
                       profileImage = MemoryImage(bytes);
                     } catch (e) {
                       profileImage = null;
@@ -240,16 +294,15 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: EdgeInsets.only(bottom: screenHeight * 0.01),
                     child: UserCard(
                       userId: filteredUsers[index].id,
                       name: name,
                       email: email,
                       role: role,
                       status: status,
-                      avatarColor: AppColors.avatarColors[
-                      index % AppColors.avatarColors.length],
-                      profileImage: profileImage, // ✅ Placeholder handled in UserCard
+                      avatarColor: AppColors.avatarColors[index % AppColors.avatarColors.length],
+                      profileImage: profileImage,
                     ),
                   );
                 },

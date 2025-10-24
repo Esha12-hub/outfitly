@@ -122,18 +122,18 @@ class _SkinColorPalettePageState extends State<SkinColorPalettePage> {
     );
   }
 
-  Widget _buildColorGrid(List<Color> colors) {
+  Widget _buildColorGrid(List<Color> colors, double width) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: width * 0.02,
+      runSpacing: width * 0.02,
       children: colors
           .map(
             (color) => Container(
-          width: 55,
-          height: 55,
+          width: width * 0.12,
+          height: width * 0.12,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(width * 0.03),
             boxShadow: const [
               BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(1, 1))
             ],
@@ -144,31 +144,34 @@ class _SkinColorPalettePageState extends State<SkinColorPalettePage> {
     );
   }
 
-  Widget _buildSuggestionGrid(List<Map<String, dynamic>> colors) {
+  Widget _buildSuggestionGrid(List<Map<String, dynamic>> colors, double width) {
     return Wrap(
-      spacing: 10,
-      runSpacing: 12,
+      spacing: width * 0.03,
+      runSpacing: width * 0.03,
       children: colors
           .map(
             (item) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 60,
-              height: 60,
+              width: width * 0.14,
+              height: width * 0.14,
               decoration: BoxDecoration(
                 color: item["color"],
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(width * 0.03),
                 boxShadow: const [
                   BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(1, 1))
                 ],
               ),
             ),
             const SizedBox(height: 5),
-            Text(
-              item["name"],
-              style: const TextStyle(fontSize: 12, color: Colors.black87),
-              textAlign: TextAlign.center,
+            SizedBox(
+              width: width * 0.16,
+              child: Text(
+                item["name"],
+                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         ),
@@ -179,21 +182,24 @@ class _SkinColorPalettePageState extends State<SkinColorPalettePage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          // Custom App Bar
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.025),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "Skin Color Palette",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: width * 0.05,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -204,8 +210,8 @@ class _SkinColorPalettePageState extends State<SkinColorPalettePage> {
                       onTap: () => Navigator.pop(context),
                       child: Image.asset(
                         "assets/images/white_back_btn.png",
-                        height: 30,
-                        width: 30,
+                        height: width * 0.08,
+                        width: width * 0.08,
                       ),
                     ),
                   ),
@@ -213,29 +219,26 @@ class _SkinColorPalettePageState extends State<SkinColorPalettePage> {
               ),
             ),
           ),
-
-          // Expanded white section (fixed layout)
           Expanded(
             child: Container(
-              width: double.infinity, // ✅ ensures full width
-              decoration: const BoxDecoration(
+              width: double.infinity,
+              decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(width * 0.06)),
               ),
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(width * 0.04),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     if (_image != null)
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: Image.file(_image!, height: 200, fit: BoxFit.cover),
+                        borderRadius: BorderRadius.circular(width * 0.04),
+                        child: Image.file(_image!, height: height * 0.28, fit: BoxFit.cover),
                       )
                     else
-                      const Icon(Icons.person, size: 100, color: Colors.grey),
-                    const SizedBox(height: 20),
-
+                      Icon(Icons.person, size: width * 0.25, color: Colors.grey),
+                    SizedBox(height: height * 0.025),
                     ElevatedButton.icon(
                       onPressed: _showImageSourceDialog,
                       icon: const Icon(Icons.color_lens, color: Colors.white),
@@ -245,42 +248,39 @@ class _SkinColorPalettePageState extends State<SkinColorPalettePage> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.pink,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: EdgeInsets.symmetric(horizontal: width * 0.06, vertical: height * 0.015),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(width * 0.05),
                         ),
                       ),
                     ),
-
-                    const SizedBox(height: 25),
-
+                    SizedBox(height: height * 0.03),
                     if (_colors.isNotEmpty) ...[
-                      const Text(
+                      Text(
                         "Extracted Colors",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: width * 0.045, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 10),
-                      _buildColorGrid(_colors),
-                      const SizedBox(height: 25),
+                      SizedBox(height: height * 0.015),
+                      _buildColorGrid(_colors, width),
+                      SizedBox(height: height * 0.03),
                     ],
-
                     if (_skinToneType != null) ...[
                       Text(
                         "Detected: $_skinToneType",
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: TextStyle(
+                          fontSize: width * 0.048,
                           fontWeight: FontWeight.bold,
                           color: Colors.teal,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
+                      SizedBox(height: height * 0.015),
+                      Text(
                         "Recommended Outfit Colors",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: width * 0.045, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 12),
-                      _buildSuggestionGrid(_suggestedColors),
-                      const SizedBox(height: 25),
+                      SizedBox(height: height * 0.015),
+                      _buildSuggestionGrid(_suggestedColors, width),
+                      SizedBox(height: height * 0.03),
                       Text(
                         _skinToneType == "Warm Tone"
                             ? "🌞 Warm undertone detected — try coral, gold, orange, or olive hues."
@@ -288,7 +288,7 @@ class _SkinColorPalettePageState extends State<SkinColorPalettePage> {
                             ? "❄️ Cool undertone detected — try blue, purple, turquoise, or lavender."
                             : "🌤 Neutral undertone detected — you can wear both warm and cool shades!",
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 14, color: Colors.black87),
+                        style: TextStyle(fontSize: width * 0.037, color: Colors.black87),
                       ),
                     ],
                   ],

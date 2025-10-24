@@ -3,12 +3,14 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'fashion_content_screen.dart';
 import 'settings_screen.dart';
 import 'user_login_screen.dart';
 import 'outfit_planner.dart';
 import 'color_palette_screen.dart';
 import 'fabric_care.dart';
+import 'user_dashboard.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -31,6 +33,14 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   @override
   void initState() {
     super.initState();
+
+    // ✅ Make status bar icons white (for black background)
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+
     fetchUserProfile();
   }
 
@@ -92,43 +102,63 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         ? MemoryImage(_decodeBase64(base64Image!)!)
         : const AssetImage("assets/images/user (1).png") as ImageProvider;
 
+    final size = MediaQuery.of(context).size;
+    final width = size.width;
+    final height = size.height;
+
+    double fontScale(double base) => base * (width / 390).clamp(0.8, 1.4);
+    double spacing(double base) => base * (height / 844).clamp(0.8, 1.3);
+
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
+          // ✅ Black header (fills top area fully)
           Container(
+            width: double.infinity,
             color: Colors.black,
-            padding: const EdgeInsets.only(top: 54, bottom: 16),
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + spacing(8),
+              bottom: spacing(10),
+            ),
             child: Column(
               children: [
+                // Top bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.symmetric(horizontal: spacing(14)),
                       child: GestureDetector(
                         onTap: () {
-                          Navigator.pop(context);
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const WardrobeHomeScreen(),
+                            ),
+                          );
                         },
                         child: Image.asset(
                           "assets/images/white_back_btn.png",
-                          height: 30,
-                          width: 30,
+                          height: spacing(35),
+                          width: spacing(35),
                         ),
                       ),
                     ),
-                    const Text(
+
+                    Text(
                       'My Profile',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: fontScale(20),
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding:
+                      EdgeInsets.symmetric(horizontal: spacing(12)),
                       child: InkWell(
                         onTap: () {
                           Navigator.push(
@@ -138,27 +168,30 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             ),
                           );
                         },
-                        child:
-                        const Icon(Icons.settings, color: Colors.white),
+                        child: Icon(Icons.settings,
+                            color: Colors.white, size: fontScale(28)),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: spacing(12)),
                 CircleAvatar(
-                  radius: 50,
+                  radius: spacing(50),
                   backgroundColor: Colors.grey[300],
                   backgroundImage: profileImage,
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: spacing(8)),
                 Text(
                   '@${name.toLowerCase().replaceAll(" ", "")}',
-                  style:
-                  const TextStyle(fontSize: 18, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: fontScale(18),
+                    color: Colors.white,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: spacing(12)),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding:
+                  EdgeInsets.symmetric(horizontal: spacing(12)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -166,17 +199,19 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         icon: Icons.checkroom,
                         count: itemsCount.toString(),
                         label: "Items",
+                        iconSize: fontScale(26),
                       ),
                       _ProfileStat(
                         icon: Icons.notifications,
                         count: notificationsCount.toString(),
                         label: "Notifications",
-                        iconSize: 22,
+                        iconSize: fontScale(22),
                       ),
                       _ProfileStat(
                         icon: Icons.favorite_border,
                         count: favoritesCount.toString(),
                         label: "Favorites",
+                        iconSize: fontScale(26),
                       ),
                     ],
                   ),
@@ -184,129 +219,141 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               ],
             ),
           ),
+
+          // ✅ Scrollable content
           Expanded(
             child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const _SectionTitle(title: 'ACCOUNT DETAILS'),
-                  _profileField("Name", name),
-                  _profileField("Birthday", birthday),
-                  _profileField("Email", email),
-                  _profileField("Password", "********"),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: spacing(30)),
+                child: Column(
+                  children: [
+                    const _SectionTitle(title: 'ACCOUNT DETAILS'),
+                    _profileField("Name", name, fontScale),
+                    _profileField("Birthday", birthday, fontScale),
+                    _profileField("Email", email, fontScale),
+                    _profileField("Password", "********", fontScale),
 
-                  const _SectionTitle(title: 'STYLE PREFERENCES'),
-                  _preferenceOption(
-                    "Outfit Schedule",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                          OutfitCalendarScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _preferenceOption("Color Palette",onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                        const SkinColorPalettePage(),
-                      ),
-                    );
-                  },),
-                  _preferenceOption("Fabric Care Advise",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                          const FabricCareAdvisorScreen(),
-                        ),
-                      );
-                    },),
+                    const _SectionTitle(title: 'STYLE PREFERENCES'),
+                    _preferenceOption("Outfit Schedule", fontScale,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => OutfitCalendarScreen()),
+                          );
+                        }),
+                    _preferenceOption("Color Palette", fontScale,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                const SkinColorPalettePage()),
+                          );
+                        }),
+                    _preferenceOption("Fabric Care Advise", fontScale,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                const FabricCareAdvisorScreen()),
+                          );
+                        }),
 
-                  const _SectionTitle(title: 'SOCIAL & COLLABORATIVE'),
-                  _preferenceOption("Style Share"),
-                  _preferenceOption(
-                    "Fashion Articles/Videos",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                          const FashionStylingContentScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                    const _SectionTitle(title: 'SOCIAL & COLLABORATIVE'),
+                    _preferenceOption("Style Share", fontScale),
+                    _preferenceOption("Fashion Articles/Videos", fontScale,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                const FashionStylingContentScreen()),
+                          );
+                        }),
 
-                  const SizedBox(height: 30),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        // Show confirmation dialog
-                        final shouldLogout = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            backgroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            title: const Text(
-                              "Logout",
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                    SizedBox(height: spacing(30)),
+                    Padding(
+                      padding:
+                      EdgeInsets.symmetric(horizontal: spacing(30)),
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final shouldLogout = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(12)),
+                              title: const Text(
+                                "Logout",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              content:
+                              const Text("Do you want to logout?"),
+                              actions: [
+                                TextButton(
+                                  child: const Text("No",
+                                      style: TextStyle(
+                                          color: Colors.black)),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                ),
+                                TextButton(
+                                  child: const Text("Yes",
+                                      style:
+                                      TextStyle(color: Colors.red)),
+                                  onPressed: () =>
+                                      Navigator.pop(context, true),
+                                ),
+                              ],
                             ),
-                            content: const Text("Do you want to logout?"),
-                            actions: [
-                              TextButton(
-                                child: const Text("No", style: TextStyle(color: Colors.black)),
-                                onPressed: () => Navigator.pop(context, false),
-                              ),
-                              TextButton(
-                                child: const Text("Yes", style: TextStyle(color: Colors.red)),
-                                onPressed: () => Navigator.pop(context, true),
-                              ),
-                            ],
-                          ),
-                        );
+                          );
 
-                        // If confirmed, logout
-                        if (shouldLogout == true) {
-                          await FirebaseAuth.instance.signOut();
-                          if (context.mounted) {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const UserLoginScreen()),
-                                  (route) => false,
-                            );
+                          if (shouldLogout == true) {
+                            await FirebaseAuth.instance.signOut();
+                            if (context.mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                    const UserLoginScreen()),
+                                    (route) => false,
+                              );
+                            }
                           }
-                        }
-                      },
-                      icon: const Icon(Icons.logout, color: Colors.white),
-                      label: const Text(
-                        "Logout",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.pink,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                        },
+                        icon: const Icon(Icons.logout, color: Colors.white),
+                        label: Text(
+                          "Logout",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: fontScale(16)),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        minimumSize: const Size(double.infinity, 50),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.pink,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                              vertical: spacing(14)),
+                          minimumSize:
+                          Size(double.infinity, spacing(50)),
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
-                  const Text(
-                    "Version 1.1.1",
-                    style:
-                    TextStyle(fontSize: 12, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 30),
-                ],
+                    SizedBox(height: spacing(16)),
+                    Text(
+                      "Version 1.1.1",
+                      style: TextStyle(
+                          fontSize: fontScale(12),
+                          color: Colors.black54),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -315,7 +362,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  static Widget _profileField(String title, String value) {
+  static Widget _profileField(
+      String title, String value, double Function(double) fontScale) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -327,15 +375,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title,
-              style:
-              const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          Text(value, style: const TextStyle(fontSize: 14)),
+              style: TextStyle(
+                  fontSize: fontScale(14), fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(fontSize: fontScale(14))),
         ],
       ),
     );
   }
 
-  Widget _preferenceOption(String title, {VoidCallback? onTap}) {
+  Widget _preferenceOption(String title, double Function(double) fontScale,
+      {VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -350,8 +399,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: fontScale(14),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -401,13 +450,17 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    double fontScale(double base) => base * (width / 390).clamp(0.8, 1.4);
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 10),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: fontScale(14)),
         ),
       ),
     );

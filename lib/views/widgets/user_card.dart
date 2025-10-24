@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
@@ -12,7 +11,7 @@ class UserCard extends StatelessWidget {
   final String role;
   final String status;
   final Color avatarColor;
-  final ImageProvider? profileImage; // ✅ NEW
+  final ImageProvider? profileImage;
   final VoidCallback? onTap;
   final IconData? avatarIcon;
   final Widget? trailing;
@@ -25,7 +24,7 @@ class UserCard extends StatelessWidget {
     required this.role,
     required this.status,
     required this.avatarColor,
-    this.profileImage, // ✅ NEW
+    this.profileImage,
     this.onTap,
     this.avatarIcon,
     this.trailing,
@@ -52,23 +51,20 @@ class UserCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // 👤 Avatar (with optional profile image)
+            // Avatar
             CircleAvatar(
               radius: 26,
               backgroundColor:
               profileImage == null ? avatarColor : Colors.transparent,
-              backgroundImage: profileImage, // ✅ show image if available
+              backgroundImage: profileImage,
               child: profileImage == null
-                  ? Icon(
-                avatarIcon ?? Icons.person,
-                color: AppColors.textWhite,
-                size: 26,
-              )
+                  ? Icon(avatarIcon ?? Icons.person,
+                  color: AppColors.textWhite, size: 26)
                   : null,
             ),
             const SizedBox(width: 14),
 
-            // 📝 User Info
+            // User Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,18 +79,19 @@ class UserCard extends StatelessWidget {
                           AppColors.primary),
                       const SizedBox(width: 8),
                       _buildChip(
-                          status,
-                          status == 'Active'
-                              ? Colors.green.withOpacity(0.2)
-                              : Colors.red.withOpacity(0.2),
-                          status == 'Active' ? Colors.green : Colors.red),
+                        status,
+                        status == 'Active'
+                            ? Colors.green.withOpacity(0.2)
+                            : Colors.red.withOpacity(0.2),
+                        status == 'Active' ? Colors.green : Colors.red,
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
 
-            // ⋮ Options Menu
+            // Options Menu
             PopupMenuButton<String>(
               color: Colors.white,
               shape: RoundedRectangleBorder(
@@ -102,14 +99,21 @@ class UserCard extends StatelessWidget {
               onSelected: (value) async {
                 switch (value) {
                   case 'edit':
-                    Get.to(() => UserProfileScreen(
-                      name: name,
-                      email: email,
-                      role: role,
-                      status: status,
-                      avatarColor: avatarColor,
-                      avatarIcon: avatarIcon,
-                    ));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserProfileScreen(
+                          uid: userId, // pass actual userId
+                          name: name,
+                          email: email,
+                          role: role,
+                          status: status,
+                          avatarColor: avatarColor,
+                          avatarIcon: avatarIcon,
+                        ),
+
+                      ),
+                    );
                     break;
 
                   case 'block':
@@ -124,13 +128,7 @@ class UserCard extends StatelessWidget {
                             .collection('users')
                             .doc(userId)
                             .update({'status': 'Blocked'});
-
-                        Get.snackbar(
-                          'User Blocked',
-                          '$name has been blocked successfully.',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
+                        _showMessage(context, '$name has been blocked.');
                       },
                     );
                     break;
@@ -148,13 +146,7 @@ class UserCard extends StatelessWidget {
                             .collection('users')
                             .doc(userId)
                             .delete();
-
-                        Get.snackbar(
-                          'User Deleted',
-                          '$name has been deleted.',
-                          backgroundColor: Colors.red,
-                          colorText: Colors.white,
-                        );
+                        _showMessage(context, '$name has been deleted.');
                       },
                     );
                     break;
@@ -200,7 +192,6 @@ class UserCard extends StatelessWidget {
     );
   }
 
-  // 🌈 Role / Status Chip
   Widget _buildChip(String label, Color bgColor, Color textColor) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -208,14 +199,10 @@ class UserCard extends StatelessWidget {
         color: bgColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Text(
-        label,
-        style: AppTextStyles.caption.copyWith(color: textColor),
-      ),
+      child: Text(label, style: AppTextStyles.caption.copyWith(color: textColor)),
     );
   }
 
-  // ⚠️ Confirmation Dialog
   void _confirmAction(
       BuildContext context, {
         required String title,
@@ -228,22 +215,19 @@ class UserCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         title: Text(title,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         content: Text(message, style: const TextStyle(fontSize: 15)),
         actions: [
           TextButton(
-            child: const Text('Cancel',
-                style: TextStyle(color: Colors.black, fontSize: 14)),
+            child:
+            const Text('Cancel', style: TextStyle(color: Colors.black, fontSize: 14)),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: Text(
-              confirmText,
-              style: TextStyle(color: confirmColor, fontWeight: FontWeight.bold),
-            ),
+            child: Text(confirmText,
+                style: TextStyle(color: confirmColor, fontWeight: FontWeight.bold)),
             onPressed: () {
               Navigator.pop(context);
               onConfirm();
@@ -252,5 +236,9 @@ class UserCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }

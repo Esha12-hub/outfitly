@@ -56,20 +56,72 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Future<void> deleteItem() async {
     final shouldDelete = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Item"),
-        content: const Text(
-            "Are you sure you want to delete this item? This action cannot be undone."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 60, color: Colors.pink),
+              const SizedBox(height: 15),
+              const Text(
+                "Delete Item?",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Are you sure you want to permanently delete this item? This action cannot be undone.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+              ),
+              const SizedBox(height: 25),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Delete",
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -93,6 +145,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     }
   }
 
+
   Future<void> toggleFavorite() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -115,10 +168,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
     try {
       if (isFavorite) {
-        // ✅ Mark as favorite in wardrobe
         await userWardrobeRef.update({'isFavorite': true});
-
-        // ✅ Add to favorites collection
         await userFavoritesRef.set({
           'itemData': {
             'itemId': widget.itemId,
@@ -129,24 +179,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           },
           'timestamp': FieldValue.serverTimestamp(),
         });
-
       } else {
-        // ❌ Unfavorite in wardrobe
         await userWardrobeRef.update({'isFavorite': false});
-
-        // ❌ Remove from favorites collection
         await userFavoritesRef.delete();
       }
     } catch (e) {
-      // Revert UI if error occurs
       setState(() {
         isFavorite = !isFavorite;
       });
       print("Error updating favorites: $e");
     }
   }
-
-
 
   Future<void> markAsWorn() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -170,7 +213,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Fix: support both "colors" (array) and "color" (single number)
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     final List<int> colors = (itemData?['colors'] as List?)
         ?.map((e) => e as int)
         .toList() ??
@@ -185,8 +230,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           children: [
             // Custom AppBar
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 30),
+              padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.04,
+                  vertical: screenHeight * 0.03),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -194,16 +240,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     onTap: () => Navigator.pop(context),
                     child: Image.asset(
                       "assets/images/white_back_btn.png",
-                      height: 30,
-                      width: 30,
+                      height: screenWidth * 0.08,
+                      width: screenWidth * 0.08,
                     ),
                   ),
-                  const Text(
+                  Text(
                     "Item Details",
                     style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 18),
+                        fontSize: screenWidth * 0.045),
                   ),
                   GestureDetector(
                     onTap: toggleFavorite,
@@ -212,13 +258,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           ? Icons.favorite
                           : Icons.favorite_border,
                       color: isFavorite ? Colors.red : Colors.white,
+                      size: screenWidth * 0.07,
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Body
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -227,13 +273,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   BorderRadius.vertical(top: Radius.circular(24)),
                 ),
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(screenWidth * 0.04),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Item Image
                       Container(
-                        height: 240,
+                        height: screenHeight * 0.3,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: Colors.white12,
@@ -254,18 +300,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: screenHeight * 0.02),
 
                       Text(
                         itemData?['item_name'] ?? 'Unknown Item',
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: screenWidth * 0.05,
+                            fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: screenHeight * 0.02),
 
                       // Info Section
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: EdgeInsets.all(screenWidth * 0.04),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0F0F0),
                           borderRadius: BorderRadius.circular(12),
@@ -279,14 +326,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 _InfoTile(
                                     label: "Category",
                                     value: itemData?['category'] ?? '-',
-                                    icon: Icons.local_offer),
+                                    icon: Icons.local_offer,
+                                    screenWidth: screenWidth),
                                 _InfoTile(
                                     label: "Fabric",
                                     value: itemData?['fabric'] ?? '-',
-                                    icon: Icons.texture),
+                                    icon: Icons.texture,
+                                    screenWidth: screenWidth),
                               ],
                             ),
-                            const SizedBox(height: 20),
+                            SizedBox(height: screenHeight * 0.02),
                             Row(
                               mainAxisAlignment:
                               MainAxisAlignment.spaceBetween,
@@ -294,24 +343,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 _InfoTile(
                                     label: "Season",
                                     value: itemData?['season'] ?? '-',
-                                    icon: Icons.wb_cloudy),
+                                    icon: Icons.wb_cloudy,
+                                    screenWidth: screenWidth),
                                 _InfoTile(
                                     label: "Occasion",
                                     value: itemData?['occasion'] ?? '-',
-                                    icon: Icons.person),
+                                    icon: Icons.person,
+                                    screenWidth: screenWidth),
                               ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: screenHeight * 0.02),
 
                       // Colors
-                      const Text("COLORS:",
+                      Text("COLORS:",
                           style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 12)),
-                      const SizedBox(height: 10),
+                              fontSize: screenWidth * 0.035)),
+                      SizedBox(height: screenHeight * 0.01),
                       colors.isNotEmpty
                           ? Wrap(
                         spacing: 8,
@@ -319,7 +370,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                         children: colors
                             .map((c) => CircleAvatar(
                           backgroundColor: Color(c),
-                          radius: 14,
+                          radius: screenWidth * 0.035,
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
@@ -332,25 +383,32 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             .toList(),
                       )
                           : const Text("No colors added"),
-                      const SizedBox(height: 24),
+                      SizedBox(height: screenHeight * 0.03),
 
                       // Care Instructions
-                      const Text("CARE INSTRUCTIONS",
+                      Text("CARE INSTRUCTIONS",
                           style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 12)),
-                      const SizedBox(height: 16),
+                              fontSize: screenWidth * 0.035)),
+                      SizedBox(height: screenHeight * 0.02),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
+                        children: [
                           _CareCard(
                               icon: Icons.local_laundry_service,
-                              label: "Hand Wash"),
-                          _CareCard(icon: Icons.air, label: "Line Dry"),
-                          _CareCard(icon: Icons.iron, label: "Low Iron"),
+                              label: "Hand Wash",
+                              screenWidth: screenWidth),
+                          _CareCard(
+                              icon: Icons.air,
+                              label: "Line Dry",
+                              screenWidth: screenWidth),
+                          _CareCard(
+                              icon: Icons.iron,
+                              label: "Low Iron",
+                              screenWidth: screenWidth),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: screenHeight * 0.03),
 
                       // Times Worn + Added On
                       Container(
@@ -358,7 +416,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           color: const Color(0xFFF0F0F0),
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(screenWidth * 0.04),
                         child: Column(
                           children: [
                             Row(
@@ -369,14 +427,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                   crossAxisAlignment:
                                   CrossAxisAlignment.start,
                                   children: [
-                                    const Text("Times Worn",
-                                        style:
-                                        TextStyle(fontSize: 12)),
-                                    const SizedBox(height: 4),
+                                    Text("Times Worn",
+                                        style: TextStyle(
+                                            fontSize: screenWidth * 0.03)),
+                                    SizedBox(height: screenHeight * 0.005),
                                     Text(
                                       "${itemData?['times_worn'] ?? 0}",
-                                      style: const TextStyle(
-                                          fontSize: 16,
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.045,
                                           fontWeight: FontWeight.bold),
                                     ),
                                   ],
@@ -385,36 +443,35 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                   crossAxisAlignment:
                                   CrossAxisAlignment.end,
                                   children: [
-                                    const Text("Added On",
-                                        style:
-                                        TextStyle(fontSize: 12)),
-                                    const SizedBox(height: 4),
+                                    Text("Added On",
+                                        style: TextStyle(
+                                            fontSize: screenWidth * 0.03)),
+                                    SizedBox(height: screenHeight * 0.005),
                                     Text(
-                                      formatTimestamp(
-                                          itemData?['createdAt']),
-                                      style: const TextStyle(
-                                          fontSize: 14),
+                                      formatTimestamp(itemData?['createdAt']),
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.035),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-
+                            SizedBox(height: screenHeight * 0.015),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 16),
-
-
-                      const SizedBox(height: 20),
+                      SizedBox(height: screenHeight * 0.03),
 
                       // Buttons
                       ActionButton(
-                          label: 'Wear This Today',
-                          isTapped: isWearTapped,
-                          onTap: markAsWorn),
-                      const SizedBox(height: 12),
+                        label: 'Wear This Today',
+                        isTapped: isWearTapped,
+                        onTap: markAsWorn,
+                        screenWidth: screenWidth,
+                        backgroundColor: const Color(0xFFD71D5C),
+                        textColor: Colors.white,
+                      ),
+                      SizedBox(height: screenHeight * 0.015),
                       ActionButton(
                         label: 'Edit Item',
                         isTapped: isEditTapped,
@@ -429,15 +486,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                             ),
                           );
                         },
+                        screenWidth: screenWidth,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: screenHeight * 0.015),
                       ActionButton(
                         label: 'Delete Item',
                         isTapped: false,
                         onTap: deleteItem,
                         destructive: true,
+                        screenWidth: screenWidth,
                       ),
-                      const SizedBox(height: 30),
+                      SizedBox(height: screenHeight * 0.03),
                     ],
                   ),
                 ),
@@ -454,25 +513,28 @@ class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+  final double screenWidth;
 
   const _InfoTile(
-      {required this.label, required this.value, required this.icon});
+      {required this.label,
+        required this.value,
+        required this.icon,
+        required this.screenWidth});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.black),
-        const SizedBox(width: 8),
+        Icon(icon, size: screenWidth * 0.05, color: Colors.black),
+        SizedBox(width: screenWidth * 0.02),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(label,
-                style:
-                const TextStyle(fontSize: 10, color: Colors.black54)),
+                style: TextStyle(fontSize: screenWidth * 0.025, color: Colors.black54)),
             Text(value,
-                style: const TextStyle(
-                    fontSize: 14,
+                style: TextStyle(
+                    fontSize: screenWidth * 0.035,
                     fontWeight: FontWeight.bold,
                     color: Colors.black)),
           ],
@@ -485,27 +547,28 @@ class _InfoTile extends StatelessWidget {
 class _CareCard extends StatelessWidget {
   final IconData icon;
   final String label;
+  final double screenWidth;
 
-  const _CareCard({required this.icon, required this.label});
+  const _CareCard({required this.icon, required this.label, required this.screenWidth});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 100,
-      height: 80,
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      width: screenWidth * 0.25,
+      height: screenWidth * 0.22,
+      padding: EdgeInsets.symmetric(
+          vertical: screenWidth * 0.02, horizontal: screenWidth * 0.015),
       decoration: BoxDecoration(
           color: const Color(0xFFF0F0F0),
           borderRadius: BorderRadius.circular(12)),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 28, color: Colors.black),
-          const SizedBox(height: 6),
+          Icon(icon, size: screenWidth * 0.07, color: Colors.black),
+          SizedBox(height: screenWidth * 0.015),
           Text(label,
               textAlign: TextAlign.center,
-              style:
-              const TextStyle(fontSize: 11, color: Colors.black87)),
+              style: TextStyle(fontSize: screenWidth * 0.027, color: Colors.black87)),
         ],
       ),
     );
@@ -517,40 +580,46 @@ class ActionButton extends StatelessWidget {
   final bool isTapped;
   final VoidCallback onTap;
   final bool destructive;
+  final double screenWidth;
+  final Color? backgroundColor; // optional background color
+  final Color? textColor;       // optional text color
 
-  const ActionButton(
-      {super.key,
-        required this.label,
-        required this.isTapped,
-        required this.onTap,
-        this.destructive = false});
+  const ActionButton({
+    super.key,
+    required this.label,
+    required this.isTapped,
+    required this.onTap,
+    required this.screenWidth,
+    this.destructive = false,
+    this.backgroundColor,
+    this.textColor,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final Color activeColor =
-    destructive ? Colors.red : const Color(0xFFD71D5C);
+    final Color defaultActiveColor = destructive ? Colors.red : const Color(0xFFD71D5C);
 
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: EdgeInsets.symmetric(vertical: screenWidth * 0.035),
           side: BorderSide(
-              color: isTapped
-                  ? activeColor
-                  : (destructive ? Colors.red : Colors.black)),
-          backgroundColor: isTapped ? activeColor : Colors.white,
+            color: backgroundColor ?? (isTapped ? defaultActiveColor : (destructive ? Colors.red : Colors.black)),
+          ),
+          backgroundColor: backgroundColor ?? (isTapped ? defaultActiveColor : Colors.white),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          ),
         ),
         onPressed: onTap,
         child: Text(
           label,
           style: TextStyle(
-              color: isTapped
-                  ? Colors.white
-                  : (destructive ? Colors.red : Colors.black),
-              fontWeight: FontWeight.bold),
+            color: textColor ?? (isTapped ? Colors.white : (destructive ? Colors.red : Colors.black)),
+            fontWeight: FontWeight.bold,
+            fontSize: screenWidth * 0.04,
+          ),
         ),
       ),
     );

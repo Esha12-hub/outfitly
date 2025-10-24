@@ -148,23 +148,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // ===========================
-                      // ACCOUNT SETTINGS
-                      // ===========================
-                      _buildSectionTitle('ACCOUNT SETTINGS'),
-                      const SizedBox(height: 16),
-                      _buildSettingItem('Verify Email/Phone Number', Icons.mail, onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const VerifyEmailPhoneScreen()));
-                      }),
-                      const SizedBox(height: 8),
-                      _buildSettingItem('Change Password', Icons.key, onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordScreen()));
-                      }),
-                      const SizedBox(height: 8),
-                      _buildSettingItem('Delete Profile', Icons.person_remove, onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const DeleteProfileScreen()));
-                      }),
-                      const SizedBox(height: 32),
 
                       // ===========================
                       // ADMIN MANAGEMENT

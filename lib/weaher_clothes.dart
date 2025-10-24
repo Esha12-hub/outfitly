@@ -37,14 +37,12 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
     super.dispose();
   }
 
-  /// Determine season based on temperature
-  String getSeasonFromTemperature(double temp) {
-    if (temp >= 25) return 'Summer';
-    if (temp >= 20) return 'Spring';
-    return 'Winter';
+  List<String> getSeasonsFromTemperature(double temp) {
+    if (temp >= 25) return ['summer', 'spring'];
+    if (temp >= 20) return ['spring', 'summer'];
+    return ['winter'];
   }
 
-  /// Fetch wardrobe items based on determined season (case-insensitive)
   Future<void> fetchWardrobeItems() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -54,26 +52,23 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
         return;
       }
 
-      final season = getSeasonFromTemperature(widget.temperature);
-      print('🌤️ Detected season: $season');
+      final seasons = getSeasonsFromTemperature(widget.temperature);
+      print('🌤️ Fetching wardrobe for seasons: $seasons');
 
       final wardrobeRef = FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('wardrobe');
 
-      // Fetch all items and then filter locally (since Firestore can’t do case-insensitive queries)
       final snapshot = await wardrobeRef.get();
-
-      final normalizedSeason = season.toLowerCase();
 
       final filteredDocs = snapshot.docs.where((doc) {
         final data = doc.data();
         final seasonField = (data['season'] ?? '').toString().toLowerCase();
-        return seasonField == normalizedSeason;
+        return seasons.contains(seasonField);
       }).toList();
 
-      print('👚 Found ${filteredDocs.length} items for $season');
+      print('👚 Found ${filteredDocs.length} items for seasons $seasons');
 
       Map<String, List<Map<String, dynamic>>> grouped = {};
 
@@ -150,22 +145,26 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width > 600;
+    final double baseWidth = 390;
+    final scale = size.width / baseWidth;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          _buildAppBar(),
-          _buildCategorySlider(),
-          const SizedBox(height: 20),
+          _buildAppBar(scale),
+          _buildCategorySlider(scale),
+          SizedBox(height: 20 * scale),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16 * scale),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: subcategories.isEmpty
                   ? const Center(
@@ -194,6 +193,8 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
                     return _buildSection(
                       subcategory,
                       itemsBySubcategory[subcategory]!,
+                      scale,
+                      isTablet,
                     );
                   }).toList(),
                 ),
@@ -205,35 +206,38 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
     );
   }
 
-  Widget _buildAppBar() {
+  Widget _buildAppBar(double scale) {
+    final seasonLabel = getSeasonsFromTemperature(widget.temperature)
+        .map((s) => s[0].toUpperCase() + s.substring(1))
+        .join(' & ');
+
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        padding: EdgeInsets.symmetric(horizontal: 16 * scale, vertical: 20 * scale),
         child: Stack(
           alignment: Alignment.center,
           children: [
             Center(
               child: Text(
-                "${getSeasonFromTemperature(widget.temperature)[0].toUpperCase()}${getSeasonFromTemperature(widget.temperature).substring(1).toLowerCase()} Wardrobe",
-                style: const TextStyle(
-                  fontSize: 20,
+                "$seasonLabel Wardrobe",
+                style: TextStyle(
+                  fontSize: 20 * scale,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-
             Align(
               alignment: Alignment.centerLeft,
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: SizedBox(
-                  height: 40,
-                  width: 40,
+                  height: 40 * scale,
+                  width: 40 * scale,
                   child: Image.asset(
                     "assets/images/white_back_btn.png",
-                    height: 20,
-                    width: 20,
+                    height: 20 * scale,
+                    width: 20 * scale,
                   ),
                 ),
               ),
@@ -244,17 +248,17 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
     );
   }
 
-  Widget _buildCategorySlider() {
+  Widget _buildCategorySlider(double scale) {
     return SizedBox(
-      height: 30,
+      height: 30 * scale,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.symmetric(horizontal: 16 * scale),
         itemCount: subcategories.length,
         itemBuilder: (context, index) {
           final isSelected = index == selectedIndex;
           return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: EdgeInsets.only(right: 8.0 * scale),
             child: GestureDetector(
               onTap: () {
                 setState(() {
@@ -263,18 +267,18 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
                 _scrollToSection(subcategories[index]);
               },
               child: Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 3),
+                padding: EdgeInsets.symmetric(horizontal: 20 * scale, vertical: 3 * scale),
                 decoration: BoxDecoration(
                   color: isSelected ? Colors.pink : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20 * scale),
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),
                 child: Text(
                   subcategories[index],
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
+                    fontSize: 14 * scale,
                   ),
                 ),
               ),
@@ -285,27 +289,27 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
     );
   }
 
-  Widget _buildSection(String title, List<Map<String, dynamic>> items) {
+  Widget _buildSection(String title, List<Map<String, dynamic>> items, double scale, bool isTablet) {
+    final crossAxisCount = isTablet ? 4 : 2;
     return Container(
       key: sectionKeys[title],
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: EdgeInsets.only(bottom: 24 * scale),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style:
-            const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: 18 * scale, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: 10 * scale),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: 16 * scale,
+              crossAxisSpacing: 16 * scale,
               childAspectRatio: 0.7,
             ),
             itemBuilder: (context, index) {
@@ -318,8 +322,7 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) =>
-                            ItemDetailScreen(itemId: itemId),
+                        builder: (context) => ItemDetailScreen(itemId: itemId),
                       ),
                     );
                   }
@@ -328,14 +331,14 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
-                      height: 160,
+                      height: 160 * scale,
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10 * scale),
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(10 * scale),
                         child: imageBytes != null
                             ? Image.memory(
                           imageBytes,
@@ -346,14 +349,14 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
                             : const Icon(Icons.image_not_supported),
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    SizedBox(height: 5 * scale),
                     Text(
                       item["item_name"] ?? '',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14 * scale,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

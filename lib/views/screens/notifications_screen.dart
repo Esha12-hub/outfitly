@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../widgets/notification_card.dart';
 import 'dashboard_screen.dart';
-import '../../controllers/navigation_controller.dart';
+import 'package:intl/intl.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -14,138 +14,65 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  int selectedFilterIndex = 0;
-
-  final List<String> filterTabs = [
-    'All',
-    'Promotional',
-    'System Updates',
-    'User Messages',
-    'AI Insights',
-    'Errors / Alerts',
-  ];
-
-  void _onFilterTapped(int index) {
-    setState(() {
-      selectedFilterIndex = index;
-    });
-  }
+  bool showUnread = false;
+  List<QueryDocumentSnapshot>? _previousDocs;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBackground,
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
+            // 🔹 Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    onPressed: () async {
-                      final controller = Get.find<NavigationController>();
-                      await controller.changeIndex(0); // Reset to Home
-                      Get.offAll(() => const DashboardScreen());
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                      );
                     },
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: AppColors.textWhite,
+                    child: Image.asset(
+                      "assets/images/white_back_btn.png",
+                      height: 30,
+                      width: 30,
                     ),
                   ),
-                  const Expanded(
-                    child: Text(
-                      'Notifications',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.whiteHeading,
+
+                  const Text(
+                    "Notifications",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 22,
                     ),
                   ),
-                  // Placeholder to balance the layout
-                  const SizedBox(width: 48), // Same width as IconButton
+                  const Icon(Icons.tune, color: Colors.white, size: 28),
                 ],
               ),
             ),
 
-            // Filter Tabs
-            Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: filterTabs.asMap().entries.map((entry) {
-                    int index = entry.key;
-                    String label = entry.value;
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        right: index < filterTabs.length - 1 ? 8 : 0,
-                      ),
-                      child: _buildFilterTab(
-                        label,
-                        selectedFilterIndex == index,
-                        () => _onFilterTapped(index),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Main Content
+            // 🔹 Main Content
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                 ),
-                child: Column(
-                  children: [
-                    // Header Section
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Text(
-                            selectedFilterIndex == 4 ? 'AI Insights' : 'All Notifications',
-                            style: AppTextStyles.h3,
-                          ),
-                          const Spacer(),
-                          TextButton(
-                            onPressed: () {
-                              // Clear all notifications
-                            },
-                            child: const Text(
-                              'Clear all',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    // Notifications List
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        children: [
-                          Text(
-                            selectedFilterIndex == 4 ? 'AI Insights' : filterTabs[selectedFilterIndex],
-                            style: AppTextStyles.h3,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildNotificationsList(),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildToggleBar(),
+                      const SizedBox(height: 12),
+                      Expanded(child: _buildNotificationsList()),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -155,211 +82,182 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildFilterTab(String label, bool isSelected, VoidCallback onTap) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: isSelected ? AppColors.primary : AppColors.textWhite.withOpacity(0.7),
-          width: 1.5,
+  // 🔹 Toggle Bar
+  Widget _buildToggleBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            _toggleButton("All", !showUnread, () {
+              setState(() => showUnread = false);
+            }),
+            const SizedBox(width: 8),
+            _toggleButton("Unread", showUnread, () {
+              setState(() => showUnread = true);
+            }),
+          ],
         ),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? AppColors.textWhite : AppColors.textWhite,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 13,
-            ),
-            textAlign: TextAlign.center,
+        TextButton(
+          onPressed: () {
+            // Optionally implement "Clear all"
+          },
+          child:
+          const Text("Clear all", style: TextStyle(color: Colors.black54)),
+        ),
+      ],
+    );
+  }
+
+  Widget _toggleButton(String label, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
     );
   }
 
+  // 🔹 Notifications List
   Widget _buildNotificationsList() {
-    switch (selectedFilterIndex) {
-      case 0: // All
-        return Column(
-          children: [
-            _buildNotificationSection('Today', [
-              NotificationCard(
-                title: 'Update Deployed',
-                description: 'App v1.8 deployed successfully with performance upgrades.',
-                time: '2 hours ago',
-                icon: Icons.system_update,
-              ),
-              const SizedBox(height: 8),
-              NotificationCard(
-                title: 'Feedback Received',
-                description: 'User @sofia_22 left feedback: \'AI didn\'t recognize winter wear.\'',
-                time: '3 hours ago',
-                icon: Icons.feedback,
-              ),
-              const SizedBox(height: 8),
-              NotificationCard(
-                title: 'Content Flagged',
-                description: 'Post by user @lily_style reported for inappropriate outfit tags.',
-                time: '3 hours ago',
-                icon: Icons.flag,
-              ),
-            ]),
-            const SizedBox(height: 16),
-            _buildNotificationSection('Yesterday', [
-              NotificationCard(
-                title: 'Moderation Alert',
-                description: '2 user posts flagged - require admin review.',
-                time: '1 day ago',
-                icon: Icons.warning,
-              ),
-            ]),
-          ],
-        );
-      case 1: // Promotional
-        return Column(
-          children: [
-            NotificationCard(
-              title: 'New Collection Alert',
-              description: 'Spring collection is now available! Check out the latest trends.',
-              time: '1 hour ago',
-              icon: Icons.shopping_bag,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'Special Offer',
-              description: '50% off on premium AI styling features this week.',
-              time: '3 hours ago',
-              icon: Icons.local_offer,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'Feature Launch',
-              description: 'Virtual Try-On 2.0 is now available for all users!',
-              time: '2 hours ago',
-              icon: Icons.celebration,
-            ),
-          ],
-        );
-      case 2: // System Updates
-        return Column(
-          children: [
-            NotificationCard(
-              title: 'Update Deployed',
-              description: 'App v1.8 deployed successfully with performance upgrades.',
-              time: '2 hours ago',
-              icon: Icons.system_update,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'Maintenance Complete',
-              description: 'Scheduled maintenance completed successfully.',
-              time: '5 hours ago',
-              icon: Icons.build,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'Database Backup',
-              description: 'Daily backup completed successfully.',
-              time: '1 day ago',
-              icon: Icons.backup,
-            ),
-          ],
-        );
-      case 3: // User Messages
-        return Column(
-          children: [
-            NotificationCard(
-              title: 'Feedback Received',
-              description: 'User @sofia_22 left feedback: \'AI didn\'t recognize winter wear.\'',
-              time: '3 hours ago',
-              icon: Icons.feedback,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'Support Request',
-              description: 'User @john_doe requested help with account settings.',
-              time: '4 hours ago',
-              icon: Icons.support_agent,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'User Registration',
-              description: 'New user @emma_wilson joined the platform.',
-              time: '6 hours ago',
-              icon: Icons.person_add,
-            ),
-          ],
-        );
-      case 4: // AI Insights
-        return Column(
-          children: [
-            _buildNotificationSection('Today', [
-              NotificationCard(
-                title: 'Usage Spike',
-                description: 'Virtual Try-On used by 78% of users today.',
-                time: '2 hours ago',
-                icon: Icons.trending_up,
-              ),
-            ]),
-            const SizedBox(height: 16),
-            _buildNotificationSection('Yesterday', [
-              NotificationCard(
-                title: 'Query Failure',
-                description: 'AI model failed to respond to 3 unique user queries.',
-                time: '1 day ago',
-                icon: Icons.error_outline,
-              ),
-            ]),
-          ],
-        );
-      case 5: // Errors / Alerts
-        return Column(
-          children: [
-            NotificationCard(
-              title: 'Content Flagged',
-              description: 'Post by user @lily_style reported for inappropriate outfit tags.',
-              time: '3 hours ago',
-              icon: Icons.flag,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'Moderation Alert',
-              description: '2 user posts flagged - require admin review.',
-              time: '1 day ago',
-              icon: Icons.warning,
-            ),
-            const SizedBox(height: 8),
-            NotificationCard(
-              title: 'System Error',
-              description: 'Image processing service temporarily unavailable.',
-              time: '2 days ago',
-              icon: Icons.error,
-            ),
-          ],
-        );
-      default:
-        return const SizedBox.shrink();
-    }
-  }
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collectionGroup('articles')
+          .where('status', isEqualTo: 'pending')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            _previousDocs == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-  Widget _buildNotificationSection(String title, List<Widget> notifications) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: AppTextStyles.h3,
-        ),
-        const SizedBox(height: 8),
-        ...notifications,
-      ],
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          _previousDocs = snapshot.data!.docs;
+        }
+
+        final docs = _previousDocs;
+        if (docs == null || docs.isEmpty) {
+          return const Center(
+              child: Text("No new notifications",
+                  style: TextStyle(color: Colors.black54)));
+        }
+
+        // 🔹 Group notifications
+        final now = DateTime.now();
+        final today = <QueryDocumentSnapshot>[];
+        final yesterday = <QueryDocumentSnapshot>[];
+        final earlier = <QueryDocumentSnapshot>[];
+
+        for (var doc in docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final submittedAt =
+              (data['submittedAt'] as Timestamp?)?.toDate() ?? now;
+          if (_isSameDay(submittedAt, now)) {
+            today.add(doc);
+          } else if (_isSameDay(
+              submittedAt, now.subtract(const Duration(days: 1)))) {
+            yesterday.add(doc);
+          } else {
+            earlier.add(doc);
+          }
+        }
+
+        return ListView(
+          children: [
+            if (today.isNotEmpty) ...[
+              const Text("Today",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black)),
+              const SizedBox(height: 12),
+              ...today.map(_buildNotificationCard),
+              const SizedBox(height: 20),
+            ],
+            if (yesterday.isNotEmpty) ...[
+              const Text("Yesterday",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black)),
+              const SizedBox(height: 12),
+              ...yesterday.map(_buildNotificationCard),
+              const SizedBox(height: 20),
+            ],
+            if (earlier.isNotEmpty) ...[
+              const Text("Earlier",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black)),
+              const SizedBox(height: 12),
+              ...earlier.map(_buildNotificationCard),
+            ],
+          ],
+        );
+      },
     );
   }
-} 
+
+  // 🔹 Card Design
+  Widget _buildNotificationCard(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final title = data['title'] ?? 'Untitled Article';
+    final writerName = data['writerName'] ?? 'Unknown Writer';
+    final submittedAt =
+        (data['submittedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F3F3),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: Colors.white,
+              radius: 22,
+              child: Icon(Icons.article, size: 22, color: Colors.black),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Article Submitted",
+                      style:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Text("$writerName submitted \"$title\" for approval.",
+                      style: const TextStyle(
+                          fontSize: 12, color: Colors.black54)),
+                  const SizedBox(height: 4),
+                  Text(_formatTime(submittedAt),
+                      style: const TextStyle(
+                          fontSize: 10, color: Colors.grey)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🔹 Helpers
+  String _formatTime(DateTime date) {
+    return DateFormat.jm().format(date);
+  }
+
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+}

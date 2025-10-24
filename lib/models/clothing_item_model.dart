@@ -6,6 +6,7 @@ class ClothingItem {
   final String productLink;
   final DateTime createdAt;
   final String adminId;
+  final String categoryId; // <-- added categoryId
 
   ClothingItem({
     required this.id,
@@ -15,6 +16,7 @@ class ClothingItem {
     required this.productLink,
     required this.createdAt,
     required this.adminId,
+    required this.categoryId, // <-- added categoryId
   });
 
   factory ClothingItem.fromMap(Map<String, dynamic> map, String id) {
@@ -26,6 +28,7 @@ class ClothingItem {
       productLink: map['productLink'] ?? '',
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       adminId: map['adminId'] ?? '',
+      categoryId: map['categoryId'] ?? '', // <-- read categoryId from Firestore
     );
   }
 
@@ -37,6 +40,7 @@ class ClothingItem {
       'productLink': productLink,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'adminId': adminId,
+      'categoryId': categoryId, // <-- save categoryId to Firestore
     };
   }
 }

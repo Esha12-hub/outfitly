@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'user_login_screen.dart';
 import 'writer_login_screen.dart';
 import 'views/screens/admin_login_screen.dart';
+import 'main.dart';
 
 class ContinueAsScreen extends StatelessWidget {
   const ContinueAsScreen({super.key});
@@ -43,14 +44,22 @@ class ContinueAsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Back button
+                  // Back button
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyApp()),
+                            (route) => false,
+                      );
+                    },
                     child: SizedBox(
                       height: screenHeight * 0.04,
                       width: screenHeight * 0.04,
                       child: Image.asset("assets/images/back btn.png"),
                     ),
                   ),
+
 
                   SizedBox(height: spacingLarge),
 

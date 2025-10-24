@@ -58,6 +58,10 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
     final formattedName = capitalizeFirstLetter(widget.fabricName);
     final localAssetPath = 'assets/images/${widget.fabricName.toLowerCase()}.png';
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final textScale = MediaQuery.of(context).textScaleFactor;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -77,140 +81,172 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
             final data = snapshot.data!.data() as Map<String, dynamic>;
             final imageUrl = data['imageUrl']?.toString() ?? '';
 
-            return Column(
-              children: [
-                // ===== Top Bar =====
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-                  color: Colors.black,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      Flexible(
-                        child: Text(
-                          "$formattedName Fabric Care",
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: _refreshData,
-                        child: const Icon(Icons.refresh, color: Colors.white, size: 24),
-                      ),
-                    ],
-                  ),
-                ),
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final isTablet = constraints.maxWidth > 600;
+                final padding = isTablet ? 28.0 : 20.0;
+                final titleSize = isTablet ? 26.0 : 20.0;
+                final headingSize = isTablet ? 24.0 : 22.0;
+                final bodyFontSize = isTablet ? 16.0 : 14.5;
+                final iconSize = isTablet ? 30.0 : 24.0;
 
-                // ===== Body =====
-                Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                return Column(
+                  children: [
+                    // ===== Top Bar =====
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 18),
+                      color: Colors.black,
+                      child: Stack(
+                        alignment: Alignment.center,
                         children: [
-                          // ===== Image Section =====
+                          // Back Button (Left)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: IconButton(
+                              icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ),
+
+                          // Center Title
                           Center(
-                            child: Container(
-                              height: 220,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                color: Colors.pink.shade50,
-                                image: DecorationImage(
-                                  image: imageUrl.isNotEmpty
-                                      ? NetworkImage(imageUrl)
-                                      : AssetImage(localAssetPath) as ImageProvider,
-                                  fit: BoxFit.cover,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.shade300,
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                            child: Text(
+                              "$formattedName Fabric Care",
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: titleSize,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
 
-                          // ===== Title =====
-                          Text(
-                            "How to Care for $formattedName",
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                          // Refresh Icon (Right)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
+                              onTap: _refreshData,
+                              child: Icon(Icons.refresh, color: Colors.white, size: iconSize),
                             ),
                           ),
-                          const SizedBox(height: 10),
-
-                          // ===== Care Cards =====
-                          _CareCard(
-                            icon: FontAwesomeIcons.water,
-                            title: "Washing",
-                            steps: _splitText(data['washing']),
-                          ),
-                          _CareCard(
-                            icon: FontAwesomeIcons.wind,
-                            title: "Drying",
-                            steps: _splitText(data['drying']),
-                          ),
-                          _CareCard(
-                            icon: FontAwesomeIcons.temperatureLow,
-                            title: "Ironing",
-                            steps: _splitText(data['ironing']),
-                          ),
-                          _CareCard(
-                            icon: FontAwesomeIcons.boxArchive,
-                            title: "Storage",
-                            steps: _splitText(data['storage']),
-                          ),
-
-                          const SizedBox(height: 30),
-
-                          // ===== Icon Summary Row =====
-                          const Text(
-                            "Quick Reminders",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: const [
-                              _CareIcon(icon: FontAwesomeIcons.handSparkles, label: "Hand Wash"),
-                              _CareIcon(icon: FontAwesomeIcons.wind, label: "Air Dry"),
-                              _CareIcon(icon: FontAwesomeIcons.temperatureLow, label: "Low Iron"),
-                              _CareIcon(icon: FontAwesomeIcons.box, label: "Fold Dry"),
-                            ],
-                          ),
-                          const SizedBox(height: 40),
                         ],
                       ),
                     ),
-                  ),
-                ),
-              ],
+
+
+                    // ===== Body =====
+                    Expanded(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                        ),
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(padding),
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // ===== Image Section =====
+                              Center(
+                                child: Container(
+                                  height: screenHeight * 0.25,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    color: Colors.pink.shade50,
+                                    image: DecorationImage(
+                                      image: imageUrl.isNotEmpty
+                                          ? NetworkImage(imageUrl)
+                                          : AssetImage(localAssetPath) as ImageProvider,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.grey.shade300,
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: isTablet ? 32 : 24),
+
+                              // ===== Title =====
+                              Text(
+                                "How to Care for $formattedName",
+                                style: TextStyle(
+                                  fontSize: headingSize,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+
+                              // ===== Care Cards =====
+                              _CareCard(
+                                icon: FontAwesomeIcons.water,
+                                title: "Washing",
+                                steps: _splitText(data['washing']),
+                                fontSize: bodyFontSize,
+                                iconSize: iconSize,
+                              ),
+                              _CareCard(
+                                icon: FontAwesomeIcons.wind,
+                                title: "Drying",
+                                steps: _splitText(data['drying']),
+                                fontSize: bodyFontSize,
+                                iconSize: iconSize,
+                              ),
+                              _CareCard(
+                                icon: FontAwesomeIcons.temperatureLow,
+                                title: "Ironing",
+                                steps: _splitText(data['ironing']),
+                                fontSize: bodyFontSize,
+                                iconSize: iconSize,
+                              ),
+                              _CareCard(
+                                icon: FontAwesomeIcons.boxArchive,
+                                title: "Storage",
+                                steps: _splitText(data['storage']),
+                                fontSize: bodyFontSize,
+                                iconSize: iconSize,
+                              ),
+
+                              const SizedBox(height: 30),
+
+                              // ===== Icon Summary Row =====
+                              Text(
+                                "Quick Reminders",
+                                style: TextStyle(
+                                  fontSize: isTablet ? 20 : 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  _CareIcon(icon: FontAwesomeIcons.handSparkles, label: "Hand Wash", iconSize: iconSize),
+                                  _CareIcon(icon: FontAwesomeIcons.wind, label: "Air Dry", iconSize: iconSize),
+                                  _CareIcon(icon: FontAwesomeIcons.temperatureLow, label: "Low Iron", iconSize: iconSize),
+                                  _CareIcon(icon: FontAwesomeIcons.box, label: "Fold Dry", iconSize: iconSize),
+                                ],
+                              ),
+                              const SizedBox(height: 40),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -224,11 +260,15 @@ class _CareCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final List<String> steps;
+  final double fontSize;
+  final double iconSize;
 
   const _CareCard({
     required this.icon,
     required this.title,
     required this.steps,
+    required this.fontSize,
+    required this.iconSize,
   });
 
   @override
@@ -252,13 +292,13 @@ class _CareCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              FaIcon(icon, color: Colors.pink.shade400, size: 20),
+              FaIcon(icon, color: Colors.pink.shade400, size: iconSize),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 17,
+                  fontSize: fontSize + 2,
                   color: Colors.black,
                 ),
               ),
@@ -270,8 +310,8 @@ class _CareCard extends StatelessWidget {
               padding: const EdgeInsets.only(left: 6, top: 4),
               child: Text(
                 "• $step",
-                style: const TextStyle(
-                  fontSize: 14.5,
+                style: TextStyle(
+                  fontSize: fontSize,
                   color: Colors.black87,
                   height: 1.4,
                 ),
@@ -288,14 +328,15 @@ class _CareCard extends StatelessWidget {
 class _CareIcon extends StatelessWidget {
   final IconData icon;
   final String label;
+  final double iconSize;
 
-  const _CareIcon({required this.icon, required this.label});
+  const _CareIcon({required this.icon, required this.label, required this.iconSize});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        FaIcon(icon, color: Colors.pink.shade400, size: 26),
+        FaIcon(icon, color: Colors.pink.shade400, size: iconSize),
         const SizedBox(height: 6),
         Text(
           label,

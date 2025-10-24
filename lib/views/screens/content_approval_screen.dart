@@ -10,6 +10,7 @@ import '../../constants/app_text_styles.dart';
 import '../../utils/color_utils.dart';
 import '../widgets/content_card.dart';
 import 'dashboard_screen.dart';
+import 'admin_login_screen.dart';
 
 class ContentApprovalScreen extends StatefulWidget {
   const ContentApprovalScreen({super.key});
@@ -18,12 +19,20 @@ class ContentApprovalScreen extends StatefulWidget {
   State<ContentApprovalScreen> createState() => _ContentApprovalScreenState();
 }
 
+enum SortOption { newestFirst, oldestFirst }
+
 class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
   int selectedFilterIndex = 0;
   bool showAcceptanceOverlay = false;
   bool showRejectionDialog = false;
+  bool showSearchBar = false;
   String rejectionReason = '';
-  DocumentReference? selectedDocRef; // Changed from String? to DocumentReference?
+  String searchQuery = '';
+  DocumentReference? selectedDocRef;
+
+  SortOption selectedSortOption = SortOption.newestFirst;
+
+  final TextEditingController searchController = TextEditingController();
 
   final List<String> filterTabs = [
     'pending',
@@ -37,30 +46,31 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
     });
   }
 
+  void _toggleSearchBar() {
+    setState(() {
+      showSearchBar = !showSearchBar;
+      if (!showSearchBar) {
+        searchQuery = '';
+        searchController.clear();
+      }
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      searchQuery = value.trim().toLowerCase();
+    });
+  }
+
   Future<void> _acceptContent(DocumentReference docRef) async {
-    print('Attempting to update document at path: ${docRef.path}');
-    print('Current user UID: ${FirebaseAuth.instance.currentUser?.uid}');
-    final adminDoc = await FirebaseFirestore.instance
-        .collection('admins')
-        .doc(FirebaseAuth.instance.currentUser?.uid)
-        .get();
-
-    print('Is current user admin? ${adminDoc.exists}');
-    print('Logged in email: ${FirebaseAuth.instance.currentUser?.email}');
-    print('Logged in UID: ${FirebaseAuth.instance.currentUser?.uid}');
-
     try {
       await docRef.update({'status': 'approved'});
       _showAcceptanceOverlay();
-    } catch (e, stacktrace) {
-      print('Firestore update error: $e');
-      print(stacktrace);
+    } catch (e) {
       Get.snackbar('Error', 'Failed to accept content: $e',
           backgroundColor: AppColors.error, colorText: AppColors.textWhite);
     }
   }
-
-
 
   void _showAcceptanceOverlay() {
     setState(() {
@@ -120,6 +130,9 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: AppColors.darkBackground,
       body: Stack(
@@ -129,56 +142,55 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
               children: [
                 // Header
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(width * 0.04),
                   child: Row(
                     children: [
                       IconButton(
-                        onPressed: () {
-                          Get.offAll(() => const DashboardScreen());
-                        },
-                        icon: const Icon(
-                          Icons.arrow_back,
-                          color: AppColors.textWhite,
-                        ),
+                        onPressed: _handleLogout,
+                        icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
                       ),
-                      const Expanded(
+
+                      Expanded(
                         child: Text(
                           'Content Management',
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.whiteHeading,
+                          style: AppTextStyles.whiteHeading
+                              .copyWith(fontSize: width * 0.05),
                         ),
                       ),
                       IconButton(
-                        onPressed: () {
-                          Get.snackbar(
-                            'Search',
-                            'Search functionality coming soon!',
-                            backgroundColor: AppColors.primary,
-                            colorText: AppColors.textWhite,
-                          );
-                        },
+                        onPressed: _toggleSearchBar,
                         icon: const Icon(
                           Icons.search,
                           color: AppColors.textWhite,
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          Get.snackbar(
-                            'Filter',
-                            'Filter options coming soon!',
-                            backgroundColor: AppColors.primary,
-                            colorText: AppColors.textWhite,
-                          );
-                        },
-                        icon: const Icon(
-                          Icons.filter_list,
-                          color: AppColors.textWhite,
-                        ),
-                      ),
+
                     ],
                   ),
                 ),
+
+                // Search Bar
+                if (showSearchBar)
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: _onSearchChanged,
+                      decoration: InputDecoration(
+                        hintText: 'Search articles...',
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: AppColors.cardBackground,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                SizedBox(height: showSearchBar ? height * 0.015 : height * 0.0),
 
                 // Main Content
                 Expanded(
@@ -192,67 +204,73 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                     ),
                     child: Column(
                       children: [
+                        SizedBox(height: 10),
                         // Filter Tabs
-                        Container(
-                          padding: const EdgeInsets.all(16),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                           child: Row(
                             children: filterTabs.asMap().entries.map((entry) {
                               int index = entry.key;
                               String label = entry.value;
                               return Padding(
                                 padding: EdgeInsets.only(
-                                  right: index < filterTabs.length - 1 ? 16 : 0,
+                                  right: index < filterTabs.length - 1
+                                      ? width * 0.03
+                                      : 0,
                                 ),
                                 child: _buildFilterTab(
                                   label[0].toUpperCase() + label.substring(1),
                                   selectedFilterIndex == index,
                                       () => _onFilterTapped(index),
+                                  width,
                                 ),
                               );
                             }).toList(),
                           ),
                         ),
 
-                        // Sort By Section
+                        SizedBox(height: height * 0.02),
+
+                        // Sort By Section with Dropdown
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                           child: Row(
                             children: [
                               const Text(
                                 'Sort by:',
                                 style: AppTextStyles.bodyMedium,
                               ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cardBackground,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: AppColors.cardBorder),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: const [
-                                    Text(
-                                      'Date Submitted',
-                                      style: AppTextStyles.bodySmall,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Icon(
-                                      Icons.keyboard_arrow_down,
-                                      size: 16,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ],
-                                ),
+                              SizedBox(width: width * 0.02),
+                              DropdownButton<SortOption>(
+                                value: selectedSortOption,
+                                dropdownColor: AppColors.surface,
+                                underline: Container(),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: SortOption.newestFirst,
+                                    child: Text('Newest First'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: SortOption.oldestFirst,
+                                    child: Text('Oldest First'),
+                                  ),
+                                ],
+                                onChanged: (SortOption? newValue) {
+                                  if (newValue != null) {
+                                    setState(() {
+                                      selectedSortOption = newValue;
+                                    });
+                                  }
+                                },
                               ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
 
-                        // Content List from Firestore
+                        SizedBox(height: height * 0.02),
+
+                        // Content List
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
@@ -260,66 +278,66 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                                 .snapshots(),
                             builder: (context, snapshot) {
                               if (!snapshot.hasData) {
-                                return const Center(
-                                    child: CircularProgressIndicator());
+                                return const Center(child: CircularProgressIndicator());
                               }
 
                               final allDocs = snapshot.data!.docs;
 
-                              // Filter by status
                               final filteredDocs = allDocs.where((doc) {
                                 final data = doc.data() as Map<String, dynamic>;
                                 final status = data['status'] as String?;
-                                return status == filterTabs[selectedFilterIndex];
+                                final title = (data['title'] ?? '').toString().toLowerCase();
+                                final matchesStatus = status == filterTabs[selectedFilterIndex];
+                                final matchesSearch =
+                                    searchQuery.isEmpty || title.contains(searchQuery);
+                                return matchesStatus && matchesSearch;
                               }).toList();
+
+                              // Sort by timestamp based on dropdown
+                              filteredDocs.sort((a, b) {
+                                final aTimestamp = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                                final bTimestamp = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                                final aDate = aTimestamp?.toDate() ?? DateTime(1970);
+                                final bDate = bTimestamp?.toDate() ?? DateTime(1970);
+
+                                if (selectedSortOption == SortOption.newestFirst) {
+                                  return bDate.compareTo(aDate);
+                                } else {
+                                  return aDate.compareTo(bDate);
+                                }
+                              });
 
                               if (filteredDocs.isEmpty) {
                                 return const Center(child: Text('No articles found.'));
                               }
 
                               return ListView.separated(
-                                padding:
-                                const EdgeInsets.symmetric(horizontal: 16),
+                                padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                                 itemCount: filteredDocs.length,
-                                separatorBuilder: (_, __) =>
-                                const SizedBox(height: 16),
+                                separatorBuilder: (_, __) => SizedBox(height: height * 0.02),
                                 itemBuilder: (context, index) {
                                   final articleDoc = filteredDocs[index];
-                                  final data =
-                                  articleDoc.data() as Map<String, dynamic>;
+                                  final data = articleDoc.data() as Map<String, dynamic>;
 
-                                  final String? base64Image =
-                                  data['mediaBase64'] as String?;
+                                  final String? base64Image = data['mediaBase64'] as String?;
                                   final Uint8List? imageBytes =
-                                  base64Image != null
-                                      ? base64Decode(base64Image)
-                                      : null;
+                                  base64Image != null ? base64Decode(base64Image) : null;
 
-                                  // Get article timestamp
                                   final String articleDate = data['timestamp'] != null
-                                      ? (data['timestamp'] as Timestamp)
-                                      .toDate()
-                                      .toString()
+                                      ? (data['timestamp'] as Timestamp).toDate().toString()
                                       : '';
 
-                                  // Get reference to the parent user document
                                   final userRef = articleDoc.reference.parent.parent;
 
                                   return FutureBuilder<DocumentSnapshot>(
                                     future: userRef?.get(),
                                     builder: (context, userSnapshot) {
-                                      if (!userSnapshot.hasData) {
-                                        return const SizedBox(); // Placeholder
-                                      }
-                                      final userData =
-                                      userSnapshot.data!.data() as Map<String, dynamic>;
+                                      if (!userSnapshot.hasData) return const SizedBox();
+                                      final userData = userSnapshot.data!.data() as Map<String, dynamic>;
                                       final String authorName = userData['name'] ?? '';
-                                      final String? profileBase64 =
-                                      userData['image_base64'];
+                                      final String? profileBase64 = userData['image_base64'];
                                       final Uint8List? profileImageBytes =
-                                      profileBase64 != null
-                                          ? base64Decode(profileBase64)
-                                          : null;
+                                      profileBase64 != null ? base64Decode(profileBase64) : null;
 
                                       return ContentCard(
                                         title: data['title'] ?? '',
@@ -327,10 +345,8 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                                         authorImageBytes: profileImageBytes,
                                         date: articleDate,
                                         imageBytes: imageBytes,
-                                        onAccept: () =>
-                                            _acceptContent(articleDoc.reference),
-                                        onReject: () =>
-                                            _showRejectionDialog(articleDoc.reference),
+                                        onAccept: () => _acceptContent(articleDoc.reference),
+                                        onReject: () => _showRejectionDialog(articleDoc.reference),
                                         onView: () {},
                                         content: data['content'] ?? '',
                                       );
@@ -355,18 +371,18 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
               color: ColorUtils.withOpacity(Colors.black, 0.7),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.all(32),
+                  padding: EdgeInsets.all(width * 0.08),
                   decoration: BoxDecoration(
                     color: AppColors.darkBackground,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(width * 0.04),
                     border: Border.all(color: AppColors.primary, width: 2),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: width * 0.18,
+                        height: width * 0.18,
                         decoration: const BoxDecoration(
                           color: AppColors.primary,
                           shape: BoxShape.circle,
@@ -377,7 +393,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                           size: 40,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: height * 0.02),
                       const Text(
                         'Content accepted successfully',
                         style: TextStyle(
@@ -398,8 +414,8 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
               color: ColorUtils.withOpacity(Colors.black, 0.7),
               child: Center(
                 child: Container(
-                  margin: const EdgeInsets.all(32),
-                  padding: const EdgeInsets.all(24),
+                  margin: EdgeInsets.all(width * 0.08),
+                  padding: EdgeInsets.all(width * 0.06),
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
@@ -415,7 +431,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                           color: Colors.black87,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: height * 0.02),
                       TextField(
                         maxLines: 4,
                         decoration: InputDecoration(
@@ -439,7 +455,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                           });
                         },
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: height * 0.03),
                       Row(
                         children: [
                           Expanded(
@@ -455,7 +471,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                               child: const Text('Cancel'),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: width * 0.02),
                           Expanded(
                             child: ElevatedButton(
                               onPressed: _submitRejection,
@@ -480,16 +496,49 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
       ),
     );
   }
+  Future<void> _handleLogout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: const Text("Logout"),
+        content: const Text("Do you want to logout?"),
+        actions: [
+          TextButton(
+            child: const Text("No", style: TextStyle(color: Colors.black)),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          TextButton(
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    );
 
-  Widget _buildFilterTab(String label, bool isSelected, VoidCallback onTap) {
+    if (shouldLogout == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
+              (route) => false,
+        );
+      }
+    }
+  }
+
+  Widget _buildFilterTab(
+      String label, bool isSelected, VoidCallback onTap, double width) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: width * 0.05, vertical: width * 0.03),
+        margin: EdgeInsets.symmetric(vertical: width * 0.01),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(width * 0.05),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.textPrimary,
             width: 1.5,
@@ -501,7 +550,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
             style: TextStyle(
               color: isSelected ? AppColors.textWhite : AppColors.textPrimary,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 13,
+              fontSize: width * 0.032,
             ),
             textAlign: TextAlign.center,
           ),

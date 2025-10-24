@@ -23,6 +23,9 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
 
+  List<ClothingCategory> _categories = ClothingCategory.getDefaultCategories();
+  ClothingCategory? _selectedCategory;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -45,9 +48,7 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   }
 
   void _clearAllImages() {
-    setState(() {
-      _selectedImages.clear();
-    });
+    setState(() => _selectedImages.clear());
   }
 
   Future<List<String>> _uploadImages() async {
@@ -61,9 +62,7 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
         if (fileName.endsWith('.png')) mimeType = 'image/png';
         if (fileName.endsWith('.gif')) mimeType = 'image/gif';
         if (fileName.endsWith('.webp')) mimeType = 'image/webp';
-
-        final imageUrl = 'data:$mimeType;base64,$base64String';
-        imageUrls.add(imageUrl);
+        imageUrls.add('data:$mimeType;base64,$base64String');
       } catch (e) {
         imageUrls.add('https://via.placeholder.com/400x400?text=Image+${i + 1}');
       }
@@ -74,26 +73,25 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   Future<void> _saveClothingItem() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedImages.isEmpty) return _showError('Please select at least one image');
+    if (_selectedCategory == null) return _showError('Please select a category');
 
     setState(() => _isLoading = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        _showError('User not authenticated');
-        return;
-      }
+      if (user == null) return _showError('User not authenticated');
 
       final imageUrls = await _uploadImages();
 
       final clothingItem = ClothingItem(
         id: '',
         name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(), // optional
+        description: _descriptionController.text.trim(),
         imageUrls: imageUrls,
         productLink: _productLinkController.text.trim(),
         createdAt: DateTime.now(),
         adminId: user.uid,
+        categoryId: _selectedCategory!.id,
       );
 
       await FirebaseFirestore.instance.collection('clothing_items').add(clothingItem.toMap());
@@ -117,6 +115,9 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final padding = size.width * 0.05;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -125,7 +126,8 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
         centerTitle: true,
         title: const Text(
           'Add Clothing Item',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold,
+          fontSize: 20),
         ),
         leading: IconButton(
           icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
@@ -133,10 +135,7 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
         ),
       ),
       body: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
         child: Container(
           color: Colors.white,
           child: _isLoading
@@ -145,35 +144,28 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(padding),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Product Images Section
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               'Product Images',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                             ),
                             if (_selectedImages.isNotEmpty)
                               TextButton(
                                 onPressed: _clearAllImages,
-                                child: const Text(
-                                  'Clear All',
-                                  style: TextStyle(color: Colors.red),
-                                ),
+                                child: const Text('Clear All', style: TextStyle(color: Colors.red)),
                               ),
                           ],
                         ),
-                        Container(
-                          height: 120,
+                        SizedBox(
+                          height: size.height * 0.16,
                           child: _selectedImages.isEmpty
                               ? GestureDetector(
                             onTap: _pickImages,
@@ -189,54 +181,64 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
                               return SelectedImageThumbnail(
                                 image: _selectedImages[index],
                                 onRemove: () {
-                                  setState(() {
-                                    _selectedImages.removeAt(index);
-                                  });
+                                  setState(() => _selectedImages.removeAt(index));
                                 },
                               );
                             },
                           ),
                         ),
-                        const SizedBox(height: 20),
-
+                        SizedBox(height: size.height * 0.02),
                         buildTextField(_nameController, 'Product Name', Icons.shopping_bag),
-                        const SizedBox(height: 12),
-                        buildTextField(
-                          _descriptionController,
-                          'Description',
-                          Icons.description,
-                          maxLines: 3,
-                          optional: true,
+                        SizedBox(height: size.height * 0.015),
+                        buildTextField(_descriptionController, 'Description', Icons.description,
+                            maxLines: 3, optional: true),
+                        SizedBox(height: size.height * 0.02),
+                        buildTextField(_productLinkController, 'Product Link', Icons.link,
+                            hintText: 'https://example.com/product'),
+                        SizedBox(height: size.height * 0.02),
+                        DropdownButtonFormField<ClothingCategory>(
+                          value: _selectedCategory,
+                          decoration: const InputDecoration(
+                            labelText: 'Category',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.category),
+                          ),
+                          items: _categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Text(category.name.toUpperCase()),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategory = value!;
+                            });
+                          },
+                          validator: (value) => value == null ? 'Please select a category' : null,
                         ),
-                        const SizedBox(height: 16),
-                        buildTextField(
-                          _productLinkController,
-                          'Product Link',
-                          Icons.link,
-                          hintText: 'https://example.com/product',
-                        ),
-                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(padding),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 50,
+                  height: size.height * 0.06,
                   child: ElevatedButton(
                     onPressed: _saveClothingItem,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.pink,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Add Clothing Item',
-                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: size.width * 0.035,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -248,15 +250,11 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
     );
   }
 
-  Widget buildTextField(
-      TextEditingController controller,
-      String label,
-      IconData icon, {
-        TextInputType keyboardType = TextInputType.text,
+  Widget buildTextField(TextEditingController controller, String label, IconData icon,
+      {TextInputType keyboardType = TextInputType.text,
         String? hintText,
         int maxLines = 1,
-        bool optional = false,
-      }) {
+        bool optional = false}) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
@@ -277,16 +275,15 @@ class _AddClothingItemScreenState extends State<AddClothingItemScreen> {
   }
 }
 
-// --------------------------
-// Helper Widgets
-// --------------------------
-
 class DottedBorderContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
+      width: double.infinity,
+      height: size.height * 0.14,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey, style: BorderStyle.solid, width: 2),
+        border: Border.all(color: Colors.grey, width: 2),
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Center(
@@ -308,13 +305,14 @@ class AddMoreImageButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 100,
+        width: size.width * 0.25,
         margin: const EdgeInsets.only(left: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey, style: BorderStyle.solid, width: 2),
+          border: Border.all(color: Colors.grey, width: 2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: const Center(
@@ -322,7 +320,11 @@ class AddMoreImageButton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.add, size: 30),
-              Text('Add More\nImages', style: TextStyle(fontSize: 12), textAlign: TextAlign.center),
+              Text(
+                'Add More\nImages',
+                style: TextStyle(fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         ),
@@ -338,14 +340,15 @@ class SelectedImageThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
-      width: 100,
+      width: size.width * 0.25,
       margin: const EdgeInsets.only(right: 8),
       child: Stack(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.file(image, width: 100, height: 100, fit: BoxFit.cover),
+            child: Image.file(image, width: size.width * 0.25, height: size.width * 0.25, fit: BoxFit.cover),
           ),
           Positioned(
             top: 4,

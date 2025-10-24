@@ -124,13 +124,16 @@ class WeatherPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          const SizedBox(height: 50),
+          SizedBox(height: screenHeight * 0.06),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.03),
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -138,27 +141,39 @@ class WeatherPage extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Image.asset("assets/images/white_back_btn.png", height: 30, width: 30),
+                    icon: Image.asset("assets/images/white_back_btn.png",
+                        height: screenHeight * 0.03, width: screenHeight * 0.03),
                   ),
                 ),
-                const Text('Current Weather', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text('Current Weather',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: screenWidth * 0.05,
+                        fontWeight: FontWeight.bold)),
               ],
             ),
           ),
           Expanded(
             child: Container(
               width: double.infinity,
-              margin: const EdgeInsets.only(top: 16),
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
+              margin: EdgeInsets.only(top: screenHeight * 0.02),
+              padding: EdgeInsets.all(screenWidth * 0.06),
+              decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.only(topRight: Radius.circular(28), topLeft: Radius.circular(28)),
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(screenWidth * 0.07),
+                  topLeft: Radius.circular(screenWidth * 0.07),
+                ),
               ),
               child: FutureBuilder<Map<String, dynamic>>(
                 future: getWeatherData(),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-                  if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    return const Center(child: CircularProgressIndicator());
+                  if (snapshot.hasError)
+                    return Center(
+                        child: Text('Error: ${snapshot.error}',
+                            style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.04)));
 
                   final weather = snapshot.data!;
                   final city = weather['city_name'] ?? 'Unknown';
@@ -170,103 +185,143 @@ class WeatherPage extends StatelessWidget {
                   final isDay = imagePath.contains('clear.png');
 
                   return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            if (isNight)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: Image.asset('assets/images/night.jpg', height: 120, width: 300, fit: BoxFit.cover),
-                              ),
-                            if (isDay)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(20),
-                                child: Image.asset('assets/images/day.jpg', height: 120, width: 300, fit: BoxFit.cover),
-                              ),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(20),
-                              child: Image.asset(imagePath, height: 100),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: Colors.pink[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Column(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
                             children: [
-                              Text(city, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 8),
-                              Text('${temp.toStringAsFixed(1)}°C', style: const TextStyle(fontSize: 20)),
-                              const SizedBox(height: 8),
-                              Text(description, style: const TextStyle(fontStyle: FontStyle.italic)),
-                              const SizedBox(height: 12),
-                              Text("Male: ${getClothingSuggestion(temp, 'male')}", textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, color: Colors.black87)),
-                              const SizedBox(height: 8),
-                              Text("Female: ${getClothingSuggestion(temp, 'female')}", textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, color: Colors.black87)),
-                              const SizedBox(height: 20),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () async {
-                                    final seasonOn = await isSeasonFilteringOn();
-                                    if (seasonOn) {
-                                      Navigator.push(context, MaterialPageRoute(builder: (_) => WeatherClothesScreen(temperature: temp)));
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          backgroundColor: Colors.black87,
-                                          content: RichText(
-                                            text: TextSpan(
-                                              children: [
-                                                const TextSpan(
-                                                  text: "Season-based filtering is OFF",
-                                                  style: TextStyle(color: Colors.white),
-                                                ),
-                                                const WidgetSpan(
-                                                  child: SizedBox(width: 30), // space between texts
-                                                ),
-                                                TextSpan(
-                                                  text: "Go to Settings",
-                                                  style: const TextStyle(
-                                                    color: Colors.pink,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                  recognizer: TapGestureRecognizer()
-                                                    ..onTap = () {
-                                                      Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(builder: (_) => SettingsScreen()),
-                                                      );
-                                                    },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          duration: const Duration(seconds: 3),
-                                        ),
-                                      );
-
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.pink,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              if (isNight)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                  child: Image.asset(
+                                    'assets/images/night.jpg',
+                                    height: screenHeight * 0.15,
+                                    width: screenWidth * 0.8,
+                                    fit: BoxFit.cover,
                                   ),
-                                  child: const Text('Explore Wardrobe', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                ),
+                              if (isDay)
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                  child: Image.asset(
+                                    'assets/images/day.jpg',
+                                    height: screenHeight * 0.15,
+                                    width: screenWidth * 0.8,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                child: Image.asset(
+                                  imagePath,
+                                  height: screenHeight * 0.12,
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          SizedBox(height: screenHeight * 0.015),
+                          Container(
+                            padding: EdgeInsets.all(screenWidth * 0.05),
+                            decoration: BoxDecoration(
+                              color: Colors.pink[100],
+                              borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(city,
+                                    style: TextStyle(
+                                        fontSize: screenWidth * 0.06,
+                                        fontWeight: FontWeight.bold)),
+                                SizedBox(height: screenHeight * 0.01),
+                                Text('${temp.toStringAsFixed(1)}°C',
+                                    style: TextStyle(fontSize: screenWidth * 0.05)),
+                                SizedBox(height: screenHeight * 0.01),
+                                Text(description,
+                                    style: TextStyle(
+                                        fontStyle: FontStyle.italic,
+                                        fontSize: screenWidth * 0.045)),
+                                SizedBox(height: screenHeight * 0.015),
+                                Text("Male: ${getClothingSuggestion(temp, 'male')}",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: screenWidth * 0.04, color: Colors.black87)),
+                                SizedBox(height: screenHeight * 0.01),
+                                Text("Female: ${getClothingSuggestion(temp, 'female')}",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontSize: screenWidth * 0.04, color: Colors.black87)),
+                                SizedBox(height: screenHeight * 0.02),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      final seasonOn = await isSeasonFilteringOn();
+                                      if (seasonOn) {
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (_) => WeatherClothesScreen(
+                                                    temperature: temp)));
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            backgroundColor: Colors.black87,
+                                            content: RichText(
+                                              text: TextSpan(
+                                                children: [
+                                                  const TextSpan(
+                                                    text: "Season-based filtering is OFF",
+                                                    style: TextStyle(color: Colors.white),
+                                                  ),
+                                                  const WidgetSpan(
+                                                    child: SizedBox(width: 10),
+                                                  ),
+                                                  TextSpan(
+                                                    text: "Go to Settings",
+                                                    style: TextStyle(
+                                                      color: Colors.pink,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: screenWidth * 0.04,
+                                                    ),
+                                                    recognizer: TapGestureRecognizer()
+                                                      ..onTap = () {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                              builder: (_) =>
+                                                                  SettingsScreen()),
+                                                        );
+                                                      },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            duration: const Duration(seconds: 3),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.pink,
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: screenHeight * 0.018),
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(screenWidth * 0.03)),
+                                    ),
+                                    child: Text('Explore Wardrobe',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: screenWidth * 0.045,
+                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   );
                 },

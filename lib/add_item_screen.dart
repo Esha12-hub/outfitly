@@ -33,7 +33,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   final picker = ImagePicker();
 
-  /// ✅ Check local media storage permission
   Future<bool> _checkMediaPermission() async {
     final prefs = await SharedPreferences.getInstance();
     final isMediaAllowed = prefs.getBool('mediaStorage') ?? true;
@@ -77,7 +76,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
     return true;
   }
 
-  /// ✅ Check local camera permission
   Future<bool> _checkCameraPermission() async {
     final prefs = await SharedPreferences.getInstance();
     final isCameraAllowed = prefs.getBool('cameraAccess') ?? true;
@@ -121,7 +119,6 @@ class _AddItemScreenState extends State<AddItemScreen> {
     return true;
   }
 
-  /// ✅ Show bottom sheet for image source
   Future<void> showImageSourceDialog() async {
     showModalBottomSheet(
       context: context,
@@ -384,6 +381,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -392,34 +392,29 @@ class _AddItemScreenState extends State<AddItemScreen> {
             Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
+                  padding: EdgeInsets.symmetric(horizontal: width * 0.04, vertical: height * 0.015),
                   child: Row(
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => WardrobeHomeScreen()),
-                            );
-                          },
-
-                          child: Image.asset(
-                            "assets/images/white_back_btn.png",
-                            height: 30,
-                            width: 30,
-                          ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => WardrobeHomeScreen()),
+                          );
+                        },
+                        child: Image.asset(
+                          "assets/images/white_back_btn.png",
+                          height: height * 0.04,
+                          width: height * 0.04,
                         ),
                       ),
-                      SizedBox(width: 10),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 50),
+                      SizedBox(width: width * 0.3),
+                      Expanded(
                         child: Text(
                           "Add Item",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: width * 0.05,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -430,8 +425,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 GestureDetector(
                   onTap: showImageSourceDialog,
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    height: 220,
+                    margin: EdgeInsets.symmetric(horizontal: width * 0.04),
+                    height: height * 0.3,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                       color: Colors.white,
@@ -444,14 +439,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
                         selectedImage!,
                         fit: BoxFit.cover,
                         width: double.infinity,
-                        height: 220,
+                        height: height * 0.3,
                       ),
                     )
                         : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
-                        SizedBox(height: 10),
+                        Icon(Icons.add_a_photo, size: width * 0.12, color: Colors.grey),
+                        SizedBox(height: height * 0.01),
                         Text("Tap to upload image", style: TextStyle(color: Colors.grey)),
                       ],
                     ),
@@ -460,11 +455,11 @@ class _AddItemScreenState extends State<AddItemScreen> {
               ],
             ),
             Positioned(
-              top: 250,
+              top: height * 0.33,
               left: 0,
               right: 0,
               bottom: 0,
-              child: _buildBottomForm(),
+              child: _buildBottomForm(width, height),
             ),
           ],
         ),
@@ -472,9 +467,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
     );
   }
 
-  Widget _buildBottomForm() {
+  Widget _buildBottomForm(double width, double height) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(width * 0.04),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
@@ -484,17 +479,17 @@ class _AddItemScreenState extends State<AddItemScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 12),
+            SizedBox(height: height * 0.015),
             TextField(
               controller: itemNameController,
               decoration: InputDecoration(labelText: "Item Name", border: OutlineInputBorder()),
             ),
-            SizedBox(height: 12),
+            SizedBox(height: height * 0.015),
             TextField(
               controller: fabricController,
               decoration: InputDecoration(labelText: "Fabric", border: OutlineInputBorder()),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: height * 0.02),
             sectionTitle("Select Category",
                 onAdd: () => showAddDialog('Category'), onDelete: () => showDeleteDialog('Category')),
             _buildGrid(categories, selectedCategory, (cat) => setState(() => selectedCategory = cat)),
@@ -506,14 +501,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
             sectionTitle("Select Occasion"),
             _buildGrid(occasions, selectedOccasion, (oc) => setState(() => selectedOccasion = oc)),
             sectionTitle("Select Color", onAdd: showColorPickerDialog, onDelete: showDeleteColorDialog),
-            SizedBox(height: 8),
+            SizedBox(height: height * 0.01),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(children: colors.map((c) => buildColorCircle(c)).toList()),
             ),
-            SizedBox(height: 24),
+            SizedBox(height: height * 0.03),
             _buildSaveButton(),
-            SizedBox(height: 100),
+            SizedBox(height: height * 0.12),
           ],
         ),
       ),

@@ -9,7 +9,7 @@ class ContentCard extends StatelessWidget {
   final String author;
   final String date;
   final Uint8List? imageBytes;
-  final Uint8List? authorImageBytes; // Author profile image
+  final Uint8List? authorImageBytes;
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
   final VoidCallback onView;
@@ -30,7 +30,14 @@ class ContentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.03,
+        vertical: screenHeight * 0.01,
+      ),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
@@ -41,43 +48,49 @@ class ContentCard extends StatelessWidget {
         children: [
           // Author and Date Section
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(screenWidth * 0.04),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 16,
+                  radius: screenWidth * 0.05,
                   backgroundColor: AppColors.primary,
                   backgroundImage: authorImageBytes != null
                       ? MemoryImage(authorImageBytes!)
                       : null,
                   child: authorImageBytes == null
-                      ? const Icon(Icons.person,
-                      color: AppColors.textWhite, size: 16)
+                      ? Icon(Icons.person,
+                      color: AppColors.textWhite,
+                      size: screenWidth * 0.05)
                       : null,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: screenWidth * 0.03),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(author, style: AppTextStyles.h4),
-                      Text(date, style: AppTextStyles.caption),
+                      Text(author,
+                          style: AppTextStyles.h4
+                              .copyWith(fontSize: screenWidth * 0.04)),
+                      Text(date,
+                          style: AppTextStyles.caption
+                              .copyWith(fontSize: screenWidth * 0.03)),
                     ],
                   ),
                 ),
                 Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: screenWidth * 0.03,
+                      vertical: screenHeight * 0.005),
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.cardBorder),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Review',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: screenWidth * 0.028,
                     ),
                   ),
                 ),
@@ -87,58 +100,53 @@ class ContentCard extends StatelessWidget {
 
           // Image Section
           Container(
-            height: 200,
+            height: screenHeight * 0.25,
             width: double.infinity,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Container(
-                color: Colors.grey[100],
-                child: imageBytes != null
-                    ? Image.memory(
-                  imageBytes!,
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                  height: 200,
-                )
-                    : Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBorder,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.7),
-                            ],
-                          ),
+              child: imageBytes != null
+                  ? Image.memory(
+                imageBytes!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: screenHeight * 0.25,
+              )
+                  : Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.7),
+                          ],
                         ),
                       ),
-                      Positioned(
-                        bottom: 16,
-                        left: 16,
-                        right: 16,
-                        child: Text(
-                          title,
-                          style: AppTextStyles.h4.copyWith(
-                            color: AppColors.textWhite,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                    ),
+                    Positioned(
+                      bottom: screenHeight * 0.015,
+                      left: screenWidth * 0.03,
+                      right: screenWidth * 0.03,
+                      child: Text(
+                        title,
+                        style: AppTextStyles.h4.copyWith(
+                          color: AppColors.textWhite,
+                          fontSize: screenWidth * 0.045,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -146,14 +154,16 @@ class ContentCard extends StatelessWidget {
 
           // Action Buttons
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(screenWidth * 0.04),
             child: Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: onAccept,
-                    icon: const Icon(Icons.check, size: 16),
-                    label: const Text('Accept'),
+                    icon: Icon(Icons.check, size: screenWidth * 0.045),
+                    label: Text('Accept',
+                        style:
+                        TextStyle(fontSize: screenWidth * 0.035)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.textWhite,
@@ -163,12 +173,14 @@ class ContentCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: screenWidth * 0.02),
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: onReject,
-                    icon: const Icon(Icons.close, size: 16),
-                    label: const Text('Reject'),
+                    icon: Icon(Icons.close, size: screenWidth * 0.045),
+                    label: Text('Reject',
+                        style:
+                        TextStyle(fontSize: screenWidth * 0.035)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
                       shape: RoundedRectangleBorder(
@@ -177,7 +189,7 @@ class ContentCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: screenWidth * 0.02),
                 Container(
                   decoration: BoxDecoration(
                     color: AppColors.cardBackground,
@@ -198,6 +210,8 @@ class ContentCard extends StatelessWidget {
                             authorImageBytes: authorImageBytes,
                             readTime: '2 min read',
                             imageBytes: imageBytes,
+                            articleId: '', // Pass real articleId if needed
+                            authorUid: '', // Pass real authorUid if needed
                             onBackPressed: () {
                               Navigator.pop(context);
                             },
@@ -205,10 +219,10 @@ class ContentCard extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.visibility,
                       color: AppColors.textSecondary,
-                      size: 20,
+                      size: screenWidth * 0.05,
                     ),
                   ),
                 ),

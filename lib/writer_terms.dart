@@ -34,6 +34,10 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final fontSize = screenWidth * 0.04; // Responsive text size
+
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -50,14 +54,17 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
           // Header
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: EdgeInsets.symmetric(
+                horizontal: screenWidth * 0.04,
+                vertical: screenHeight * 0.02,
+              ),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  const Text(
+                  Text(
                     "Writer Terms of Use",
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: fontSize + 2,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -66,7 +73,11 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
                     alignment: Alignment.centerLeft,
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                      child: Image.asset(
+                        "assets/images/white_back_btn.png",
+                        height: screenWidth * 0.07,
+                        width: screenWidth * 0.07,
+                      ),
                     ),
                   ),
                 ],
@@ -83,131 +94,123 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(screenWidth * 0.08),
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Welcome, Writer!",
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: fontSize + 2,
                           fontWeight: FontWeight.bold,
                           color: Colors.pink,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Text(
+                      SizedBox(height: screenHeight * 0.015),
+                      Text(
                         "By creating content on this platform, you agree to comply with these terms. "
                             "Please read carefully and ensure your content follows guidelines. "
                             "If you do not agree, do not continue using this writer account.",
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        style: TextStyle(
+                          fontSize: fontSize,
+                          color: Colors.black87,
+                          height: 1.5,
+                        ),
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: screenHeight * 0.02),
 
-                      const Text(
-                        "1. Content Ownership & Licensing",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      _sectionTitle("1. Content Ownership & Licensing", fontSize),
+                      _sectionText(
                         "All content you create remains your intellectual property, "
                             "but by submitting content here, you grant us the right to publish and distribute it.",
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        fontSize,
                       ),
-                      const SizedBox(height: 16),
 
-                      const Text(
-                        "2. Quality & Originality",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      _sectionTitle("2. Quality & Originality", fontSize),
+                      _sectionText(
                         "• Ensure your submissions are original and free from plagiarism.\n"
                             "• Avoid offensive, inappropriate, or illegal content.\n"
                             "• Follow the style and format guidelines provided in the writer dashboard.",
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        fontSize,
                       ),
-                      const SizedBox(height: 16),
 
-                      const Text(
-                        "3. Privacy & Data Handling",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      _sectionTitle("3. Privacy & Data Handling", fontSize),
+                      _sectionText(
                         "We handle your personal data responsibly. Minimal data is collected to manage your writer account and content contributions.",
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        fontSize,
                       ),
-                      const SizedBox(height: 16),
 
-                      const Text(
-                        "4. Termination",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      _sectionTitle("4. Termination", fontSize),
+                      _sectionText(
                         "Violation of these terms may lead to account suspension or termination.",
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        fontSize,
                       ),
-                      const SizedBox(height: 16),
 
-                      const Text(
-                        "5. Updates",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      _sectionTitle("5. Updates", fontSize),
+                      _sectionText(
                         "These terms may be updated periodically. Continuing to use your writer account implies acceptance of new terms.",
-                        style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.5),
+                        fontSize,
                       ),
-                      const SizedBox(height: 30),
 
-                      // Checkbox for Acceptance
+                      SizedBox(height: screenHeight * 0.03),
+
+                      // Checkbox
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Checkbox(
-                            value: _isAccepted,
-                            activeColor: Colors.pink,
-                            onChanged: (value) async {
-                              setState(() {
-                                _isAccepted = value ?? false;
-                              });
-                              await _saveAcceptanceStatus(_isAccepted);
-                            },
+                          SizedBox(
+                            width: screenWidth * 0.05,
+                            height: screenWidth * 0.05,
+                            child: Checkbox(
+                              value: _isAccepted,
+                              activeColor: Colors.pink,
+                              onChanged: (value) async {
+                                setState(() {
+                                  _isAccepted = value ?? false;
+                                });
+                                await _saveAcceptanceStatus(_isAccepted);
+                              },
+                            ),
                           ),
-                          const Expanded(
+                          SizedBox(width: screenWidth * 0.02),
+                          Expanded(
                             child: Text(
                               "I have read and agree to the Writer Terms of Use.",
-                              style: TextStyle(fontSize: 14, color: Colors.black87),
+                              style: TextStyle(
+                                fontSize: fontSize,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
+                      SizedBox(height: screenHeight * 0.02),
 
-                      // Continue Button
+                      // Button
                       Center(
                         child: ElevatedButton(
-                          onPressed: _isAccepted
-                              ? () {
-                            Navigator.pop(context);
-                          }
-                              : null,
+                          onPressed: _isAccepted ? () => Navigator.pop(context) : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _isAccepted ? Colors.pink : Colors.grey,
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: screenWidth * 0.1,
+                              vertical: screenHeight * 0.015,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          child: const Text(
+                          child: Text(
                             "Continue",
-                            style: TextStyle(fontSize: 16, color: Colors.white),
+                            style: TextStyle(
+                              fontSize: fontSize + 1,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: screenHeight * 0.02),
                     ],
                   ),
                 ),
@@ -215,6 +218,33 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text, double fontSize) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: fontSize + 1,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionText(String text, double fontSize) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: fontSize,
+          color: Colors.black87,
+          height: 1.5,
+        ),
       ),
     );
   }

@@ -37,20 +37,16 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
   Future<void> _checkAdminStatus() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final adminDoc = await FirebaseFirestore.instance
-          .collection('admins')
-          .doc(user.uid)
-          .get();
+      final adminDoc =
+      await FirebaseFirestore.instance.collection('admins').doc(user.uid).get();
 
       if (adminDoc.exists) {
         setState(() => isAdmin = true);
         return;
       }
 
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      final userDoc =
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
       if (userDoc.exists) {
         final data = userDoc.data()!;
@@ -109,16 +105,10 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: selectedCategory == null
-            ? const Text(
-          'Smart Shopping',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        )
-            : Text(
-          _getCategoryName(selectedCategory!),
+        title: Text(
+          selectedCategory == null
+              ? 'Smart Shopping'
+              : _getCategoryName(selectedCategory!),
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -139,7 +129,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
               if (_searchQuery.isNotEmpty) {
                 _searchQuery = '';
                 _searchController.clear();
-              } else if (selectedCategory != null) {
+              } else {
                 selectedCategory = null;
               }
             });
@@ -165,7 +155,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
         child: Padding(
           padding: const EdgeInsets.only(top: 10),
           child: _searchQuery.isNotEmpty
-              ? _buildGlobalSearchResults()
+              ? _buildClothingItemsGrid()
               : selectedCategory == null
               ? _buildCategoryGrid()
               : _buildClothingItemsGrid(),
@@ -237,7 +227,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
 
   Widget _buildCategoryCard(ClothingCategory category) {
     return GestureDetector(
-      onTap: () => setState(() => selectedCategory = category.id),
+      onTap: () => setState(() => selectedCategory = category.id.toLowerCase()),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -260,7 +250,8 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
                       color: Colors.grey[300],
-                      child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                      child:
+                      const Icon(Icons.image, size: 50, color: Colors.grey),
                     );
                   },
                 ),
@@ -319,29 +310,37 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
         Padding(padding: const EdgeInsets.all(16), child: _buildSearchField()),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('clothing_items')
-                .snapshots(),
+            stream:
+            FirebaseFirestore.instance.collection('clothing_items').snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
 
               if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return _noItemsWidget('No items found in this category');
+                return _noItemsWidget('No items found');
               }
 
               final items = snapshot.data!.docs
-                  .map((doc) => ClothingItem.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+                  .map((doc) =>
+                  ClothingItem.fromMap(doc.data() as Map<String, dynamic>, doc.id))
                   .where((item) {
                 final matchesSearch = _searchQuery.isEmpty ||
                     item.name.toLowerCase().contains(_searchQuery) ||
                     item.description.toLowerCase().contains(_searchQuery);
-                return matchesSearch;
+
+                final matchesCategory = selectedCategory == null ||
+                    (item.categoryId.toLowerCase() ==
+                        selectedCategory!.toLowerCase());
+
+                return matchesSearch && matchesCategory;
               }).toList();
 
-
-              if (items.isEmpty) return _noItemsWidget('No items found in this category');
+              if (items.isEmpty) {
+                return _noItemsWidget(selectedCategory != null
+                    ? 'No items found in this category'
+                    : 'No products found for "$_searchQuery"');
+              }
 
               return Padding(
                 padding: const EdgeInsets.all(16),
@@ -353,54 +352,14 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                     childAspectRatio: 0.7,
                   ),
                   itemCount: items.length,
-                  itemBuilder: (context, index) => _buildClothingItemCard(items[index]),
+                  itemBuilder: (context, index) =>
+                      _buildClothingItemCard(items[index]),
                 ),
               );
             },
           ),
         ),
       ],
-    );
-  }
-
-  // ---------------- GLOBAL SEARCH ----------------
-  Widget _buildGlobalSearchResults() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('clothing_items').snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text("No products found."));
-        }
-
-        final items = snapshot.data!.docs
-            .map((doc) => ClothingItem.fromMap(doc.data() as Map<String, dynamic>, doc.id))
-            .where((item) =>
-        item.name.toLowerCase().contains(_searchQuery) ||
-            item.description.toLowerCase().contains(_searchQuery))
-            .toList();
-
-        if (items.isEmpty) {
-          return _noItemsWidget('No products found for "$_searchQuery"');
-        }
-
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.7,
-            ),
-            itemCount: items.length,
-            itemBuilder: (context, index) => _buildClothingItemCard(items[index]),
-          ),
-        );
-      },
     );
   }
 
@@ -460,7 +419,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
   String _getCategoryName(String categoryId) {
     final categories = ClothingCategory.getDefaultCategories();
     final category = categories.firstWhere(
-          (cat) => cat.id == categoryId,
+          (cat) => cat.id.toLowerCase() == categoryId.toLowerCase(),
       orElse: () => ClothingCategory(
         id: categoryId,
         name: categoryId.toUpperCase(),
@@ -506,7 +465,8 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                           ? _buildImageWidget(item.imageUrls.first)
                           : Container(
                         color: Colors.grey[300],
-                        child: const Icon(Icons.image, size: 40, color: Colors.grey),
+                        child: const Icon(Icons.image,
+                            size: 40, color: Colors.grey),
                       ),
                     ),
                   ),
@@ -514,19 +474,14 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                     flex: 2,
                     child: Padding(
                       padding: const EdgeInsets.all(8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.name,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                      child: Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ),
@@ -546,7 +501,8 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                     color: Colors.red.withOpacity(0.8),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.delete, color: Colors.white, size: 16),
+                  child:
+                  const Icon(Icons.delete, color: Colors.white, size: 16),
                 ),
               ),
             ),

@@ -6,29 +6,34 @@ class SmartAssistantWelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final paddingHorizontal = size.width * 0.06; // 6% horizontal padding
+    final imageHeight = size.height * 0.4; // 40% of screen height
+
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6FC),
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 40),
+            SizedBox(height: size.height * 0.15), // 5% top spacing
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
               child: Image.asset(
                 'assets/images/ai_welcome.png',
+                height: imageHeight,
                 fit: BoxFit.contain,
               ),
             ),
-            const Spacer(),
+            Spacer(),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.pink,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: size.height * 0.02), // responsive vertical padding
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -41,15 +46,15 @@ class SmartAssistantWelcomeScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       'Start Conversation',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      style: TextStyle(fontSize: size.width * 0.042, color: Colors.white), // responsive font
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: size.height * 0.015),
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -57,15 +62,15 @@ class SmartAssistantWelcomeScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.pop(context);
                     },
-                    child: const Text(
+                    child: Text(
                       'Go Back',
-                      style: TextStyle(fontSize: 16, color: Colors.black),
+                      style: TextStyle(fontSize: size.width * 0.042, color: Colors.black),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            SizedBox(height: size.height * 0.04),
           ],
         ),
       ),

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
+import '../../main.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../screens/dashboard_screen.dart';
@@ -40,18 +41,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final password = _passwordController.text.trim();
 
     try {
-      // Step 1: Sign in with Firebase Auth
       final credential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
 
       final uid = credential.user!.uid;
 
-      // Step 2: Check if this user is an admin in Firestore
       final adminDoc =
       await FirebaseFirestore.instance.collection('admins').doc(uid).get();
 
       if (!adminDoc.exists) {
-        // Not an admin — sign out and show error
         await FirebaseAuth.instance.signOut();
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -60,7 +58,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         return;
       }
 
-      // Step 3: Admin verified — navigate to dashboard
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -85,56 +82,73 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final padding = width * 0.06;
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(padding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyApp()),
+                      );
+                    },
                     child: Image.asset(
                       "assets/images/back btn.png",
-                      height: 30,
-                      width: 30,
+                      height: width * 0.07,
+                      width: width * 0.07,
                     ),
                   ),
-                  const Expanded(
+
+                  Expanded(
                     child: Center(
-                      child: Text('Admin Login', style: AppTextStyles.h1),
+                      child: Text(
+                        'Admin Login',
+                        style: AppTextStyles.h1.copyWith(
+                          fontSize: width * 0.06,
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  SizedBox(width: width * 0.12),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: width * 0.06),
               Center(
                 child: Container(
-                  width: 100,
-                  height: 100,
+                  width: width * 0.25,
+                  height: width * 0.25,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.primary.withOpacity(0.1),
                   ),
-                  child: const Icon(Icons.person,
-                      size: 50, color: AppColors.primary),
+                  child: Icon(Icons.person,
+                      size: width * 0.125, color: AppColors.primary),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Center(
-                  child: Text('Welcome Back!', style: AppTextStyles.h2)),
-              const SizedBox(height: 24),
+              SizedBox(height: width * 0.05),
+              Center(
+                  child: Text(
+                    'Welcome Back!',
+                    style: AppTextStyles.h2.copyWith(fontSize: width * 0.05),
+                  )),
+              SizedBox(height: width * 0.06),
               CustomTextField(
                 controller: _emailController,
                 label: 'Email Address',
                 hint: 'Enter your email',
                 keyboardType: TextInputType.emailAddress,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: width * 0.04),
               CustomTextField(
                 controller: _passwordController,
                 label: 'Password',
@@ -147,11 +161,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                         ? Icons.visibility_off
                         : Icons.visibility,
                     color: AppColors.textSecondary,
-                    size: 20,
+                    size: width * 0.05,
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: width * 0.06),
               SizedBox(
                 width: double.infinity,
                 child: CustomButton(

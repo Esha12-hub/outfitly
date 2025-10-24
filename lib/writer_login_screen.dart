@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'writer_dashboard_screen.dart';
 import 'user_register_screen.dart';
+import 'writer_forgot_password.dart';
+import 'continue_as_screen.dart';
 
 class WriterLoginScreen extends StatefulWidget {
   const WriterLoginScreen({Key? key}) : super(key: key);
@@ -149,13 +151,19 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
-                onTap: () => Navigator.pop(context),
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => ContinueAsScreen()),
+                  );
+                },
                 child: SizedBox(
                   height: spacingV * 1.5,
                   width: spacingV * 1.5,
                   child: Image.asset("assets/images/back btn.png"),
                 ),
               ),
+
               SizedBox(height: spacingV),
               Center(
                 child: CircleAvatar(
@@ -186,7 +194,9 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => WriterForgotPasswordScreen()));
+                  },
                   child: Text(
                     'Forget Password?',
                     style: TextStyle(color: Colors.pink, fontSize: inputFontSize),

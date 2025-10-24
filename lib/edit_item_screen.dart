@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +38,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill data
     itemNameController.text = widget.itemData['item_name'] ?? '';
     fabricController.text = widget.itemData['fabric'] ?? '';
     selectedCategory = widget.itemData['category'] ?? 'Top';
@@ -47,13 +45,11 @@ class _EditItemScreenState extends State<EditItemScreen> {
     selectedSeason = widget.itemData['season'] ?? 'Summer';
     selectedOccasion = widget.itemData['occasion'] ?? 'Casual';
 
-    // Load existing color(s)
     if (widget.itemData['colors'] != null) {
       List<dynamic> savedColors = widget.itemData['colors'];
       colors = savedColors.map((c) => Color(c)).toList();
       if (colors.isNotEmpty) selectedColor = colors.first;
     } else if (widget.itemData['color'] != null) {
-      // fallback if only one color was saved before
       selectedColor = Color(widget.itemData['color']);
       colors.add(selectedColor!);
     }
@@ -73,7 +69,8 @@ class _EditItemScreenState extends State<EditItemScreen> {
 
       String? base64Image;
       if (selectedImage != null) {
-        base64Image = await selectedImage!.readAsBytes().then((bytes) => base64Encode(bytes));
+        base64Image =
+        await selectedImage!.readAsBytes().then((bytes) => base64Encode(bytes));
       }
 
       await FirebaseFirestore.instance
@@ -205,162 +202,202 @@ class _EditItemScreenState extends State<EditItemScreen> {
   @override
   Widget build(BuildContext context) {
     final existingImageBase64 = widget.itemData['image_base64'];
+    final size = MediaQuery.of(context).size;
+    final textScale = size.width < 400 ? 0.9 : 1.0;
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Image.asset("assets/images/white_back_btn.png", height: 30, width: 30),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text("Edit Item",
-                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            double horizontalPadding = constraints.maxWidth * 0.04;
+            double fieldSpacing = constraints.maxHeight * 0.015;
 
-            // Image Picker
-            GestureDetector(
-              onTap: pickImage,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                height: 220,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  color: Colors.white,
-                ),
-                alignment: Alignment.center,
-                child: selectedImage != null
-                    ? ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Image.file(selectedImage!, fit: BoxFit.cover, width: double.infinity, height: 220),
-                )
-                    : (existingImageBase64 != null
-                    ? ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                  child: Image.memory(
-                    base64Decode(existingImageBase64.split(',').last),
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: 220,
-                  ),
-                )
-                    : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
-                    SizedBox(height: 10),
-                    Text("Tap to upload image", style: TextStyle(color: Colors.grey)),
-                  ],
-                )),
-              ),
-            ),
-
-            // Form
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
+            return Column(
+              children: [
+                // Header
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: horizontalPadding, vertical: constraints.maxHeight * 0.02),
+                  child: Row(
                     children: [
-                      TextField(
-                        controller: itemNameController,
-                        decoration: const InputDecoration(labelText: "Item Name", border: OutlineInputBorder()),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Image.asset("assets/images/white_back_btn.png",
+                            height: 30, width: 30),
                       ),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: fabricController,
-                        decoration: const InputDecoration(labelText: "Fabric", border: OutlineInputBorder()),
-                      ),
-                      const SizedBox(height: 16),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedCategory,
-                        items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                        onChanged: (val) => setState(() => selectedCategory = val!),
-                        decoration: const InputDecoration(labelText: "Category", border: OutlineInputBorder()),
-                      ),
-                      const SizedBox(height: 12),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedSubcategory,
-                        items: subcategories.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                        onChanged: (val) => setState(() => selectedSubcategory = val!),
-                        decoration: const InputDecoration(labelText: "Subcategory", border: OutlineInputBorder()),
-                      ),
-                      const SizedBox(height: 12),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedSeason,
-                        items: seasons.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                        onChanged: (val) => setState(() => selectedSeason = val!),
-                        decoration: const InputDecoration(labelText: "Season", border: OutlineInputBorder()),
-                      ),
-                      const SizedBox(height: 12),
-
-                      DropdownButtonFormField<String>(
-                        value: selectedOccasion,
-                        items: occasions.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
-                        onChanged: (val) => setState(() => selectedOccasion = val!),
-                        decoration: const InputDecoration(labelText: "Occasion", border: OutlineInputBorder()),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Colors section (multiple like Add Item)
-                      sectionTitle("Select Color", onAdd: showColorPickerDialog, onDelete: showDeleteColorDialog),
-                      const SizedBox(height: 8),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: colors.map((c) => buildColorCircle(c)).toList(),
-                      ),
-                    ),
-                      const SizedBox(height: 24),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: updateItem,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.pink,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text("Update", style: TextStyle(color: Colors.white)),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.pop(context),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.grey,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: const Text("Cancel", style: TextStyle(color: Colors.white)),
-                            ),
-                          ),
-                        ],
+                      SizedBox(width: constraints.maxWidth * 0.04),
+                      Text(
+                        "Edit Item",
+                        textScaleFactor: textScale,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
-          ],
+
+                // Image Picker
+                GestureDetector(
+                  onTap: pickImage,
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    height: constraints.maxHeight * 0.25,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                      color: Colors.white,
+                    ),
+                    alignment: Alignment.center,
+                    child: selectedImage != null
+                        ? ClipRRect(
+                      borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                      child: Image.file(selectedImage!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: constraints.maxHeight * 0.25),
+                    )
+                        : (existingImageBase64 != null
+                        ? ClipRRect(
+                      borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                      child: Image.memory(
+                        base64Decode(existingImageBase64.split(',').last),
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: constraints.maxHeight * 0.25,
+                      ),
+                    )
+                        : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.add_a_photo, size: 50, color: Colors.grey),
+                        SizedBox(height: 10),
+                        Text("Tap to upload image",
+                            style: TextStyle(color: Colors.grey)),
+                      ],
+                    )),
+                  ),
+                ),
+
+                // Form
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.all(horizontalPadding),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: itemNameController,
+                            decoration: const InputDecoration(
+                                labelText: "Item Name", border: OutlineInputBorder()),
+                          ),
+                          SizedBox(height: fieldSpacing),
+                          TextField(
+                            controller: fabricController,
+                            decoration: const InputDecoration(
+                                labelText: "Fabric", border: OutlineInputBorder()),
+                          ),
+                          SizedBox(height: fieldSpacing),
+
+                          DropdownButtonFormField<String>(
+                            value: selectedCategory,
+                            items: categories
+                                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                .toList(),
+                            onChanged: (val) => setState(() => selectedCategory = val!),
+                            decoration: const InputDecoration(
+                                labelText: "Category", border: OutlineInputBorder()),
+                          ),
+                          SizedBox(height: fieldSpacing),
+
+                          DropdownButtonFormField<String>(
+                            value: selectedSubcategory,
+                            items: subcategories
+                                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                .toList(),
+                            onChanged: (val) => setState(() => selectedSubcategory = val!),
+                            decoration: const InputDecoration(
+                                labelText: "Subcategory", border: OutlineInputBorder()),
+                          ),
+                          SizedBox(height: fieldSpacing),
+
+                          DropdownButtonFormField<String>(
+                            value: selectedSeason,
+                            items: seasons
+                                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                .toList(),
+                            onChanged: (val) => setState(() => selectedSeason = val!),
+                            decoration: const InputDecoration(
+                                labelText: "Season", border: OutlineInputBorder()),
+                          ),
+                          SizedBox(height: fieldSpacing),
+
+                          DropdownButtonFormField<String>(
+                            value: selectedOccasion,
+                            items: occasions
+                                .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                                .toList(),
+                            onChanged: (val) => setState(() => selectedOccasion = val!),
+                            decoration: const InputDecoration(
+                                labelText: "Occasion", border: OutlineInputBorder()),
+                          ),
+                          SizedBox(height: fieldSpacing),
+
+                          sectionTitle("Select Color",
+                              onAdd: showColorPickerDialog,
+                              onDelete: showDeleteColorDialog),
+                          SizedBox(height: fieldSpacing * 0.5),
+
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: colors.map((c) => buildColorCircle(c)).toList(),
+                            ),
+                          ),
+                          SizedBox(height: fieldSpacing * 1.5),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: updateItem,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.pink,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  child: const Text("Update",
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                              ),
+                              SizedBox(width: constraints.maxWidth * 0.03),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.grey,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  child: const Text("Cancel",
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

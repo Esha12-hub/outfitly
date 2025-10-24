@@ -6,6 +6,11 @@ class FabricCareAdvisorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final textScale = size.width < 380 ? 0.9 : 1.0;
+    final padding = size.width * 0.04;
+    final isTablet = size.width > 600;
+
     final List<Map<String, String>> fabrics = [
       {"name": "SILK", "id": "silk_doc_id", "image": "assets/images/silk.png"},
       {"name": "COTTON", "id": "cotton_doc_id", "image": "assets/images/cotton.png"},
@@ -28,31 +33,37 @@ class FabricCareAdvisorScreen extends StatelessWidget {
           children: [
             // Custom AppBar
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 28, 16, 14),
+              padding: EdgeInsets.fromLTRB(
+                padding,
+                size.height * 0.02,
+                padding,
+                size.height * 0.018,
+              ),
               color: Colors.black,
               child: Row(
                 children: [
                   IconButton(
-                    icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                    icon: Image.asset('assets/images/white_back_btn.png',
+                        width: isTablet ? 36 : 28, height: isTablet ? 36 : 28),
                     onPressed: () => Navigator.pop(context),
                   ),
                   Expanded(
                     child: Center(
                       child: Text(
                         "Fabric Care Advisor",
+                        textScaleFactor: textScale,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
+                          fontSize: isTablet ? 26 : 20,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48), // To balance the space of the back button
+                  SizedBox(width: isTablet ? 60 : 48), // balance back button space
                 ],
               ),
-
             ),
 
             // White rounded section
@@ -62,14 +73,19 @@ class FabricCareAdvisorScreen extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                padding: EdgeInsets.symmetric(
+                    horizontal: padding, vertical: size.height * 0.02),
                 child: GridView.builder(
                   itemCount: fabrics.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.8,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: isTablet
+                        ? 3
+                        : (size.width > 450
+                        ? 2
+                        : 2), // more columns on large screens
+                    crossAxisSpacing: size.width * 0.04,
+                    mainAxisSpacing: size.height * 0.02,
+                    childAspectRatio: isTablet ? 0.9 : 0.8,
                   ),
                   itemBuilder: (context, index) {
                     final fabric = fabrics[index];
@@ -101,11 +117,14 @@ class FabricCareAdvisorScreen extends StatelessWidget {
                         child: Column(
                           children: [
                             Container(
-                              height: 120,
+                              height: isTablet
+                                  ? size.height * 0.22
+                                  : size.height * 0.18,
                               decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(12)),
                                 image: DecorationImage(
-                                  image: AssetImage(fabric['image']!), // ✅ Dynamic image
+                                  image: AssetImage(fabric['image']!),
                                   fit: BoxFit.cover,
                                 ),
                               ),
@@ -115,10 +134,11 @@ class FabricCareAdvisorScreen extends StatelessWidget {
                                 child: Text(
                                   fabric['name']!,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  textScaleFactor: textScale,
+                                  style: TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 16,
+                                    fontSize: isTablet ? 20 : 16,
                                     letterSpacing: 0.5,
                                   ),
                                 ),

@@ -5,15 +5,14 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../widgets/metric_card.dart';
 import '../widgets/pending_approval_card.dart';
-import '../widgets/ai_usage_chart.dart';
 import 'active_users_screen.dart';
 import 'notifications_screen.dart';
 import 'user_profile_screen.dart';
 import '../screens/content_approval_screen.dart';
 import '../screens/analytics_screen.dart';
-import '../screens/settings_screen.dart';
 import '../../smart_shopping_screen.dart';
-import '../screens/admin_login_screen.dart'; // import admin login screen
+import '../screens/admin_login_screen.dart';
+import 'user_profile_details_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -32,13 +31,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const AnalyticsScreen(),
     const ActiveUsersScreen(),
     const SmartShoppingScreen(),
-    const SettingsScreen(),
+    const UserProfileDetailsScreen(),
   ];
 
   // Intercept back button
-// inside _DashboardScreenState
-
-// Intercept back button
   Future<bool> _onWillPop() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -66,7 +62,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(color: Colors.red),
             ),
             onPressed: () {
-              Navigator.pop(context, true); // close dialog
+              Navigator.pop(context, true);
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
@@ -116,7 +112,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     );
   }
-
 }
 
 class _DashboardHomeContent extends StatefulWidget {
@@ -125,6 +120,7 @@ class _DashboardHomeContent extends StatefulWidget {
 }
 
 class _DashboardHomeContentState extends State<_DashboardHomeContent> {
+  // Get total wardrobe items for users with role "User"
   Future<int> _getWardrobeItemCountForUsersWithRoleUser() async {
     final usersSnap = await FirebaseFirestore.instance
         .collection('users')
@@ -137,6 +133,21 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
       totalItems += wardrobeSnap.docs.length;
     }
     return totalItems;
+  }
+
+  // Get total pending items across all users
+  Future<int> _getPendingItemsCount() async {
+    int totalPending = 0;
+    final usersSnap = await FirebaseFirestore.instance.collection('users').get();
+
+    for (var userDoc in usersSnap.docs) {
+      final wardrobeSnap = await userDoc.reference
+          .collection('articles')
+          .where('status', isEqualTo: 'pending') // Make sure it matches your Firestore value
+          .get();
+      totalPending += wardrobeSnap.docs.length;
+    }
+    return totalPending;
   }
 
   @override
@@ -159,7 +170,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                         role: 'Administrator',
                         status: 'Active',
                         avatarColor: AppColors.primary,
-                        avatarIcon: Icons.admin_panel_settings,
+                        avatarIcon: Icons.admin_panel_settings, uid: '',
                       ),
                     ),
                   );
@@ -241,7 +252,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                         },
                       ),
 
-                      // Wardrobe items count for only users with role "user"
+                      // Wardrobe items count
                       FutureBuilder<int>(
                         future: _getWardrobeItemCountForUsersWithRoleUser(),
                         builder: (context, snapshot) {
@@ -264,25 +275,40 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                       ),
 
                       const MetricCard(
-                          title: 'Active Today',
-                          value: '1,046',
-                          icon: Icons.trending_up,
-                          color: AppColors.success),
-                      const MetricCard(
-                          title: 'AI Accuracy',
-                          value: '98.5%',
-                          icon: Icons.psychology,
-                          color: AppColors.warning),
+                        title: 'Active Today',
+                        value: '1,046',
+                        icon: Icons.trending_up,
+                        color: AppColors.success,
+                      ),
+
+                      // Pending Approvals count
+                      FutureBuilder<int>(
+                        future: _getPendingItemsCount(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const MetricCard(
+                              title: 'Pending Approvals',
+                              value: 'Loading...',
+                              icon: Icons.pending_actions,
+                              color: AppColors.warning,
+                            );
+                          }
+
+                          return MetricCard(
+                            title: 'Pending Approvals',
+                            value: snapshot.data.toString(),
+                            icon: Icons.pending_actions,
+                            color: AppColors.warning,
+                          );
+                        },
+                      ),
                     ],
                   ),
+
                   const SizedBox(height: 24),
                   const Text('Pending Approvals', style: AppTextStyles.h3),
                   const SizedBox(height: 12),
                   const PendingApprovalCard(),
-                  const SizedBox(height: 24),
-                  const Text('AI Usage Breakdown', style: AppTextStyles.h3),
-                  const SizedBox(height: 12),
-                  const AiUsageChart(),
                   const SizedBox(height: 24),
                   const Text('Recent Activity', style: AppTextStyles.h3),
                   const SizedBox(height: 12),
