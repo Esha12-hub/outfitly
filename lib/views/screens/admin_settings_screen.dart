@@ -66,7 +66,7 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                           'Settings',
                           textAlign: TextAlign.center,
                           style: AppTextStyles.whiteHeading.copyWith(
-                            fontSize: screenHeight * 0.03,
+                            fontSize: screenHeight * 0.025,
                           ),
                         ),
                       ),

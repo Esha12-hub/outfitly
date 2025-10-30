@@ -18,6 +18,7 @@ import 'fashion_content_screen.dart';
 import 'smart_assistant_welcome.dart';
 import 'user_login_screen.dart';
 import 'smart_shopping_screen.dart';
+import 'virtual_try.dart';
 
 class WardrobeHomeScreen extends StatefulWidget {
   const WardrobeHomeScreen({super.key});
@@ -340,6 +341,11 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                         context, MaterialPageRoute(builder: (_) => AddItemScreen()))),
                 SizedBox(width: width * 0.03),
                 categoryCard("AI Outfit Suggestions", 'assets/images/outfit.png'),
+                SizedBox(width: width * 0.03),
+                categoryCard("Virtual Try-On", 'assets/images/virtual try-on.png',
+                    onTap: () => Navigator.push(
+                        context, MaterialPageRoute(builder: (_) => const VirtualTryOnScreen()))
+                ),
                 SizedBox(width: width * 0.03),
                 categoryCard("Weather based Suggestions", 'assets/images/weather.png',
                     onTap: () => Navigator.push(

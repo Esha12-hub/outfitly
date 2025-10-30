@@ -113,6 +113,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: 20
           ),
         ),
         backgroundColor: Colors.black,

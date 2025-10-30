@@ -40,7 +40,7 @@ class AppVersionScreen extends StatelessWidget {
                       child: Text(
                         'App Version',
                         style: AppTextStyles.whiteHeading.copyWith(
-                          fontSize: screenHeight * 0.03,
+                          fontSize: screenHeight * 0.025,
                         ),
                       ),
                     ),
