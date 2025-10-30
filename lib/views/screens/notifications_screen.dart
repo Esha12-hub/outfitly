@@ -52,7 +52,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       fontSize: 22,
                     ),
                   ),
-                  const Icon(Icons.tune, color: Colors.white, size: 28),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _previousDocs = null;
+                      });
+                    },
+                    child: const Icon(Icons.refresh, color: Colors.white, size: 28),
+                  ),
                 ],
               ),
             ),

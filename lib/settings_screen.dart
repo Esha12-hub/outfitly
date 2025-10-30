@@ -9,6 +9,8 @@ import 'about_us_screen.dart';
 import 'user_profile_screen.dart';
 import 'smart_assistant_welcome.dart';
 import 'terms.dart';
+import 'writer_login_screen.dart';
+import 'user_login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   @override
@@ -75,8 +77,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final h = size.height / 812; // base iPhone X height
-    final w = size.width / 375; // base width
+    final h = size.height / 812;
+    final w = size.width / 375;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -86,7 +88,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Positioned.fill(child: Container(color: Colors.black)),
 
-              // Main content
               Positioned(
                 top: 140 * h,
                 left: 0,
@@ -105,10 +106,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Search bar
                         Container(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 16 * w, vertical: 4 * h),
+                          padding: EdgeInsets.symmetric(horizontal: 16 * w, vertical: 4 * h),
                           decoration: BoxDecoration(
                             color: Colors.grey[200],
                             borderRadius: BorderRadius.circular(20 * w),
@@ -123,7 +122,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         SizedBox(height: 20 * h),
 
-                        // Profile Tile
                         InkWell(
                           onTap: () {
                             Navigator.push(
@@ -183,9 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           );
                         }),
                         _iconTile(Icons.delete_forever, "Delete Profile", w,
-                            onTap: () {
-                              _showDeleteConfirmationDialog();
-                            }),
+                            onTap: _confirmDeleteProfile),
 
                         SizedBox(height: 24 * h),
 
@@ -195,7 +191,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               setState(() => seasonBasedFiltering = val);
                               _updatePreference('seasonBasedFiltering', val);
                             }, w),
-
                         SizedBox(height: 24 * h),
 
                         _sectionTitle("NOTIFICATIONS", w),
@@ -204,27 +199,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               setState(() => outfitSuggestions = val);
                               _updatePreference('outfitSuggestions', val);
                             }, w),
-                        _toggleTile(
-                            Icons.shopping_bag,
-                            "Shopping Recommendations",
+                        _toggleTile(Icons.shopping_bag, "Shopping Recommendations",
                             shoppingRecommendations, (val) {
-                          setState(() => shoppingRecommendations = val);
-                          _updatePreference('shoppingRecommendations', val);
-                        }, w),
-
+                              setState(() => shoppingRecommendations = val);
+                              _updatePreference('shoppingRecommendations', val);
+                            }, w),
                         SizedBox(height: 24 * h),
 
                         _sectionTitle("PRIVACY AND SECURITY", w),
-
-                        _iconTile(Icons.shield, "Manage Permissions", w,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => ManagePermissionsScreen()),
-                              );
-                            }),
-
+                        _iconTile(Icons.shield, "Manage Permissions", w, onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ManagePermissionsScreen()),
+                          );
+                        }),
                         SizedBox(height: 24 * h),
 
                         _sectionTitle("ABOUT APP", w),
@@ -252,13 +241,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     const SmartAssistantWelcomeScreen()),
                               );
                             }),
+
+                        SizedBox(height: 24 * h),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final shouldLogout = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                title: const Text(
+                                  "Logout",
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                content: const Text("Do you want to logout?"),
+                                actions: [
+                                  TextButton(
+                                    child: const Text(
+                                      "No",
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                    onPressed: () => Navigator.pop(context, false),
+                                  ),
+                                  TextButton(
+                                    child: const Text(
+                                      "Yes",
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                    onPressed: () => Navigator.pop(context, true),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (shouldLogout == true) {
+                              await FirebaseAuth.instance.signOut();
+                              if (context.mounted) {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => const UserLoginScreen()),
+                                      (route) => false,
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.logout, color: Colors.white),
+                          label: const Text(
+                            "Logout",
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.pink,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            minimumSize: const Size(double.infinity, 50),
+                          ),
+                        ),
+
+                        SizedBox(height: 16 * h),
                       ],
                     ),
                   ),
                 ),
               ),
 
-              // Top Bar
               Positioned(
                 top: 60 * h,
                 left: 0,
@@ -356,56 +407,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _showDeleteConfirmationDialog() {
-    showDialog(
+  // NEW: Modern Delete Profile Dialog
+  Future<void> _confirmDeleteProfile() async {
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: const Text(
-            "Confirm Deletion",
-            style: TextStyle(fontWeight: FontWeight.w500),
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 60, color: Colors.pink),
+              const SizedBox(height: 15),
+              const Text(
+                "Delete Profile?",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Are you sure you want to permanently delete your account? This action cannot be undone.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+              ),
+              const SizedBox(height: 25),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade300,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Delete",
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-          content: const Text(
-            "Are you sure you want to delete your account? This action cannot be undone.",
-          ),
-          actions: [
-            OutlinedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.black26),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-              child: const Text(
-                "No",
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink,
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _deleteAccount();
-              },
-              child: const Text(
-                "Yes",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          ],
-        );
-      },
+        ),
+      ),
     );
-  }
 
-  void _deleteAccount() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Account deletion not implemented yet")),
-    );
+    if (confirm == true) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).delete();
+          await user.delete();
+
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const WriterLoginScreen()),
+            );
+          }
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error deleting profile: $e")),
+        );
+      }
+    }
   }
 }
+

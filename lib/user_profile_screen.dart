@@ -11,6 +11,7 @@ import 'outfit_planner.dart';
 import 'color_palette_screen.dart';
 import 'fabric_care.dart';
 import 'user_dashboard.dart';
+import 'feedback_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -262,7 +263,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         }),
 
                     const _SectionTitle(title: 'SOCIAL & COLLABORATIVE'),
-                    _preferenceOption("Style Share", fontScale),
+                    _preferenceOption("Feedback", fontScale, onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const FeedbackScreen()),
+                      );
+                    }),
+
                     _preferenceOption("Fashion Articles/Videos", fontScale,
                         onTap: () {
                           Navigator.push(

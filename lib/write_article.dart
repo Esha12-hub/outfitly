@@ -16,12 +16,21 @@ class WriteArticleScreen extends StatefulWidget {
 class _WriteArticleScreenState extends State<WriteArticleScreen> {
   String _selectedCategory = 'Styling Tips';
   String? _selectedMediaBase64;
-  bool _isVideo = false;
+
+  bool _isDraftSaving = false;
+  bool _isSubmitting = false;
 
   final _titleController = TextEditingController();
   final _tagController = TextEditingController();
   final _contentController = TextEditingController();
   final _captionController = TextEditingController();
+
+  // Rich text formatting
+  bool _isBold = false;
+  bool _isItalic = false;
+  bool _isUnderline = false;
+  bool _isList = false;
+  TextAlign _textAlign = TextAlign.left;
 
   @override
   void dispose() {
@@ -32,12 +41,10 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     super.dispose();
   }
 
-  Future<void> _pickMedia(ImageSource source, bool isImage) async {
+  // Pick Image Only
+  Future<void> _pickMedia() async {
     final picker = ImagePicker();
-    final pickedFile = await (isImage
-        ? picker.pickImage(source: source)
-        : picker.pickVideo(source: source));
-
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
 
     final file = File(pickedFile.path);
@@ -46,16 +53,29 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
 
     setState(() {
       _selectedMediaBase64 = base64String;
-      _isVideo = !isImage;
     });
   }
 
-  Future<void> _submitArticle() async {
+  // Unified save function for draft or submit
+  Future<void> _saveArticle({required String status}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text("Please log in.")));
       return;
+    }
+
+    if (_titleController.text.trim().isEmpty &&
+        _contentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Title and content cannot be empty.")));
+      return;
+    }
+
+    if (status == 'draft') {
+      setState(() => _isDraftSaving = true);
+    } else {
+      setState(() => _isSubmitting = true);
     }
 
     try {
@@ -69,18 +89,35 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         'tags': _tagController.text.trim(),
         'content': _contentController.text.trim(),
         'mediaBase64': _selectedMediaBase64 ?? '',
-        'isVideo': _isVideo,
         'caption': _captionController.text.trim(),
         'timestamp': Timestamp.now(),
-        'status': 'pending',
+        'status': status, // 'draft' or 'pending'
       });
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Article submitted!")));
-      Navigator.pop(context);
+      // Reset form
+      _titleController.clear();
+      _tagController.clear();
+      _contentController.clear();
+      _captionController.clear();
+      setState(() {
+        _selectedMediaBase64 = null;
+        _selectedCategory = 'Styling Tips';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                status == 'draft' ? "Draft saved!" : "Article submitted!")),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text("Error: $e")));
+    } finally {
+      if (status == 'draft') {
+        setState(() => _isDraftSaving = false);
+      } else {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -122,7 +159,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Responsive metrics
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
     double basePadding = screenWidth * 0.04;
@@ -149,14 +185,16 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              // Top bar
+              // Top Bar
               Container(
-                padding: EdgeInsets.symmetric(horizontal: basePadding, vertical: basePadding),
+                padding:
+                EdgeInsets.symmetric(horizontal: basePadding, vertical: basePadding),
                 child: Row(
                   children: [
                     GestureDetector(
                       onTap: _handleLogout,
-                      child: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                      child: Image.asset('assets/images/white_back_btn.png',
+                          width: 28, height: 28),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -172,91 +210,92 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.logout, color: Colors.white, size: screenWidth * 0.07),
+                      icon:
+                      Icon(Icons.logout, color: Colors.white, size: screenWidth * 0.07),
                       onPressed: _handleLogout,
                     ),
                   ],
                 ),
               ),
-              // Main content
+
+              // Main Content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                   ),
-                  padding: EdgeInsets.fromLTRB(basePadding, basePadding, basePadding, basePadding),
+                  padding: EdgeInsets.all(basePadding),
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
                         _buildSection(
                           label: "Article Title",
-                          child: _buildTextField("Enter article title...", _titleController),
+                          child:
+                          _buildTextField("Enter article title...", _titleController),
                         ),
                         SizedBox(height: sectionSpacing),
+
+                        // Category + Tags
                         LayoutBuilder(
                           builder: (context, constraints) {
                             if (constraints.maxWidth < 500) {
-                              // Small screens: stack vertically
                               return Column(
                                 children: [
-                                  _buildSection(
-                                    label: "Category",
-                                    child: _buildDropdown(),
-                                  ),
+                                  _buildSection(label: "Category", child: _buildDropdown()),
                                   SizedBox(height: sectionSpacing / 2),
-                                  _buildSection(
-                                    label: "Tags",
-                                    child: _buildTags(),
-                                  ),
+                                  _buildSection(label: "Tags", child: _buildTags()),
                                 ],
                               );
                             } else {
-                              // Medium/Large screens: side by side
                               return Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Expanded(child: _buildSection(label: "Category", child: _buildDropdown())),
-                                  SizedBox(width: 16),
+                                  Expanded(
+                                      child:
+                                      _buildSection(label: "Category", child: _buildDropdown())),
+                                  const SizedBox(width: 16),
                                   Expanded(child: _buildSection(label: "Tags", child: _buildTags())),
                                 ],
                               );
                             }
                           },
                         ),
+
                         SizedBox(height: sectionSpacing),
                         _buildSection(label: "Content", child: _buildRichEditor(contentHeight)),
                         SizedBox(height: sectionSpacing),
                         _buildSection(label: "Insert Media", child: _buildMediaUpload(contentHeight)),
+
                         SizedBox(height: sectionSpacing * 1.5),
                         Row(
                           children: [
                             Expanded(
                               child: OutlinedButton(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Draft saved (not implemented)')),
-                                  );
-                                },
+                                onPressed: _isDraftSaving ? null : () => _saveArticle(status: 'draft'),
                                 style: OutlinedButton.styleFrom(
                                   padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   side: const BorderSide(color: Colors.black),
                                   foregroundColor: Colors.black,
                                 ),
-                                child: const Text("Save a Draft"),
+                                child: _isDraftSaving
+                                    ? const CircularProgressIndicator()
+                                    : const Text("Save a Draft"),
                               ),
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
-                                onPressed: _submitArticle,
+                                onPressed: _isSubmitting ? null : () => _saveArticle(status: 'pending'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.pink,
                                   padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
-                                child: const Text("Submit for Review", style: TextStyle(color: Colors.white)),
+                                child: _isSubmitting
+                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    : const Text("Submit for Review", style: TextStyle(color: Colors.white)),
                               ),
                             ),
                           ],
@@ -274,16 +313,15 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     );
   }
 
+  // --- Helper Widgets ---
   Widget _buildDropdown() => DropdownButtonFormField<String>(
     decoration: _inputDecoration(),
     value: _selectedCategory,
     isExpanded: true,
-    items: ['Styling Tips', 'Trends', 'Do\'s and Don\'ts']
+    items: ['Styling Tips', 'Trends', "Do's and Don'ts"]
         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
         .toList(),
-    onChanged: (val) {
-      setState(() => _selectedCategory = val!);
-    },
+    onChanged: (val) => setState(() => _selectedCategory = val!),
   );
 
   Widget _buildTags() => Column(
@@ -304,31 +342,26 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     ],
   );
 
-  Widget _buildSection({required String label, required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          const SizedBox(height: 8),
-          child,
-        ],
-      ),
-    );
-  }
+  Widget _buildSection({required String label, required Widget child}) => Container(
+    padding: const EdgeInsets.all(12),
+    margin: const EdgeInsets.only(bottom: 4),
+    decoration: BoxDecoration(
+      color: Colors.grey[100],
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.15),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+      const SizedBox(height: 8),
+      child,
+    ]),
+  );
 
   InputDecoration _inputDecoration() => InputDecoration(
     filled: true,
@@ -359,22 +392,45 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
   Widget _buildRichEditor(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Row(
-        children: const [
-          Icon(Icons.format_bold),
-          SizedBox(width: 8),
-          Icon(Icons.format_italic),
-          SizedBox(width: 8),
-          Icon(Icons.format_underline),
-          SizedBox(width: 8),
-          Icon(Icons.format_list_bulleted),
-          SizedBox(width: 8),
-          Icon(Icons.format_align_left),
-          Spacer(),
-          Icon(Icons.lightbulb),
-          SizedBox(width: 4),
-          Text("Add Style Tip"),
-        ],
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.format_bold, color: _isBold ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _isBold = !_isBold),
+            ),
+            IconButton(
+              icon: Icon(Icons.format_italic, color: _isItalic ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _isItalic = !_isItalic),
+            ),
+            IconButton(
+              icon: Icon(Icons.format_underline, color: _isUnderline ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _isUnderline = !_isUnderline),
+            ),
+            IconButton(
+              icon: Icon(Icons.format_list_bulleted, color: _isList ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _isList = !_isList),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.format_align_left,
+                  color: _textAlign == TextAlign.left ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _textAlign = TextAlign.left),
+            ),
+            IconButton(
+              icon: Icon(Icons.format_align_center,
+                  color: _textAlign == TextAlign.center ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _textAlign = TextAlign.center),
+            ),
+            IconButton(
+              icon: Icon(Icons.format_align_right,
+                  color: _textAlign == TextAlign.right ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _textAlign = TextAlign.right),
+            ),
+            const SizedBox(width: 12),
+          ],
+        ),
       ),
       const SizedBox(height: 8),
       Container(
@@ -389,11 +445,25 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
           controller: _contentController,
           maxLines: null,
           expands: true,
-          style: const TextStyle(color: Colors.black),
+          textAlign: _textAlign,
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: _isBold ? FontWeight.bold : FontWeight.normal,
+            fontStyle: _isItalic ? FontStyle.italic : FontStyle.normal,
+            decoration: _isUnderline ? TextDecoration.underline : TextDecoration.none,
+          ),
           decoration: const InputDecoration.collapsed(
             hintText: 'Start writing your article...',
             hintStyle: TextStyle(color: Colors.grey),
           ),
+          onChanged: (text) {
+            if (_isList && !text.startsWith("• ")) {
+              _contentController.text = "• $text";
+              _contentController.selection = TextSelection.fromPosition(
+                TextPosition(offset: _contentController.text.length),
+              );
+            }
+          },
         ),
       ),
     ],
@@ -402,28 +472,12 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
   Widget _buildMediaUpload(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _pickMedia(ImageSource.gallery, true),
-              icon: const Icon(Icons.photo),
-              label: const Text("Pick Image"),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _pickMedia(ImageSource.gallery, false),
-              icon: const Icon(Icons.videocam),
-              label: const Text("Pick Video"),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
-            ),
-          ),
-        ],
+      ElevatedButton.icon(
+        onPressed: _pickMedia,
+        icon: const Icon(Icons.photo),
+        label: const Text("Pick Image"),
+        style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
       ),
       const SizedBox(height: 12),
       if (_selectedMediaBase64 != null)
@@ -434,9 +488,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
             border: Border.all(color: Colors.grey),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: _isVideo
-              ? const Center(child: Text("Video selected"))
-              : ClipRRect(
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Image.memory(base64Decode(_selectedMediaBase64!), fit: BoxFit.cover),
           ),

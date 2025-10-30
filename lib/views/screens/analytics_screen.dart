@@ -207,43 +207,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 
   Widget _buildMetricCards(double width, double height) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildMetricCard(
-            dailyActiveUsers.toString(),
-            'Active Users',
-            Icons.trending_up,
-            AppColors.primary,
-            width,
-            height,
-          ),
-        ),
-        SizedBox(width: width * 0.03),
-        Expanded(
-          child: _buildMetricCard(
-            totalNewSignups.toString(),
-            'New Signups',
-            Icons.person_add,
-            AppColors.success,
-            width,
-            height,
-          ),
-        ),
-        SizedBox(width: width * 0.03),
-        Expanded(
-          child: _buildMetricCard(
-            sessionDuration,
-            'Session Duration',
-            Icons.timer,
-            AppColors.info,
-            width,
-            height,
-          ),
-        ),
-      ],
+    return _buildMetricCard(
+      dailyActiveUsers.toString(),
+      'Active Users',
+      Icons.trending_up,
+      AppColors.primary,
+      width,
+      height,
     );
   }
+
 
   Widget _buildMetricCard(
       String value,

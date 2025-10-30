@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../controllers/navigation_controller.dart';
-import 'settings_screen.dart';
+import 'admin_settings_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -62,7 +62,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     onPressed: () async {
                       final controller = Get.find<NavigationController>();
                       await controller.changeIndex(4); // Settings tab
-                      Get.offAll(() => const SettingsScreen());
+                      Get.offAll(() => const AdminSettingsScreen());
                     },
                     icon: const Icon(
                       Icons.arrow_back,

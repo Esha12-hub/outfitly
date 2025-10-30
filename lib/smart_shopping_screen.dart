@@ -6,6 +6,7 @@ import 'dart:async';
 import 'models/clothing_item_model.dart';
 import 'add_clothing_item_screen.dart';
 import 'clothing_item_detail_screen.dart';
+import 'views/screens/dashboard_screen.dart';
 
 class SmartShoppingScreen extends StatefulWidget {
   const SmartShoppingScreen({super.key});
@@ -117,8 +118,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
         backgroundColor: Colors.black,
         elevation: 0,
         centerTitle: true,
-        leading: (selectedCategory != null || _searchQuery.isNotEmpty)
-            ? IconButton(
+        leading: IconButton(
           icon: Image.asset(
             'assets/images/white_back_btn.png',
             width: 28,
@@ -129,13 +129,22 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
               if (_searchQuery.isNotEmpty) {
                 _searchQuery = '';
                 _searchController.clear();
-              } else {
+              } else if (selectedCategory != null) {
                 selectedCategory = null;
+              } else {
+                // Navigate to AdminSettingsScreen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DashboardScreen(),
+                  ),
+                );
               }
             });
           },
-        )
-            : null,
+        ),
+
+
       ),
       body: Container(
         decoration: const BoxDecoration(

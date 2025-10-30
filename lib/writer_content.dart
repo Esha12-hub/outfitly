@@ -19,7 +19,7 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
   String? writerId;
 
   final List<String> filters = ['All', 'Casual', 'Formal', 'Streetwear', 'Trends'];
-  final List<String> statuses = ['Accepted', 'Pending', 'Rejected'];
+  final List<String> statuses = ['Accepted', 'Pending', 'Rejected', 'Draft']; // Added Draft
 
   @override
   void initState() {
@@ -43,7 +43,11 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
         children: [
           // 🔹 HEADER + FILTER CHIPS
           Container(
-            padding: EdgeInsets.only(top: screenHeight * 0.03, left: basePadding, right: basePadding, bottom: screenHeight * 0.015),
+            padding: EdgeInsets.only(
+                top: screenHeight * 0.03,
+                left: basePadding,
+                right: basePadding,
+                bottom: screenHeight * 0.015),
             color: Colors.black,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,9 +153,18 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                             : articles.where((a) => a['category']?.toString().toLowerCase().contains(selectedFilter.toLowerCase()) ?? false).toList();
 
                         final filtered = filteredByCategory.where((a) {
-                          if (selectedStatus == 'Accepted') return a['status'] == 'approved';
-                          if (selectedStatus == 'Rejected') return a['status'] == 'rejected';
-                          return a['status'] != 'approved' && a['status'] != 'rejected';
+                          switch (selectedStatus) {
+                            case 'Accepted':
+                              return a['status'] == 'approved';
+                            case 'Rejected':
+                              return a['status'] == 'rejected';
+                            case 'Pending':
+                              return a['status'] == 'pending';
+                            case 'Draft':
+                              return a['status'] == 'draft';
+                            default:
+                              return true;
+                          }
                         }).toList();
 
                         if (filtered.isEmpty) {
@@ -188,6 +201,7 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                                     cardHeight: cardHeight,
                                     titleFontSize: titleFontSize,
                                     textFontSize: chipFontSize,
+                                    status: article['status'] ?? '',
                                   ),
                                 ),
                                 SizedBox(height: screenHeight * 0.02),
@@ -323,6 +337,7 @@ class ContentCard extends StatelessWidget {
   final double cardHeight;
   final double titleFontSize;
   final double textFontSize;
+  final String status; // Added for draft label
 
   const ContentCard({
     super.key,
@@ -334,54 +349,76 @@ class ContentCard extends StatelessWidget {
     this.cardHeight = 160,
     this.titleFontSize = 16,
     this.textFontSize = 12,
+    this.status = '',
   });
 
   @override
   Widget build(BuildContext context) {
     final bytes = (imageBase64.isNotEmpty) ? base64Decode(imageBase64.split(',').last) : null;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.grey[100],
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (bytes != null)
-            ClipRRect(
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-              child: Image.memory(
-                bytes,
-                height: cardHeight,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-          Padding(
-            padding: EdgeInsets.all(cardHeight * 0.075),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold)),
-                SizedBox(height: cardHeight * 0.025),
-                Row(
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: Colors.grey[100],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (bytes != null)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                  child: Image.memory(
+                    bytes,
+                    height: cardHeight,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              Padding(
+                padding: EdgeInsets.all(cardHeight * 0.075),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(author, style: TextStyle(color: Colors.grey, fontSize: textFontSize)),
-                    SizedBox(width: cardHeight * 0.02),
-                    Text('•', style: TextStyle(color: Colors.grey, fontSize: textFontSize)),
-                    SizedBox(width: cardHeight * 0.02),
-                    Text(time, style: TextStyle(color: Colors.grey, fontSize: textFontSize)),
+                    Text(title, style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold)),
+                    SizedBox(height: cardHeight * 0.025),
+                    Row(
+                      children: [
+                        Text(author, style: TextStyle(color: Colors.grey, fontSize: textFontSize)),
+                        SizedBox(width: cardHeight * 0.02),
+                        Text('•', style: TextStyle(color: Colors.grey, fontSize: textFontSize)),
+                        SizedBox(width: cardHeight * 0.02),
+                        Text(time, style: TextStyle(color: Colors.grey, fontSize: textFontSize)),
+                      ],
+                    ),
+                    SizedBox(height: cardHeight * 0.03),
+                    Text(description, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: textFontSize)),
                   ],
                 ),
-                SizedBox(height: cardHeight * 0.03),
-                Text(description, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: textFontSize)),
-              ],
+              ),
+            ],
+          ),
+        ),
+        // Draft label overlay
+        if (status.toLowerCase() == 'draft')
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'DRAFT',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+              ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

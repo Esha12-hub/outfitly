@@ -26,6 +26,7 @@ class ContinueAsScreen extends StatelessWidget {
     final iconSize = screenHeight * 0.045;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true, // ensures keyboard doesn't cause overflow
       body: Stack(
         children: [
           // Background image
@@ -39,89 +40,95 @@ class ContinueAsScreen extends StatelessWidget {
           // Foreground content
           SafeArea(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Back button
-                  // Back button
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MyApp()),
-                            (route) => false,
-                      );
-                    },
-                    child: SizedBox(
-                      height: screenHeight * 0.04,
-                      width: screenHeight * 0.04,
-                      child: Image.asset("assets/images/back btn.png"),
+              padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding, vertical: verticalPadding),
+              child: SingleChildScrollView(
+                reverse: true, // scrolls up when keyboard appears
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Back button
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MyApp()),
+                              (route) => false,
+                        );
+                      },
+                      child: SizedBox(
+                        height: screenHeight * 0.04,
+                        width: screenHeight * 0.04,
+                        child: Image.asset("assets/images/back btn.png"),
+                      ),
                     ),
-                  ),
 
+                    SizedBox(height: spacingLarge),
 
-                  SizedBox(height: spacingLarge),
-
-                  // Title & subtitle
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          "Continue As",
-                          style: TextStyle(
-                            fontSize: titleFontSize,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                    // Title & subtitle
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            "Continue As",
+                            style: TextStyle(
+                              fontSize: titleFontSize,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: spacingSmall),
-                        Text(
-                          "Choose your role to proceed",
-                          style: TextStyle(fontSize: subtitleFontSize, color: Colors.black),
-                        ),
-                      ],
+                          SizedBox(height: spacingSmall),
+                          Text(
+                            "Choose your role to proceed",
+                            style: TextStyle(
+                                fontSize: subtitleFontSize, color: Colors.black),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  SizedBox(height: spacingMedium),
+                    SizedBox(height: spacingMedium),
 
-                  // User tile
-                  _roleOptionTile(
-                    context,
-                    icon: Icons.person,
-                    title: "User",
-                    subtitle: "Explore your wardrobe and get AI outfit suggestions",
-                    iconSize: iconSize,
-                    titleFontSize: roleTitleFontSize,
-                    subtitleFontSize: roleSubtitleFontSize,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const UserLoginScreen()),
-                      );
-                    },
-                  ),
+                    // User tile
+                    _roleOptionTile(
+                      context,
+                      icon: Icons.person,
+                      title: "User",
+                      subtitle:
+                      "Explore your wardrobe and get AI outfit suggestions",
+                      iconSize: iconSize,
+                      titleFontSize: roleTitleFontSize,
+                      subtitleFontSize: roleSubtitleFontSize,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const UserLoginScreen()),
+                        );
+                      },
+                    ),
 
-                  SizedBox(height: spacingMedium),
+                    SizedBox(height: spacingMedium),
 
-                  // Content Writer tile
-                  _roleOptionTile(
-                    context,
-                    icon: Icons.edit,
-                    title: "Content Writer",
-                    subtitle: "Contribute articles, tips, and style advice.",
-                    iconSize: iconSize,
-                    titleFontSize: roleTitleFontSize,
-                    subtitleFontSize: roleSubtitleFontSize,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => WriterLoginScreen()),
-                      );
-                    },
-                  ),
-                ],
+                    // Content Writer tile
+                    _roleOptionTile(
+                      context,
+                      icon: Icons.edit,
+                      title: "Content Writer",
+                      subtitle: "Contribute articles, tips, and style advice.",
+                      iconSize: iconSize,
+                      titleFontSize: roleTitleFontSize,
+                      subtitleFontSize: roleSubtitleFontSize,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => WriterLoginScreen()),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -152,7 +159,8 @@ class ContinueAsScreen extends StatelessWidget {
       borderRadius: BorderRadius.circular(borderRadius),
       child: Container(
         width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: verticalPadding, horizontal: horizontalPadding),
+        padding: EdgeInsets.symmetric(
+            vertical: verticalPadding, horizontal: horizontalPadding),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
           border: Border.all(color: Colors.black, width: 1),
@@ -174,7 +182,8 @@ class ContinueAsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontSize: titleFontSize, fontWeight: FontWeight.bold)),
                   SizedBox(height: spacing / 2),
                   Text(
                     subtitle,
