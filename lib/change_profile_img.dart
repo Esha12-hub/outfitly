@@ -1,72 +1,55 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class FeedbackScreen extends StatefulWidget {
-  const FeedbackScreen({super.key});
+class ChangeProfileImageScreen extends StatefulWidget {
+  const ChangeProfileImageScreen({super.key});
 
   @override
-  State<FeedbackScreen> createState() => _FeedbackScreenState();
+  State<ChangeProfileImageScreen> createState() =>
+      _ChangeProfileImageScreenState();
 }
 
-class _FeedbackScreenState extends State<FeedbackScreen> {
-  final TextEditingController _feedbackController = TextEditingController();
+class _ChangeProfileImageScreenState extends State<ChangeProfileImageScreen> {
+  Uint8List? _imageBytes;
   bool _isLoading = false;
 
-  Future<void> _submitFeedback() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final feedbackText = _feedbackController.text.trim();
-    if (feedbackText.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Please enter feedback")));
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final userName = userDoc.data()?['name'] ?? 'User';
-
-      final feedbackData = {
-        'user': userName,
-        'message': feedbackText,
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'Unread',
-        'userId': user.uid,
-      };
-
-      // ✅ Save feedback in a top-level collection
-      await FirebaseFirestore.instance.collection('feedback').add(feedbackData);
-
-      // ✅ Also optionally keep user-specific feedback history
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('feedback')
-          .add(feedbackData);
-
-      _feedbackController.clear();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Feedback submitted!")));
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
-    } finally {
-      setState(() => _isLoading = false);
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      setState(() => _imageBytes = bytes);
     }
   }
 
-  @override
-  void dispose() {
-    _feedbackController.dispose();
-    super.dispose();
+  Future<void> _saveImage() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || _imageBytes == null) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final base64Image = base64Encode(_imageBytes!);
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'image_base64': base64Image,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile image updated successfully")),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error updating image: $e")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -83,6 +66,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           return Column(
             children: [
               SizedBox(height: height * 0.07),
+
+              // 🔙 Header
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                 child: Row(
@@ -102,7 +87,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     Expanded(
                       child: Center(
                         child: Text(
-                          "Feedback",
+                          "Change Profile Image",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20 * textScale,
@@ -125,7 +110,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ],
                 ),
               ),
+
               SizedBox(height: height * 0.02),
+
+              // ⚪ Main Container
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -139,24 +127,40 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ),
                   child: SingleChildScrollView(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "We value your feedback! Please share your thoughts below:",
+                          "Upload a new profile photo",
                           style: TextStyle(
                             fontSize: 18 * textScale,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(height: height * 0.03),
-                        _buildFeedbackField(
-                          controller: _feedbackController,
-                          width: width,
-                          textScale: textScale,
+                        SizedBox(height: height * 0.04),
+
+                        // 🖼 Profile Image Selector
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: CircleAvatar(
+                            radius: width * 0.22,
+                            backgroundColor: Colors.grey.shade200,
+                            backgroundImage: _imageBytes != null
+                                ? MemoryImage(_imageBytes!)
+                                : null,
+                            child: _imageBytes == null
+                                ? Icon(
+                              Icons.add_a_photo,
+                              size: width * 0.12,
+                              color: Colors.black54,
+                            )
+                                : null,
+                          ),
                         ),
+
                         SizedBox(height: height * 0.05),
+
+                        // 💾 Save Button
                         ElevatedButton(
-                          onPressed: _isLoading ? null : _submitFeedback,
+                          onPressed: _isLoading ? null : _saveImage,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.pink.shade600,
                             minimumSize: Size.fromHeight(height * 0.06),
@@ -166,9 +170,10 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           ),
                           child: _isLoading
                               ? const CircularProgressIndicator(
-                              color: Colors.white)
+                            color: Colors.white,
+                          )
                               : Text(
-                            "Submit Feedback",
+                            "Save Changes",
                             style: TextStyle(
                               fontSize: 16 * textScale,
                               fontWeight: FontWeight.bold,
@@ -184,31 +189,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildFeedbackField({
-    required TextEditingController controller,
-    required double width,
-    required double textScale,
-  }) {
-    return TextField(
-      controller: controller,
-      maxLines: 6,
-      decoration: InputDecoration(
-        hintText: "Enter your feedback...",
-        hintStyle: TextStyle(fontSize: 14 * textScale),
-        filled: true,
-        fillColor: Colors.grey.shade200,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: width * 0.04,
-          vertical: width * 0.04,
-        ),
       ),
     );
   }

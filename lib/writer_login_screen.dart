@@ -18,12 +18,20 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isPasswordVisible = false; // 👁️ Added for show/hide password
 
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+
+    // ✅ Restrict to outfitly.com domain
+    if (!email.toLowerCase().endsWith('@outfitly.com')) {
+      _showErrorSnackBar('Only @outfitly.com emails are allowed for writers.');
+      setState(() => _isLoading = false);
+      return;
+    }
 
     try {
       final userCredential =
@@ -47,12 +55,20 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     try {
       final googleSignIn = GoogleSignIn();
 
-      // Sign out first to allow choosing account again
+      // Allow account selection again
       await googleSignIn.signOut();
 
-      // Prompt account picker
       final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return; // User cancelled
+      if (googleUser == null) return; // User canceled login
+
+      // ✅ Restrict to outfitly.com domain
+      if (!googleUser.email.toLowerCase().endsWith('@outfitly.com')) {
+        await googleSignIn.signOut();
+        _showErrorSnackBar(
+            'Only @outfitly.com accounts are allowed for writers.');
+        setState(() => _isLoading = false);
+        return;
+      }
 
       final googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
@@ -70,8 +86,6 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
       setState(() => _isLoading = false);
     }
   }
-
-
 
   Future<void> _checkRoleAndNavigate(String? uid,
       [GoogleSignInAccount? googleUser]) async {
@@ -163,7 +177,6 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
                   child: Image.asset("assets/images/back btn.png"),
                 ),
               ),
-
               SizedBox(height: spacingV),
               Center(
                 child: CircleAvatar(
@@ -187,7 +200,8 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
                 ),
               ),
               SizedBox(height: spacingV),
-              _buildTextField(_emailController, 'Enter your email', inputFontSize),
+              _buildTextField(
+                  _emailController, 'Enter your email', inputFontSize),
               SizedBox(height: spacingV),
               _buildTextField(_passwordController, 'Password', inputFontSize,
                   isPassword: true),
@@ -195,11 +209,16 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => WriterForgotPasswordScreen()));
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                WriterForgotPasswordScreen()));
                   },
                   child: Text(
                     'Forget Password?',
-                    style: TextStyle(color: Colors.pink, fontSize: inputFontSize),
+                    style:
+                    TextStyle(color: Colors.pink, fontSize: inputFontSize),
                   ),
                 ),
               ),
@@ -269,8 +288,8 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
                       );
                     },
                     child: Text('Register now!',
-                        style:
-                        TextStyle(color: Colors.pink, fontSize: inputFontSize)),
+                        style: TextStyle(
+                            color: Colors.pink, fontSize: inputFontSize)),
                   ),
                 ],
               ),
@@ -304,20 +323,37 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     );
   }
 
+  // 👇 Updated text field builder with show/hide password icon
   Widget _buildTextField(
       TextEditingController controller, String hint, double fontSize,
       {bool isPassword = false}) {
     return TextField(
       controller: controller,
-      obscureText: isPassword,
+      obscureText: isPassword ? !_isPasswordVisible : false,
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
         fillColor: Colors.grey[200],
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none),
         contentPadding:
         EdgeInsets.symmetric(vertical: fontSize * 1.5, horizontal: fontSize),
+        suffixIcon: isPassword
+            ? IconButton(
+          icon: Icon(
+            _isPasswordVisible
+                ? Icons.visibility
+                : Icons.visibility_off,
+            color: Colors.grey,
+          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        )
+            : null,
       ),
       style: TextStyle(fontSize: fontSize),
     );

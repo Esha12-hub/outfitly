@@ -1,72 +1,49 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
-class FeedbackScreen extends StatefulWidget {
-  const FeedbackScreen({super.key});
+class ChangeNameScreen extends StatefulWidget {
+  const ChangeNameScreen({super.key});
 
   @override
-  State<FeedbackScreen> createState() => _FeedbackScreenState();
+  State<ChangeNameScreen> createState() => _ChangeNameScreenState();
 }
 
-class _FeedbackScreenState extends State<FeedbackScreen> {
-  final TextEditingController _feedbackController = TextEditingController();
+class _ChangeNameScreenState extends State<ChangeNameScreen> {
+  final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
 
-  Future<void> _submitFeedback() async {
+  Future<void> _updateName() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    final feedbackText = _feedbackController.text.trim();
-    if (feedbackText.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Please enter feedback")));
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a name")),
+      );
       return;
     }
 
     setState(() => _isLoading = true);
-
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+        'name': newName,
+      });
+      await user.updateDisplayName(newName);
 
-      final userName = userDoc.data()?['name'] ?? 'User';
-
-      final feedbackData = {
-        'user': userName,
-        'message': feedbackText,
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'Unread',
-        'userId': user.uid,
-      };
-
-      // ✅ Save feedback in a top-level collection
-      await FirebaseFirestore.instance.collection('feedback').add(feedbackData);
-
-      // ✅ Also optionally keep user-specific feedback history
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('feedback')
-          .add(feedbackData);
-
-      _feedbackController.clear();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Feedback submitted!")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Name updated successfully")),
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error updating name: $e")),
+      );
     } finally {
       setState(() => _isLoading = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _feedbackController.dispose();
-    super.dispose();
   }
 
   @override
@@ -82,7 +59,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         builder: (context, constraints) {
           return Column(
             children: [
-              SizedBox(height: height * 0.07),
+              SizedBox(height: height * 0.07), // responsive top spacing
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                 child: Row(
@@ -102,7 +79,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     Expanded(
                       child: Center(
                         child: Text(
-                          "Feedback",
+                          "Change Name",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20 * textScale,
@@ -111,6 +88,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         ),
                       ),
                     ),
+                    // Add transparent icon for layout balance
                     Opacity(
                       opacity: 0,
                       child: IconButton(
@@ -125,7 +103,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   ],
                 ),
               ),
+
               SizedBox(height: height * 0.02),
+
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -142,21 +122,41 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "We value your feedback! Please share your thoughts below:",
+                          "Update your display name",
                           style: TextStyle(
                             fontSize: 18 * textScale,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         SizedBox(height: height * 0.03),
-                        _buildFeedbackField(
-                          controller: _feedbackController,
-                          width: width,
-                          textScale: textScale,
+                        Text(
+                          "New Name",
+                          style: TextStyle(
+                            fontSize: 15 * textScale,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: width * 0.02),
+                        TextField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            hintText: "Enter your new name",
+                            hintStyle: TextStyle(fontSize: 14 * textScale),
+                            filled: true,
+                            fillColor: Colors.grey.shade200,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: width * 0.04,
+                              vertical: width * 0.04,
+                            ),
+                          ),
                         ),
                         SizedBox(height: height * 0.05),
                         ElevatedButton(
-                          onPressed: _isLoading ? null : _submitFeedback,
+                          onPressed: _isLoading ? null : _updateName,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.pink.shade600,
                             minimumSize: Size.fromHeight(height * 0.06),
@@ -168,7 +168,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                               ? const CircularProgressIndicator(
                               color: Colors.white)
                               : Text(
-                            "Submit Feedback",
+                            "Save Changes",
                             style: TextStyle(
                               fontSize: 16 * textScale,
                               fontWeight: FontWeight.bold,
@@ -184,31 +184,6 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildFeedbackField({
-    required TextEditingController controller,
-    required double width,
-    required double textScale,
-  }) {
-    return TextField(
-      controller: controller,
-      maxLines: 6,
-      decoration: InputDecoration(
-        hintText: "Enter your feedback...",
-        hintStyle: TextStyle(fontSize: 14 * textScale),
-        filled: true,
-        fillColor: Colors.grey.shade200,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: width * 0.04,
-          vertical: width * 0.04,
-        ),
       ),
     );
   }

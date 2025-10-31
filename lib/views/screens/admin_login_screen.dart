@@ -85,96 +85,108 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final width = MediaQuery.of(context).size.width;
     final padding = width * 0.06;
 
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(padding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MyApp()),
-                      );
-                    },
-                    child: Image.asset(
-                      "assets/images/back btn.png",
-                      height: width * 0.07,
-                      width: width * 0.07,
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MyApp()),
+        );
+        return false; // Prevents app from closing
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(padding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MyApp()),
+                        );
+                      },
+                      child: Image.asset(
+                        "assets/images/back btn.png",
+                        height: width * 0.07,
+                        width: width * 0.07,
+                      ),
                     ),
-                  ),
-
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        'Admin Login',
-                        style: AppTextStyles.h1.copyWith(
-                          fontSize: width * 0.06,
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'Admin Login',
+                          style: AppTextStyles.h1.copyWith(
+                            fontSize: width * 0.06,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: width * 0.12),
-                ],
-              ),
-              SizedBox(height: width * 0.06),
-              Center(
-                child: Container(
-                  width: width * 0.25,
-                  height: width * 0.25,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.1),
-                  ),
-                  child: Icon(Icons.person,
-                      size: width * 0.125, color: AppColors.primary),
+                    SizedBox(width: width * 0.12),
+                  ],
                 ),
-              ),
-              SizedBox(height: width * 0.05),
-              Center(
+                SizedBox(height: width * 0.06),
+                Center(
+                  child: Container(
+                    width: width * 0.25,
+                    height: width * 0.25,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withOpacity(0.1),
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      size: width * 0.125,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+                SizedBox(height: width * 0.05),
+                Center(
                   child: Text(
                     'Welcome Back!',
                     style: AppTextStyles.h2.copyWith(fontSize: width * 0.05),
-                  )),
-              SizedBox(height: width * 0.06),
-              CustomTextField(
-                controller: _emailController,
-                label: 'Email Address',
-                hint: 'Enter your email',
-                keyboardType: TextInputType.emailAddress,
-              ),
-              SizedBox(height: width * 0.04),
-              CustomTextField(
-                controller: _passwordController,
-                label: 'Password',
-                hint: 'Password',
-                obscureText: !_isPasswordVisible,
-                suffixWidget: IconButton(
-                  onPressed: _togglePasswordVisibility,
-                  icon: Icon(
-                    _isPasswordVisible
-                        ? Icons.visibility_off
-                        : Icons.visibility,
-                    color: AppColors.textSecondary,
-                    size: width * 0.05,
                   ),
                 ),
-              ),
-              SizedBox(height: width * 0.06),
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  text: _isLoading ? 'Logging in...' : 'Login',
-                  onPressed: _isLoading ? null : _handleLogin,
-                  isLoading: _isLoading,
+                SizedBox(height: width * 0.06),
+                CustomTextField(
+                  controller: _emailController,
+                  label: 'Email Address',
+                  hint: 'Enter your email',
+                  keyboardType: TextInputType.emailAddress,
                 ),
-              ),
-            ],
+                SizedBox(height: width * 0.04),
+                CustomTextField(
+                  controller: _passwordController,
+                  label: 'Password',
+                  hint: 'Password',
+                  obscureText: !_isPasswordVisible,
+                  suffixWidget: IconButton(
+                    onPressed: _togglePasswordVisibility,
+                    icon: Icon(
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: AppColors.textSecondary,
+                      size: width * 0.05,
+                    ),
+                  ),
+                ),
+                SizedBox(height: width * 0.06),
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(
+                    text: _isLoading ? 'Logging in...' : 'Login',
+                    onPressed: _isLoading ? null : _handleLogin,
+                    isLoading: _isLoading,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

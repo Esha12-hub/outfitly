@@ -12,6 +12,7 @@ import 'color_palette_screen.dart';
 import 'fabric_care.dart';
 import 'user_dashboard.dart';
 import 'feedback_screen.dart';
+import 'package:intl/intl.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -24,6 +25,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String name = 'Loading...';
   String email = 'Loading...';
   String birthday = 'Loading...';
+  String createdAt = 'Loading...';
   String? base64Image;
   bool isLoading = true;
 
@@ -54,12 +56,47 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
     if (userDoc.exists) {
       final data = userDoc.data()!;
-      name = data['name'] ?? 'No name';
-      email = data['email'] ?? 'No email';
+      name = data['name'] ?? user.displayName ?? 'No name';
+      email = data['email'] ?? user.email ?? 'No email';
       birthday = data['birthday'] ?? 'No birthday';
-      base64Image = data['image_base64'];
+
+      // 🔹 Format CreatedAt (from Firestore or fallback)
+      if (data['createdAt'] != null) {
+        try {
+          final timestamp = data['createdAt'];
+          DateTime createdDate = timestamp is Timestamp
+              ? timestamp.toDate()
+              : DateTime.tryParse(timestamp.toString()) ?? DateTime.now();
+          createdAt = DateFormat('dd MMM yyyy').format(createdDate);
+        } catch (_) {
+          createdAt = 'Unknown';
+        }
+      } else {
+        // Fallback to Firebase Auth metadata
+        createdAt = DateFormat('dd MMM yyyy')
+            .format(user.metadata.creationTime ?? DateTime.now());
+      }
+
+      // 🔹 Prefer Firestore image, else use Google photoURL
+      if (data['image_base64'] != null &&
+          data['image_base64'].toString().isNotEmpty) {
+        base64Image = data['image_base64'];
+      } else if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+        base64Image = user.photoURL; // use URL instead of base64
+      }
+    } else {
+      // 🔹 Fallback to Firebase Auth data
+      name = user.displayName ?? 'No name';
+      email = user.email ?? 'No email';
+      birthday = 'No birthday';
+      createdAt = DateFormat('dd MMM yyyy, hh:mm a')
+          .format(user.metadata.creationTime ?? DateTime.now());
+      if (user.photoURL != null && user.photoURL!.isNotEmpty) {
+        base64Image = user.photoURL;
+      }
     }
 
+    // 🔹 Count collections
     final itemsSnapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -99,9 +136,18 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profileImage = base64Image != null
-        ? MemoryImage(_decodeBase64(base64Image!)!)
-        : const AssetImage("assets/images/user (1).png") as ImageProvider;
+    late ImageProvider profileImage;
+
+    if (base64Image == null || base64Image!.isEmpty) {
+      profileImage = const AssetImage("assets/images/user (1).png");
+    } else if (base64Image!.startsWith('http')) {
+      profileImage = NetworkImage(base64Image!);
+    } else {
+      final decoded = _decodeBase64(base64Image!);
+      profileImage = decoded != null
+          ? MemoryImage(decoded)
+          : const AssetImage("assets/images/user (1).png");
+    }
 
     final size = MediaQuery.of(context).size;
     final width = size.width;
@@ -116,7 +162,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          // ✅ Black header (fills top area fully)
+          // ✅ Black header
           Container(
             width: double.infinity,
             color: Colors.black,
@@ -131,13 +177,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: spacing(14)),
+                      padding:
+                      EdgeInsets.symmetric(horizontal: spacing(14)),
                       child: GestureDetector(
                         onTap: () {
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const WardrobeHomeScreen(),
+                              builder: (context) =>
+                              const WardrobeHomeScreen(),
                             ),
                           );
                         },
@@ -148,7 +196,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         ),
                       ),
                     ),
-
                     Text(
                       'My Profile',
                       style: TextStyle(
@@ -191,8 +238,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
                 SizedBox(height: spacing(12)),
                 Padding(
-                  padding:
-                  EdgeInsets.symmetric(horizontal: spacing(12)),
+                  padding: EdgeInsets.symmetric(horizontal: spacing(12)),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -232,7 +278,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     _profileField("Name", name, fontScale),
                     _profileField("Birthday", birthday, fontScale),
                     _profileField("Email", email, fontScale),
-                    _profileField("Password", "********", fontScale),
+                    _profileField("Created At", createdAt, fontScale),
 
                     const _SectionTitle(title: 'STYLE PREFERENCES'),
                     _preferenceOption("Outfit Schedule", fontScale,
@@ -240,7 +286,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => OutfitCalendarScreen()),
+                                builder: (context) =>
+                                    OutfitCalendarScreen()),
                           );
                         }),
                     _preferenceOption("Color Palette", fontScale,
@@ -266,12 +313,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     _preferenceOption("Feedback", fontScale, onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const FeedbackScreen()),
+                        MaterialPageRoute(
+                            builder: (context) =>
+                            const FeedbackScreen()),
                       );
                     }),
-
-                    _preferenceOption("Fashion Articles/Videos", fontScale,
-                        onTap: () {
+                    _preferenceOption("Fashion Articles/Videos",
+                        fontScale, onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -303,8 +351,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                               actions: [
                                 TextButton(
                                   child: const Text("No",
-                                      style: TextStyle(
-                                          color: Colors.black)),
+                                      style:
+                                      TextStyle(color: Colors.black)),
                                   onPressed: () =>
                                       Navigator.pop(context, false),
                                 ),
@@ -332,7 +380,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             }
                           }
                         },
-                        icon: const Icon(Icons.logout, color: Colors.white),
+                        icon: const Icon(Icons.logout,
+                            color: Colors.white),
                         label: Text(
                           "Logout",
                           style: TextStyle(
@@ -466,8 +515,8 @@ class _SectionTitle extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Text(
           title,
-          style: TextStyle(
-              fontWeight: FontWeight.bold, fontSize: fontScale(14)),
+          style:
+          TextStyle(fontWeight: FontWeight.bold, fontSize: fontScale(14)),
         ),
       ),
     );

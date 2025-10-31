@@ -33,6 +33,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
 
   String? _profileImageBase64;
   String _username = "User";
+  DocumentSnapshot? _recentItem;
 
   final List<Widget> _pages = [
     const Center(child: Text('Home Screen')),
@@ -45,7 +46,12 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => fetchUserProfile());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadDashboardData());
+  }
+
+  Future<void> _loadDashboardData() async {
+    await fetchUserProfile();
+    await fetchRecentWardrobeItem();
   }
 
   Future<void> fetchUserProfile() async {
@@ -72,7 +78,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
     }
   }
 
-  Future<DocumentSnapshot?> fetchRecentWardrobeItem() async {
+  Future<void> fetchRecentWardrobeItem() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final snapshot = await FirebaseFirestore.instance
@@ -83,10 +89,11 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
           .limit(1)
           .get();
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs.first;
+        setState(() => _recentItem = snapshot.docs.first);
+      } else {
+        setState(() => _recentItem = null);
       }
     }
-    return null;
   }
 
   Future<bool> _onWillPop() async {
@@ -137,7 +144,9 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
       onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: _currentIndex == 0 ? _buildDashboard(height, width) : _pages[_currentIndex],
+        body: _currentIndex == 0
+            ? _buildDashboard(height, width)
+            : _pages[_currentIndex],
         bottomNavigationBar: CurvedNavigationBar(
           key: _bottomNavKey,
           index: _currentIndex,
@@ -161,302 +170,291 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
   }
 
   Widget _buildDashboard(double height, double width) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                height: height * 0.45,
-                padding: EdgeInsets.all(width * 0.04),
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: height * 0.14,
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: width * 0.07,
-                            backgroundColor: Colors.white,
-                            child: ClipOval(
-                              child: _profileImageBase64 != null
-                                  ? (_profileImageBase64!.startsWith("url::")
-                                  ? Image.network(
-                                _profileImageBase64!.substring(5),
-                                width: width * 0.14,
-                                height: width * 0.14,
-                                fit: BoxFit.cover,
-                              )
-                                  : Image.memory(
-                                base64Decode(_profileImageBase64!.split(',').last),
-                                width: width * 0.14,
-                                height: width * 0.14,
-                                fit: BoxFit.cover,
-                              ))
-                                  : Image.asset(
-                                "assets/images/user (1).png",
-                                width: width * 0.14,
-                                height: width * 0.14,
-                                fit: BoxFit.cover,
+    return RefreshIndicator(
+      onRefresh: _loadDashboardData,
+      color: Colors.pinkAccent,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  height: height * 0.45,
+                  padding: EdgeInsets.all(width * 0.04),
+                  decoration: const BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: height * 0.14,
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: width * 0.07,
+                              backgroundColor: Colors.white,
+                              child: ClipOval(
+                                child: _profileImageBase64 != null
+                                    ? (_profileImageBase64!.startsWith("url::")
+                                    ? Image.network(
+                                  _profileImageBase64!.substring(5),
+                                  width: width * 0.14,
+                                  height: width * 0.14,
+                                  fit: BoxFit.cover,
+                                )
+                                    : Image.memory(
+                                  base64Decode(_profileImageBase64!.split(',').last),
+                                  width: width * 0.14,
+                                  height: width * 0.14,
+                                  fit: BoxFit.cover,
+                                ))
+                                    : Image.asset(
+                                  "assets/images/user (1).png",
+                                  width: width * 0.14,
+                                  height: width * 0.14,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
-                          ),
-                          SizedBox(width: width * 0.03),
-                          Text('Hi, $_username',
-                              style: TextStyle(color: Colors.white, fontSize: width * 0.045)),
-                          const Spacer(),
-                          StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(FirebaseAuth.instance.currentUser?.uid)
-                                .collection('notifications')
-                                .where('read', isEqualTo: false)
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              int unreadCount = snapshot.data?.docs.length ?? 0;
-                              return Stack(
-                                children: [
-                                  IconButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) =>
-                                            const NotificationScreen()),
-                                      );
-                                    },
-                                    icon: Icon(Icons.notifications,
-                                        color: Colors.white, size: width * 0.07),
-                                  ),
-                                  if (unreadCount > 0)
-                                    Positioned(
-                                      right: width * 0.04,
-                                      top: height * 0.012,
-                                      child: Container(
-                                        width: width * 0.025,
-                                        height: width * 0.025,
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
+                            SizedBox(width: width * 0.03),
+                            Text('Hi, $_username',
+                                style: TextStyle(color: Colors.white, fontSize: width * 0.045)),
+                            const Spacer(),
+                            StreamBuilder<QuerySnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(FirebaseAuth.instance.currentUser?.uid)
+                                  .collection('notifications')
+                                  .where('read', isEqualTo: false)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                int unreadCount = snapshot.data?.docs.length ?? 0;
+                                return Stack(
+                                  children: [
+                                    IconButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) => const NotificationScreen()),
+                                        );
+                                      },
+                                      icon: Icon(Icons.notifications,
+                                          color: Colors.white, size: width * 0.07),
+                                    ),
+                                    if (unreadCount > 0)
+                                      Positioned(
+                                        right: width * 0.04,
+                                        top: height * 0.012,
+                                        child: Container(
+                                          width: width * 0.025,
+                                          height: width * 0.025,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: height * 0.001),
-                    Text(
-                      "Find Your Wardrobe\nItems here",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: width * 0.07,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                    SizedBox(height: height * 0.015),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: width * 0.04),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(width * 0.05),
-                      ),
-                      child: const TextField(
-                        decoration: InputDecoration(
-                          hintText: "Search...",
-                          border: InputBorder.none,
-                          icon: Icon(Icons.search),
+                                  ],
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                bottom: -height * 0.09,
-                left: width * 0.05,
-                right: width * 0.05,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    FeatureCard(
-                      icon: Icons.favorite_border,
-                      label: 'Favorites',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => FavoritesScreen()),
+                      SizedBox(height: height * 0.001),
+                      Text(
+                        "Find Your Wardrobe\nItems here",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: width * 0.07,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
-                    ),
-                    FeatureCard(
-                      icon: Icons.smart_toy_outlined,
-                      label: 'AI Assistant',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const SmartAssistantWelcomeScreen()),
+                      SizedBox(height: height * 0.015),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(width * 0.05),
+                        ),
+                        child: const TextField(
+                          decoration: InputDecoration(
+                            hintText: "Search...",
+                            border: InputBorder.none,
+                            icon: Icon(Icons.search),
+                          ),
+                        ),
                       ),
-                    ),
-                    FeatureCard(
-                      icon: Icons.checkroom_outlined,
-                      label: 'Fashion Feed',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                            const FashionStylingContentScreen()),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  bottom: -height * 0.09,
+                  left: width * 0.05,
+                  right: width * 0.05,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      FeatureCard(
+                        icon: Icons.favorite_border,
+                        label: 'Favorites',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => FavoritesScreen()),
+                        ),
                       ),
-                    ),
-                  ],
+                      FeatureCard(
+                        icon: Icons.smart_toy_outlined,
+                        label: 'AI Assistant',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SmartAssistantWelcomeScreen()),
+                        ),
+                      ),
+                      FeatureCard(
+                        icon: Icons.checkroom_outlined,
+                        label: 'Fashion Feed',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const FashionStylingContentScreen()),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: height * 0.12),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: width * 0.04),
-            child: const Align(
-              alignment: Alignment.centerLeft,
-              child: Text("Select a Category",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          SizedBox(height: height * 0.015),
-          SizedBox(
-            height: height * 0.26,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: width * 0.04),
-              children: [
-                categoryCard("Add Items to Wardrobe", 'assets/images/wardrobe1.png',
-                    onTap: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => AddItemScreen()))),
-                SizedBox(width: width * 0.03),
-                categoryCard("AI Outfit Suggestions", 'assets/images/outfit.png'),
-                SizedBox(width: width * 0.03),
-                categoryCard("Virtual Try-On", 'assets/images/virtual try-on.png',
-                    onTap: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const VirtualTryOnScreen()))
-                ),
-                SizedBox(width: width * 0.03),
-                categoryCard("Weather based Suggestions", 'assets/images/weather.png',
-                    onTap: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const WeatherPage()))),
-                SizedBox(width: width * 0.03),
-                categoryCard("Smart Shopping", 'assets/images/smart shopping.png',
-                    onTap: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const SmartShoppingScreen()))),
-                SizedBox(width: width * 0.03),
-                categoryCard("Outfit Planner", 'assets/images/Outfit-Planner.jpg',
-                    onTap: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => OutfitCalendarScreen()))),
               ],
             ),
-          ),
-          SizedBox(height: height * 0.02),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: width * 0.04),
-            child: const Align(
-              alignment: Alignment.centerLeft,
-              child: Text("Recent Activity",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            SizedBox(height: height * 0.12),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+              child: const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Select a Category",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
             ),
-          ),
-          SizedBox(height: height * 0.015),
-          FutureBuilder<DocumentSnapshot?>(
-            future: fetchRecentWardrobeItem(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data == null) {
-                return const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text("No item added recently."),
-                );
-              }
-              final item = snapshot.data!.data() as Map<String, dynamic>;
-              final itemName = item['item_name'] ?? 'Unknown Item';
-              final imageBase64 = item['image_base64'];
-              return Padding(
+            SizedBox(height: height * 0.015),
+            SizedBox(
+              height: height * 0.26,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
-                child: Row(
-                  children: [
-                    Container(
-                      width: width * 0.2,
-                      height: height * 0.12,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        image: DecorationImage(
-                          image: imageBase64 != null
-                              ? MemoryImage(base64Decode(imageBase64.split(',').last))
-                              : const AssetImage('assets/images/shirt 1.png') as ImageProvider,
-                          fit: BoxFit.cover,
-                        ),
+                children: [
+                  categoryCard("Add Items to Wardrobe", 'assets/images/wardrobe1.png',
+                      onTap: () => Navigator.push(
+                          context, MaterialPageRoute(builder: (_) => AddItemScreen()))),
+                  SizedBox(width: width * 0.03),
+                  categoryCard("AI Outfit Suggestions", 'assets/images/outfit.png'),
+                  SizedBox(width: width * 0.03),
+                  categoryCard("Virtual Try-On", 'assets/images/virtual try-on.png',
+                      onTap: () => Navigator.push(
+                          context, MaterialPageRoute(builder: (_) => const VirtualTryOnScreen()))),
+                  SizedBox(width: width * 0.03),
+                  categoryCard("Weather based Suggestions", 'assets/images/weather.png',
+                      onTap: () => Navigator.push(
+                          context, MaterialPageRoute(builder: (_) => const WeatherPage()))),
+                  SizedBox(width: width * 0.03),
+                  categoryCard("Smart Shopping", 'assets/images/smart shopping.png',
+                      onTap: () => Navigator.push(
+                          context, MaterialPageRoute(builder: (_) => const SmartShoppingScreen()))),
+                  SizedBox(width: width * 0.03),
+                  categoryCard("Outfit Planner", 'assets/images/Outfit-Planner.jpg',
+                      onTap: () => Navigator.push(
+                          context, MaterialPageRoute(builder: (_) => OutfitCalendarScreen()))),
+                ],
+              ),
+            ),
+            SizedBox(height: height * 0.02),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+              child: const Align(
+                alignment: Alignment.centerLeft,
+                child: Text("Recent Activity",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            SizedBox(height: height * 0.015),
+            _recentItem == null
+                ? const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text("No item added recently."),
+            )
+                : Padding(
+              padding: EdgeInsets.symmetric(horizontal: width * 0.04),
+              child: Row(
+                children: [
+                  Container(
+                    width: width * 0.2,
+                    height: height * 0.12,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: (_recentItem!['image_base64'] != null)
+                            ? MemoryImage(base64Decode(
+                            _recentItem!['image_base64'].split(',').last))
+                            : const AssetImage('assets/images/shirt 1.png')
+                        as ImageProvider,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    SizedBox(width: width * 0.03),
-                    Expanded(
-                      child: Text("Recently Added: $itemName",
-                          style: TextStyle(fontSize: width * 0.035)),
+                  ),
+                  SizedBox(width: width * 0.03),
+                  Expanded(
+                    child: Text(
+                      "Recently Added: ${_recentItem!['item_name'] ?? 'Unknown Item'}",
+                      style: TextStyle(fontSize: width * 0.035),
                     ),
-                  ],
-                ),
-              );
-            },
-          ),
-          SizedBox(height: height * 0.08),
-        ],
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: height * 0.08),
+          ],
+        ),
       ),
     );
   }
 
   static Widget categoryCard(String title, String imagePath, {VoidCallback? onTap}) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            width: 220,
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.black12, width: 1.5),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
-                  blurRadius: 6,
-                  offset: const Offset(7, 7),
-                ),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.black12, width: 1.5),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.3),
+              blurRadius: 6,
+              offset: const Offset(7, 7),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(imagePath, height: 140, width: 220, fit: BoxFit.cover),
-                ),
-                const SizedBox(height: 8),
-                Text(title,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    textAlign: TextAlign.center),
-              ],
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset(imagePath, height: 140, width: 220, fit: BoxFit.cover),
             ),
-          ),
-        );
-      },
+            const SizedBox(height: 8),
+            Text(title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                textAlign: TextAlign.center),
+          ],
+        ),
+      ),
     );
   }
 }

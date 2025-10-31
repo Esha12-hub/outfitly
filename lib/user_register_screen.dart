@@ -70,11 +70,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    final email = _emailController.text.trim();
+
+    // ✅ Restrict registration to @outfitly.com emails only
+    if (!email.toLowerCase().endsWith('@outfitly.com')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only Outfitly accounts can register.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
+        email: email,
         password: _passwordController.text.trim(),
       );
 
@@ -97,7 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await user.updateDisplayName(_nameController.text.trim());
         await _firestore.collection('users').doc(user.uid).set({
           'name': _nameController.text.trim(),
-          'email': _emailController.text.trim(),
+          'email': email,
           'role': _selectedRole,
           'birthday': _birthdayController.text.trim(),
           'createdAt': FieldValue.serverTimestamp(),
@@ -116,11 +128,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
     } finally {
       setState(() => _isLoading = false);
     }
   }
+
 
   Widget _buildTextField({
     required TextEditingController controller,

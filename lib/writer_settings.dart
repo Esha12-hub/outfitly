@@ -9,6 +9,8 @@ import 'about_us_screen.dart';
 import 'writer_terms.dart';
 import 'writer_profile.dart';
 import 'writer_change_password.dart';
+import 'change_name_screen.dart';
+import 'change_profile_img.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -85,6 +87,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
+                                        _buildTile(Icons.person, 'Change Username', fontSize, onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const ChangeNameScreen()),
+                                          );
+                                        }),
+                                        _buildTile(Icons.image, 'Change Profile Image', fontSize, onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(builder: (context) => const ChangeProfileImageScreen()),
+                                          );
+                                        }),
                                         _buildTile(Icons.lock, 'Change Password', fontSize, onTap: () {
                                           Navigator.push(
                                             context,
@@ -191,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: GestureDetector(
-              onTap: _handleLogout,
+              onTap: () => Navigator.pop(context),
               child: Image.asset('assets/images/white_back_btn.png', width: fontSize * 1.5, height: fontSize * 1.5),
             ),
           ),
@@ -204,39 +218,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _handleLogout() async {
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text("Logout"),
-        content: const Text("Do you want to logout?"),
-        actions: [
-          TextButton(
-            child: const Text("No", style: TextStyle(color: Colors.black)),
-            onPressed: () => Navigator.pop(context, false),
-          ),
-          TextButton(
-            child: const Text("Yes", style: TextStyle(color: Colors.red)),
-            onPressed: () => Navigator.pop(context, true),
-          ),
-        ],
-      ),
-    );
-
-    if (shouldLogout == true) {
-      await FirebaseAuth.instance.signOut();
-      if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const WriterLoginScreen()),
-              (route) => false,
-        );
-      }
-    }
   }
 
   Widget _buildUserProfileTile(double fontSize) {
