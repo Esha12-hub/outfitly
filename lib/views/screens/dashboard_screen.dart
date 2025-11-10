@@ -119,18 +119,23 @@ class _DashboardHomeContent extends StatefulWidget {
 }
 
 class _DashboardHomeContentState extends State<_DashboardHomeContent> {
-  // Total wardrobe items for users with role "User"
+  // Total wardrobe items for all normal users or outfitly.com users
   Future<int> _getWardrobeItemCount() async {
-    final usersSnap = await FirebaseFirestore.instance
-        .collection('users')
-        .where('role', isEqualTo: 'User')
-        .get();
+    final usersSnap = await FirebaseFirestore.instance.collection('users').get();
 
     int totalItems = 0;
     for (var userDoc in usersSnap.docs) {
-      final wardrobeSnap = await userDoc.reference.collection('wardrobe').get();
-      totalItems += wardrobeSnap.docs.length;
+      final data = userDoc.data() as Map<String, dynamic>;
+      final role = data['role']?.toString().toLowerCase();
+      final email = data['email']?.toString().toLowerCase() ?? '';
+
+      // Include normal users and @outfitly.com or Google users
+      if (role == 'user' || email.endsWith('@outfitly.com') || role == 'User') {
+        final wardrobeSnap = await userDoc.reference.collection('wardrobe').get();
+        totalItems += wardrobeSnap.docs.length;
+      }
     }
+
     return totalItems;
   }
 
@@ -138,6 +143,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
   Future<int> _getPendingItemsCount() async {
     int totalPending = 0;
     final usersSnap = await FirebaseFirestore.instance.collection('users').get();
+
     for (var userDoc in usersSnap.docs) {
       final articlesSnap = await userDoc.reference
           .collection('articles')
@@ -145,6 +151,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
           .get();
       totalPending += articlesSnap.docs.length;
     }
+
     return totalPending;
   }
 
@@ -152,10 +159,12 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
   Future<int> _getFeedbackCount() async {
     int totalFeedback = 0;
     final usersSnap = await FirebaseFirestore.instance.collection('users').get();
+
     for (var userDoc in usersSnap.docs) {
       final feedbackSnap = await userDoc.reference.collection('feedback').get();
       totalFeedback += feedbackSnap.docs.length;
     }
+
     return totalFeedback;
   }
 
@@ -324,9 +333,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                     childAspectRatio: 1.2,
                     children: [
                       StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('users')
-                            .snapshots(),
+                        stream: FirebaseFirestore.instance.collection('users').snapshots(),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
                             return const MetricCard(
@@ -336,12 +343,17 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                               color: AppColors.primary,
                             );
                           }
+
                           final filteredUsers = snapshot.data!.docs.where((doc) {
-                            final role =
-                            (doc.data() as Map<String, dynamic>)['role'];
-                            return role != null &&
-                                role.toString().toLowerCase() == 'user';
+                            final data = doc.data() as Map<String, dynamic>;
+                            final role = (data['role'] ?? '').toString().toLowerCase();
+                            final email = (data['email'] ?? '').toString().toLowerCase();
+
+                            return role == 'user' ||
+                                role == 'content writer' ||
+                                email.endsWith('@outfitly.com');
                           }).toList();
+
 
                           return MetricCard(
                             title: 'Users',
@@ -351,6 +363,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                           );
                         },
                       ),
+
                       FutureBuilder<int>(
                         future: _getWardrobeItemCount(),
                         builder: (context, snapshot) {

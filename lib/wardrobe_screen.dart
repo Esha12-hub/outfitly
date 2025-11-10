@@ -21,6 +21,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   bool _isProgrammaticScroll = false;
   bool isLoading = true;
   String? userProfileImage;
+  bool _profileImageFetched = false; // ✅ prevents repeated fetching
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   }
 
   Future<void> fetchWardrobeItems() async {
+    setState(() => isLoading = true);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -47,17 +49,20 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         .collection('wardrobe');
 
     final snapshot = await wardrobeRef.get();
+
     Map<String, List<Map<String, dynamic>>> grouped = {};
 
     for (var doc in snapshot.docs) {
       final data = doc.data();
       data['id'] = doc.id;
-      final subcategory = data['subcategory'] ?? 'Other';
 
-      if (!grouped.containsKey(subcategory)) {
-        grouped[subcategory] = [];
-      }
-      grouped[subcategory]!.add(data);
+      final category = (data['category'] ?? 'Other').toString().trim();
+      final subcategory = (data['subcategory'] ?? 'Other').toString().trim();
+
+      final key = '$category - $subcategory';
+
+      if (!grouped.containsKey(key)) grouped[key] = [];
+      grouped[key]!.add(data);
     }
 
     setState(() {
@@ -71,6 +76,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   }
 
   Future<void> fetchUserProfileImage() async {
+    if (_profileImageFetched) return; // ✅ fetch only once
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -80,6 +86,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     if (userDoc.exists) {
       setState(() {
         userProfileImage = userDoc.data()?['image_base64'];
+        _profileImageFetched = true;
       });
     }
   }
@@ -134,12 +141,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
   ImageProvider _getImageProvider(String image) {
     try {
-      if (image.startsWith('http')) {
-        return NetworkImage(image);
-      } else {
-        return MemoryImage(base64Decode(
-            image.contains(',') ? image.split(',').last : image));
-      }
+      if (image.startsWith('http')) return NetworkImage(image);
+      return MemoryImage(
+          base64Decode(image.contains(',') ? image.split(',').last : image));
     } catch (_) {
       return const AssetImage('assets/images/user (1).png');
     }
@@ -183,16 +187,20 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   ],
                 ),
               )
-                  : SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: subcategories.map((subcategory) {
-                    return _buildSection(
-                      subcategory,
-                      wardrobeItemsBySubcategory[subcategory]!,
-                    );
-                  }).toList(),
+                  : RefreshIndicator(
+                onRefresh: fetchWardrobeItems, // ✅ pull-to-refresh
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: subcategories.map((subcategory) {
+                      return _buildSection(
+                        subcategory,
+                        wardrobeItemsBySubcategory[subcategory]!,
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
@@ -270,9 +278,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             padding: const EdgeInsets.only(right: 8.0),
             child: GestureDetector(
               onTap: () {
-                setState(() {
-                  selectedIndex = index;
-                });
+                setState(() => selectedIndex = index);
                 _scrollToSection(subcategories[index]);
               },
               child: Container(
@@ -284,7 +290,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),
                 child: Text(
-                  subcategories[index],
+                  subcategories[index].split(' - ').last,
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
@@ -306,7 +312,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title,
+            title.split(' - ').last,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -330,7 +336,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ItemDetailScreen(itemId: itemId),
+                        builder: (context) =>
+                            ItemDetailScreen(itemId: itemId),
                       ),
                     );
                   }

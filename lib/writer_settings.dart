@@ -206,7 +206,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             alignment: Alignment.centerLeft,
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
-              child: Image.asset('assets/images/white_back_btn.png', width: fontSize * 1.5, height: fontSize * 1.5),
+              child: Image.asset('assets/images/white_back_btn.png', width: fontSize * 1.8, height: fontSize * 1.8),
             ),
           ),
           Center(

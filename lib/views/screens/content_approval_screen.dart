@@ -1,4 +1,4 @@
-import 'dart:convert'; // for base64Decode
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +9,6 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 import '../../utils/color_utils.dart';
 import '../widgets/content_card.dart';
-import 'dashboard_screen.dart';
 import 'admin_login_screen.dart';
 
 class ContentApprovalScreen extends StatefulWidget {
@@ -29,21 +28,15 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
   String rejectionReason = '';
   String searchQuery = '';
   DocumentReference? selectedDocRef;
-
   SortOption selectedSortOption = SortOption.newestFirst;
-
   final TextEditingController searchController = TextEditingController();
+  final List<String> filterTabs = ['pending', 'approved', 'rejected'];
 
-  final List<String> filterTabs = [
-    'pending',
-    'approved',
-    'rejected',
-  ];
+  QuerySnapshot? lastSnapshot;
+  final Map<String, Map<String, dynamic>> userCache = {}; // cache user data
 
   void _onFilterTapped(int index) {
-    setState(() {
-      selectedFilterIndex = index;
-    });
+    setState(() => selectedFilterIndex = index);
   }
 
   void _toggleSearchBar() {
@@ -57,9 +50,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
   }
 
   void _onSearchChanged(String value) {
-    setState(() {
-      searchQuery = value.trim().toLowerCase();
-    });
+    setState(() => searchQuery = value.trim().toLowerCase());
   }
 
   Future<void> _acceptContent(DocumentReference docRef) async {
@@ -73,15 +64,9 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
   }
 
   void _showAcceptanceOverlay() {
-    setState(() {
-      showAcceptanceOverlay = true;
-    });
+    setState(() => showAcceptanceOverlay = true);
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          showAcceptanceOverlay = false;
-        });
-      }
+      if (mounted) setState(() => showAcceptanceOverlay = false);
     });
   }
 
@@ -101,31 +86,44 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
   }
 
   Future<void> _submitRejection() async {
-    if (rejectionReason.trim().isNotEmpty && selectedDocRef != null) {
-      try {
-        await selectedDocRef!.update({
-          'status': 'rejected',
-          'rejectionReason': rejectionReason.trim(),
-        });
-        Get.snackbar(
-          'Content Rejected',
-          'Content has been rejected with reason: $rejectionReason',
-          backgroundColor: AppColors.error,
-          colorText: AppColors.textWhite,
-        );
-        _hideRejectionDialog();
-      } catch (e) {
-        Get.snackbar('Error', 'Failed to reject content: $e',
-            backgroundColor: AppColors.error, colorText: AppColors.textWhite);
-      }
-    } else {
+    if (rejectionReason.trim().isEmpty || selectedDocRef == null) {
       Get.snackbar(
         'Error',
         'Please enter a rejection reason',
         backgroundColor: AppColors.error,
         colorText: AppColors.textWhite,
       );
+      return;
     }
+
+    try {
+      await selectedDocRef!.update({
+        'status': 'rejected',
+        'rejectionReason': rejectionReason.trim(),
+      });
+      Get.snackbar(
+        'Content Rejected',
+        'Content has been rejected with reason: $rejectionReason',
+        backgroundColor: AppColors.error,
+        colorText: AppColors.textWhite,
+      );
+      _hideRejectionDialog();
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to reject content: $e',
+          backgroundColor: AppColors.error, colorText: AppColors.textWhite);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _getUserData(DocumentReference? ref) async {
+    if (ref == null) return null;
+    if (userCache.containsKey(ref.id)) return userCache[ref.id];
+
+    final snapshot = await ref.get();
+    if (snapshot.exists) {
+      userCache[ref.id] = snapshot.data() as Map<String, dynamic>;
+      return userCache[ref.id];
+    }
+    return null;
   }
 
   @override
@@ -149,23 +147,17 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                         onPressed: _handleLogout,
                         icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
                       ),
-
                       Expanded(
                         child: Text(
                           'Content Management',
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.whiteHeading
-                              .copyWith(fontSize: width * 0.05),
+                          style: AppTextStyles.whiteHeading.copyWith(fontSize: width * 0.05),
                         ),
                       ),
                       IconButton(
                         onPressed: _toggleSearchBar,
-                        icon: const Icon(
-                          Icons.search,
-                          color: AppColors.textWhite,
-                        ),
+                        icon: const Icon(Icons.search, color: AppColors.textWhite),
                       ),
-
                     ],
                   ),
                 ),
@@ -190,7 +182,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                     ),
                   ),
 
-                SizedBox(height: showSearchBar ? height * 0.015 : height * 0.0),
+                SizedBox(height: showSearchBar ? height * 0.015 : 0),
 
                 // Main Content
                 Expanded(
@@ -205,6 +197,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                     child: Column(
                       children: [
                         SizedBox(height: 10),
+
                         // Filter Tabs
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
@@ -214,11 +207,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                               int index = entry.key;
                               String label = entry.value;
                               return Padding(
-                                padding: EdgeInsets.only(
-                                  right: index < filterTabs.length - 1
-                                      ? width * 0.03
-                                      : 0,
-                                ),
+                                padding: EdgeInsets.only(right: index < filterTabs.length - 1 ? width * 0.03 : 0),
                                 child: _buildFilterTab(
                                   label[0].toUpperCase() + label.substring(1),
                                   selectedFilterIndex == index,
@@ -232,15 +221,12 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
 
                         SizedBox(height: height * 0.02),
 
-                        // Sort By Section with Dropdown
+                        // Sort By Dropdown
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                           child: Row(
                             children: [
-                              const Text(
-                                'Sort by:',
-                                style: AppTextStyles.bodyMedium,
-                              ),
+                              const Text('Sort by:', style: AppTextStyles.bodyMedium),
                               SizedBox(width: width * 0.02),
                               DropdownButton<SortOption>(
                                 value: selectedSortOption,
@@ -248,19 +234,13 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                                 underline: Container(),
                                 items: const [
                                   DropdownMenuItem(
-                                    value: SortOption.newestFirst,
-                                    child: Text('Newest First'),
-                                  ),
+                                      value: SortOption.newestFirst, child: Text('Newest First')),
                                   DropdownMenuItem(
-                                    value: SortOption.oldestFirst,
-                                    child: Text('Oldest First'),
-                                  ),
+                                      value: SortOption.oldestFirst, child: Text('Oldest First')),
                                 ],
                                 onChanged: (SortOption? newValue) {
                                   if (newValue != null) {
-                                    setState(() {
-                                      selectedSortOption = newValue;
-                                    });
+                                    setState(() => selectedSortOption = newValue);
                                   }
                                 },
                               ),
@@ -275,41 +255,27 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collectionGroup('articles')
+                                .orderBy('timestamp',
+                                descending:
+                                selectedSortOption == SortOption.newestFirst)
                                 .snapshots(),
                             builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return const Center(child: CircularProgressIndicator());
-                              }
+                              if (snapshot.hasData) lastSnapshot = snapshot.data;
 
-                              final allDocs = snapshot.data!.docs;
+                              final docs = snapshot.hasData
+                                  ? snapshot.data!.docs
+                                  : lastSnapshot?.docs ?? [];
 
-                              final filteredDocs = allDocs.where((doc) {
+                              final filteredDocs = docs.where((doc) {
                                 final data = doc.data() as Map<String, dynamic>;
                                 final status = data['status'] as String?;
                                 final title = (data['title'] ?? '').toString().toLowerCase();
                                 final matchesStatus = status == filterTabs[selectedFilterIndex];
-                                final matchesSearch =
-                                    searchQuery.isEmpty || title.contains(searchQuery);
+                                final matchesSearch = searchQuery.isEmpty || title.contains(searchQuery);
                                 return matchesStatus && matchesSearch;
                               }).toList();
 
-                              // Sort by timestamp based on dropdown
-                              filteredDocs.sort((a, b) {
-                                final aTimestamp = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                                final bTimestamp = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                                final aDate = aTimestamp?.toDate() ?? DateTime(1970);
-                                final bDate = bTimestamp?.toDate() ?? DateTime(1970);
-
-                                if (selectedSortOption == SortOption.newestFirst) {
-                                  return bDate.compareTo(aDate);
-                                } else {
-                                  return aDate.compareTo(bDate);
-                                }
-                              });
-
-                              if (filteredDocs.isEmpty) {
-                                return const Center(child: Text('No articles found.'));
-                              }
+                              if (filteredDocs.isEmpty) return const Center(child: Text('No articles found.'));
 
                               return ListView.separated(
                                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
@@ -319,25 +285,23 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                                   final articleDoc = filteredDocs[index];
                                   final data = articleDoc.data() as Map<String, dynamic>;
 
-                                  final String? base64Image = data['mediaBase64'] as String?;
-                                  final Uint8List? imageBytes =
-                                  base64Image != null ? base64Decode(base64Image) : null;
-
-                                  final String articleDate = data['timestamp'] != null
+                                  final imageBytes = data['mediaBase64'] != null
+                                      ? base64Decode(data['mediaBase64'])
+                                      : null;
+                                  final articleDate = data['timestamp'] != null
                                       ? (data['timestamp'] as Timestamp).toDate().toString()
                                       : '';
 
                                   final userRef = articleDoc.reference.parent.parent;
 
-                                  return FutureBuilder<DocumentSnapshot>(
-                                    future: userRef?.get(),
+                                  return FutureBuilder<Map<String, dynamic>?>(
+                                    future: _getUserData(userRef),
                                     builder: (context, userSnapshot) {
-                                      if (!userSnapshot.hasData) return const SizedBox();
-                                      final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-                                      final String authorName = userData['name'] ?? '';
-                                      final String? profileBase64 = userData['image_base64'];
-                                      final Uint8List? profileImageBytes =
-                                      profileBase64 != null ? base64Decode(profileBase64) : null;
+                                      final userData = userSnapshot.data;
+                                      final authorName = userData?['name'] ?? 'Unknown';
+                                      final profileImageBytes = userData?['image_base64'] != null
+                                          ? base64Decode(userData!['image_base64'])
+                                          : null;
 
                                       return ContentCard(
                                         title: data['title'] ?? '',
@@ -387,11 +351,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                           color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.check,
-                          color: AppColors.textWhite,
-                          size: 40,
-                        ),
+                        child: const Icon(Icons.check, color: AppColors.textWhite, size: 40),
                       ),
                       SizedBox(height: height * 0.02),
                       const Text(
@@ -449,11 +409,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                             borderSide: const BorderSide(color: AppColors.primary),
                           ),
                         ),
-                        onChanged: (value) {
-                          setState(() {
-                            rejectionReason = value;
-                          });
-                        },
+                        onChanged: (value) => setState(() => rejectionReason = value),
                       ),
                       SizedBox(height: height * 0.03),
                       Row(
@@ -496,6 +452,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
       ),
     );
   }
+
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -529,8 +486,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
     }
   }
 
-  Widget _buildFilterTab(
-      String label, bool isSelected, VoidCallback onTap, double width) {
+  Widget _buildFilterTab(String label, bool isSelected, VoidCallback onTap, double width) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -539,10 +495,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(width * 0.05),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.textPrimary,
-            width: 1.5,
-          ),
+          border: Border.all(color: isSelected ? AppColors.primary : AppColors.textPrimary, width: 1.5),
         ),
         child: Center(
           child: Text(

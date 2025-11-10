@@ -13,8 +13,11 @@ import 'writer_login_screen.dart';
 import 'user_login_screen.dart';
 import 'change_name_screen.dart';
 import 'change_profile_img.dart';
+import 'user_dashboard.dart';
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
@@ -142,8 +145,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return WillPopScope(
       onWillPop: () async {
-        // Intercept system back button and show logout dialog
-        await _showLogoutDialog();
+        // 🔙 Navigate to WardrobeHomeScreen on system back button
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WardrobeHomeScreen()),
+        );
         return false; // prevent default pop
       },
       child: Scaffold(
@@ -320,13 +326,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       builder: (_) => const AboutUsScreen()),
                                 );
                               }),
-                          _iconTile(Icons.smart_toy_outlined, "User Support", w, onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const SmartAssistantWelcomeScreen()),
-                            );
-                          }),
+                          _iconTile(Icons.smart_toy_outlined, "User Support", w,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const SmartAssistantWelcomeScreen()),
+                                );
+                              }),
 
                           SizedBox(height: 24 * h),
 
@@ -366,7 +374,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Positioned(
                         left: 16 * w,
                         child: IconButton(
-                          onPressed: _showLogoutDialog,
+                          // 🔙 Navigate to WardrobeHomeScreen instead of logout
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const WardrobeHomeScreen()),
+                            );
+                          },
                           icon: Image.asset(
                             "assets/images/white_back_btn.png",
                             height: 30 * w,

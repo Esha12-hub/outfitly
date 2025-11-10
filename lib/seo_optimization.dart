@@ -216,7 +216,7 @@ class _SeoAnalyzerScreenState extends State<SeoAnalyzerScreen> {
           onTap: _handleLogout,
           child: Padding(
             padding: const EdgeInsets.all(9.0),
-            child: Image.asset('assets/images/white_back_btn.png'),
+            child: Image.asset('assets/images/white_back_btn.png',height: 10,width: 10,),
           ),
         ),
       ),

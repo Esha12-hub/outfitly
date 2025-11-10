@@ -21,9 +21,14 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
   final _captionController = TextEditingController();
   String _selectedCategory = 'Styling Tips';
   String? _selectedMediaBase64;
-  bool _isVideo = false;
   bool _loading = true;
   bool _updating = false;
+
+  // Text formatting states
+  bool _isBold = false;
+  bool _isItalic = false;
+  bool _isUnderline = false;
+  TextAlign _textAlign = TextAlign.left;
 
   @override
   void initState() {
@@ -63,13 +68,12 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
           String? media = data['mediaBase64'];
           if (media != null && media.contains(',')) media = media.split(',').last;
           _selectedMediaBase64 = media;
-          _isVideo = data['isVideo'] ?? false;
           _loading = false;
         });
       } else {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Article not found')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Article not found')));
       }
     } catch (e) {
       setState(() => _loading = false);
@@ -78,18 +82,15 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
     }
   }
 
-  Future<void> _pickMedia(ImageSource source, bool isImage) async {
+  Future<void> _pickMedia(ImageSource source) async {
     final picker = ImagePicker();
-    final pickedFile = await (isImage
-        ? picker.pickImage(source: source)
-        : picker.pickVideo(source: source));
+    final pickedFile = await picker.pickImage(source: source);
     if (pickedFile == null) return;
 
     final file = File(pickedFile.path);
     final bytes = await file.readAsBytes();
     setState(() {
       _selectedMediaBase64 = base64Encode(bytes);
-      _isVideo = !isImage;
     });
   }
 
@@ -114,7 +115,6 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
         'content': _contentController.text.trim(),
         'caption': _captionController.text.trim(),
         'mediaBase64': _selectedMediaBase64,
-        'isVideo': _isVideo,
         'status': 'pending',
         'updatedAt': FieldValue.serverTimestamp(),
         'rejectionReason': FieldValue.delete(),
@@ -139,8 +139,12 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
         title: const Text('Logout'),
         content: const Text('Do you want to logout?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("No")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Yes", style: TextStyle(color: Colors.red))),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("No")),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Yes", style: TextStyle(color: Colors.red))),
         ],
       ),
     );
@@ -178,11 +182,13 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
             children: [
               // Top Bar
               Container(
-                padding: EdgeInsets.symmetric(horizontal: basePadding, vertical: basePadding),
+                padding: EdgeInsets.symmetric(
+                    horizontal: basePadding, vertical: basePadding),
                 child: Row(
                   children: [
                     IconButton(
-                      icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
+                      icon: Image.asset('assets/images/white_back_btn.png',
+                          width: 28, height: 28),
                       onPressed: () => Navigator.pop(context),
                     ),
                     const SizedBox(width: 8),
@@ -198,7 +204,8 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.logout, color: Colors.white, size: screenWidth * 0.07),
+                      icon: Icon(Icons.logout,
+                          color: Colors.white, size: screenWidth * 0.07),
                       onPressed: _handleLogout,
                     ),
                   ],
@@ -208,13 +215,15 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    borderRadius:
+                    BorderRadius.vertical(top: Radius.circular(30)),
                   ),
                   padding: EdgeInsets.all(basePadding),
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        _buildSection("Article Title", _buildTextField("Enter title...", _titleController)),
+                        _buildSection("Article Title",
+                            _buildTextField("Enter title...", _titleController)),
                         SizedBox(height: sectionSpacing),
                         _buildSection("Category", _buildDropdown()),
                         SizedBox(height: sectionSpacing),
@@ -222,7 +231,8 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
                         SizedBox(height: sectionSpacing),
                         _buildSection("Content", _buildRichEditor(contentHeight)),
                         SizedBox(height: sectionSpacing),
-                        _buildSection("Insert Media", _buildMediaUpload(contentHeight)),
+                        _buildSection("Insert Image",
+                            _buildMediaUpload(contentHeight)),
                         SizedBox(height: sectionSpacing * 1.5),
                         Row(
                           children: [
@@ -230,26 +240,34 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
                               child: OutlinedButton(
                                 onPressed: () {},
                                 style: OutlinedButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: screenHeight * 0.02),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                      BorderRadius.circular(12)),
                                   side: const BorderSide(color: Colors.black),
                                   foregroundColor: Colors.black,
                                 ),
                                 child: const Text("Save a Draft"),
                               ),
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton(
                                 onPressed: _updating ? null : _updateArticle,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.pink,
-                                  padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: screenHeight * 0.02),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius:
+                                      BorderRadius.circular(12)),
                                 ),
                                 child: _updating
-                                    ? const CircularProgressIndicator(color: Colors.white)
-                                    : const Text("Update Article", style: TextStyle(color: Colors.white)),
+                                    ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                    : const Text("Update Article",
+                                    style: TextStyle(color: Colors.white)),
                               ),
                             ),
                           ],
@@ -303,13 +321,17 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(color: Colors.grey.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 2)),
+          BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              blurRadius: 6,
+              offset: const Offset(0, 2)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(label,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
           const SizedBox(height: 8),
           child,
         ],
@@ -320,59 +342,115 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
   InputDecoration _inputDecoration() => InputDecoration(
     filled: true,
     fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.grey)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.grey)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
+    contentPadding:
+    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.grey)),
+    enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.grey)),
+    focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.black)),
     hintStyle: TextStyle(color: Colors.grey.shade400),
   );
 
   Widget _buildTextField(String hint, TextEditingController controller) =>
-      TextField(controller: controller, style: const TextStyle(color: Colors.grey), decoration: _inputDecoration().copyWith(hintText: hint));
+      TextField(
+        controller: controller,
+        style: const TextStyle(color: Colors.grey),
+        decoration: _inputDecoration().copyWith(hintText: hint),
+      );
 
-  Widget _buildRichEditor(double height) => Container(
-    height: height,
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      border: Border.all(color: Colors.grey.shade300),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: TextField(
-      controller: _contentController,
-      maxLines: null,
-      expands: true,
-      style: const TextStyle(color: Colors.black),
-      decoration: const InputDecoration.collapsed(
-        hintText: 'Start writing your article...',
-        hintStyle: TextStyle(color: Colors.grey),
+  /// 📝 Rich Editor with Bold / Italic / Underline / Alignment controls
+  Widget _buildRichEditor(double height) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            IconButton(
+                icon: Icon(Icons.format_bold,
+                    color: _isBold ? Colors.pink : Colors.black),
+                onPressed: () => setState(() => _isBold = !_isBold)),
+            IconButton(
+                icon: Icon(Icons.format_italic,
+                    color: _isItalic ? Colors.pink : Colors.black),
+                onPressed: () => setState(() => _isItalic = !_isItalic)),
+            IconButton(
+                icon: Icon(Icons.format_underline,
+                    color: _isUnderline ? Colors.pink : Colors.black),
+                onPressed: () => setState(() => _isUnderline = !_isUnderline)),
+            const SizedBox(width: 8),
+            IconButton(
+                icon: Icon(Icons.format_align_left,
+                    color:
+                    _textAlign == TextAlign.left ? Colors.pink : Colors.black),
+                onPressed: () => setState(() => _textAlign = TextAlign.left)),
+            IconButton(
+                icon: Icon(Icons.format_align_center,
+                    color: _textAlign == TextAlign.center
+                        ? Colors.pink
+                        : Colors.black),
+                onPressed: () => setState(() => _textAlign = TextAlign.center)),
+            IconButton(
+                icon: Icon(Icons.format_align_right,
+                    color: _textAlign == TextAlign.right
+                        ? Colors.pink
+                        : Colors.black),
+                onPressed: () => setState(() => _textAlign = TextAlign.right)),
+            IconButton(
+                icon: Icon(Icons.format_align_justify,
+                    color: _textAlign == TextAlign.justify
+                        ? Colors.pink
+                        : Colors.black),
+                onPressed: () => setState(() => _textAlign = TextAlign.justify)),
+          ],
+        ),
       ),
-    ),
+      const SizedBox(height: 8),
+      Container(
+        height: height,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: TextField(
+          controller: _contentController,
+          maxLines: null,
+          expands: true,
+          textAlign: _textAlign,
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: _isBold ? FontWeight.bold : FontWeight.normal,
+            fontStyle: _isItalic ? FontStyle.italic : FontStyle.normal,
+            decoration: _isUnderline
+                ? TextDecoration.underline
+                : TextDecoration.none,
+          ),
+          decoration: const InputDecoration.collapsed(
+            hintText: 'Start writing your article...',
+            hintStyle: TextStyle(color: Colors.grey),
+          ),
+        ),
+      ),
+    ],
   );
 
   Widget _buildMediaUpload(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Row(
-        children: [
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _pickMedia(ImageSource.gallery, true),
-              icon: const Icon(Icons.photo),
-              label: const Text("Pick Image"),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton.icon(
-              onPressed: () => _pickMedia(ImageSource.gallery, false),
-              icon: const Icon(Icons.videocam),
-              label: const Text("Pick Video"),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: Colors.black),
-            ),
-          ),
-        ],
+      ElevatedButton.icon(
+        onPressed: () => _pickMedia(ImageSource.gallery),
+        icon: const Icon(Icons.photo),
+        label: const Text("Pick Image"),
+        style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey[200],
+            foregroundColor: Colors.black),
       ),
       const SizedBox(height: 12),
       if (_selectedMediaBase64 != null)
@@ -383,11 +461,10 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
             border: Border.all(color: Colors.grey),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: _isVideo
-              ? const Center(child: Text("Video selected"))
-              : ClipRRect(
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.memory(base64Decode(_selectedMediaBase64!), fit: BoxFit.cover),
+            child: Image.memory(base64Decode(_selectedMediaBase64!),
+                fit: BoxFit.cover),
           ),
         ),
       const SizedBox(height: 8),

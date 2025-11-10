@@ -226,17 +226,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             _isLoadingMetrics
                                 ? const CircularProgressIndicator()
                                 : Row(
-                              children: [
-                                Icon(Icons.thumb_up,
-                                    color: Colors.blueGrey, size: screenWidth * 0.045),
-                                SizedBox(width: screenWidth * 0.01),
-                                Text('$likesCount'),
-                                SizedBox(width: screenWidth * 0.04),
-                                Icon(Icons.comment,
-                                    color: Colors.blueGrey, size: screenWidth * 0.045),
-                                SizedBox(width: screenWidth * 0.01),
-                                Text('$commentsCount'),
-                              ],
+
                             ),
                           ],
                         ),

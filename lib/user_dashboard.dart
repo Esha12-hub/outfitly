@@ -39,7 +39,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
     const Center(child: Text('Home Screen')),
     const WardrobeScreen(),
     AddItemScreen(),
-    const AiOutfitSuggestionsScreen(),
+    const OutfitScreen(),
     const UserProfileScreen(),
   ];
 
@@ -351,7 +351,9 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                       onTap: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => AddItemScreen()))),
                   SizedBox(width: width * 0.03),
-                  categoryCard("AI Outfit Suggestions", 'assets/images/outfit.png'),
+                  categoryCard("AI Outfit Suggestions", 'assets/images/outfit.png',
+                      onTap: () => Navigator.push(
+                          context, MaterialPageRoute(builder: (_) => const OutfitScreen()))),
                   SizedBox(width: width * 0.03),
                   categoryCard("Virtual Try-On", 'assets/images/virtual try-on.png',
                       onTap: () => Navigator.push(

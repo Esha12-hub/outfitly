@@ -40,10 +40,22 @@ class _EditItemScreenState extends State<EditItemScreen> {
     super.initState();
     itemNameController.text = widget.itemData['item_name'] ?? '';
     fabricController.text = widget.itemData['fabric'] ?? '';
-    selectedCategory = widget.itemData['category'] ?? 'Top';
-    selectedSubcategory = widget.itemData['subcategory'] ?? 'Shirt';
-    selectedSeason = widget.itemData['season'] ?? 'Summer';
-    selectedOccasion = widget.itemData['occasion'] ?? 'Casual';
+
+    // Safely handle custom user categories or fields
+    String? cat = widget.itemData['category'];
+    String? sub = widget.itemData['subcategory'];
+    String? sea = widget.itemData['season'];
+    String? occ = widget.itemData['occasion'];
+
+    if (cat != null && !categories.contains(cat)) categories.add(cat);
+    if (sub != null && !subcategories.contains(sub)) subcategories.add(sub);
+    if (sea != null && !seasons.contains(sea)) seasons.add(sea);
+    if (occ != null && !occasions.contains(occ)) occasions.add(occ);
+
+    selectedCategory = cat ?? 'Top';
+    selectedSubcategory = sub ?? 'Shirt';
+    selectedSeason = sea ?? 'Summer';
+    selectedOccasion = occ ?? 'Casual';
 
     if (widget.itemData['colors'] != null) {
       List<dynamic> savedColors = widget.itemData['colors'];
@@ -160,6 +172,38 @@ class _EditItemScreenState extends State<EditItemScreen> {
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  // Add new value dialog for category, subcategory, etc.
+  Future<void> _addNewValueDialog(
+      {required String title, required List<String> list, required Function(String) onAdded}) async {
+    final controller = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Add New $title'),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(hintText: 'Enter new $title name'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              final newVal = controller.text.trim();
+              if (newVal.isNotEmpty && !list.contains(newVal)) {
+                setState(() {
+                  list.add(newVal);
+                  onAdded(newVal);
+                });
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Add'),
+          ),
+        ],
       ),
     );
   }
@@ -304,47 +348,115 @@ class _EditItemScreenState extends State<EditItemScreen> {
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          DropdownButtonFormField<String>(
-                            value: selectedCategory,
-                            items: categories
-                                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                                .toList(),
-                            onChanged: (val) => setState(() => selectedCategory = val!),
-                            decoration: const InputDecoration(
-                                labelText: "Category", border: OutlineInputBorder()),
+                          // Category Dropdown with Add Button
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedCategory,
+                                  items: categories
+                                      .map((c) =>
+                                      DropdownMenuItem(value: c, child: Text(c)))
+                                      .toList(),
+                                  onChanged: (val) =>
+                                      setState(() => selectedCategory = val!),
+                                  decoration: const InputDecoration(
+                                      labelText: "Category",
+                                      border: OutlineInputBorder()),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle, color: Colors.pink),
+                                onPressed: () => _addNewValueDialog(
+                                    title: 'Category',
+                                    list: categories,
+                                    onAdded: (v) => selectedCategory = v),
+                              ),
+                            ],
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          DropdownButtonFormField<String>(
-                            value: selectedSubcategory,
-                            items: subcategories
-                                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                                .toList(),
-                            onChanged: (val) => setState(() => selectedSubcategory = val!),
-                            decoration: const InputDecoration(
-                                labelText: "Subcategory", border: OutlineInputBorder()),
+                          // Subcategory Dropdown
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedSubcategory,
+                                  items: subcategories
+                                      .map((s) =>
+                                      DropdownMenuItem(value: s, child: Text(s)))
+                                      .toList(),
+                                  onChanged: (val) =>
+                                      setState(() => selectedSubcategory = val!),
+                                  decoration: const InputDecoration(
+                                      labelText: "Subcategory",
+                                      border: OutlineInputBorder()),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle, color: Colors.pink),
+                                onPressed: () => _addNewValueDialog(
+                                    title: 'Subcategory',
+                                    list: subcategories,
+                                    onAdded: (v) => selectedSubcategory = v),
+                              ),
+                            ],
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          DropdownButtonFormField<String>(
-                            value: selectedSeason,
-                            items: seasons
-                                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                                .toList(),
-                            onChanged: (val) => setState(() => selectedSeason = val!),
-                            decoration: const InputDecoration(
-                                labelText: "Season", border: OutlineInputBorder()),
+                          // Season Dropdown
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedSeason,
+                                  items: seasons
+                                      .map((s) =>
+                                      DropdownMenuItem(value: s, child: Text(s)))
+                                      .toList(),
+                                  onChanged: (val) =>
+                                      setState(() => selectedSeason = val!),
+                                  decoration: const InputDecoration(
+                                      labelText: "Season",
+                                      border: OutlineInputBorder()),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle, color: Colors.pink),
+                                onPressed: () => _addNewValueDialog(
+                                    title: 'Season',
+                                    list: seasons,
+                                    onAdded: (v) => selectedSeason = v),
+                              ),
+                            ],
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          DropdownButtonFormField<String>(
-                            value: selectedOccasion,
-                            items: occasions
-                                .map((o) => DropdownMenuItem(value: o, child: Text(o)))
-                                .toList(),
-                            onChanged: (val) => setState(() => selectedOccasion = val!),
-                            decoration: const InputDecoration(
-                                labelText: "Occasion", border: OutlineInputBorder()),
+                          // Occasion Dropdown
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: selectedOccasion,
+                                  items: occasions
+                                      .map((o) =>
+                                      DropdownMenuItem(value: o, child: Text(o)))
+                                      .toList(),
+                                  onChanged: (val) =>
+                                      setState(() => selectedOccasion = val!),
+                                  decoration: const InputDecoration(
+                                      labelText: "Occasion",
+                                      border: OutlineInputBorder()),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle, color: Colors.pink),
+                                onPressed: () => _addNewValueDialog(
+                                    title: 'Occasion',
+                                    list: occasions,
+                                    onAdded: (v) => selectedOccasion = v),
+                              ),
+                            ],
                           ),
                           SizedBox(height: fieldSpacing),
 

@@ -20,6 +20,8 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
 
   /// ✅ Cache user data (name, photoUrl, base64)
   final Map<String, Map<String, dynamic>> _userCache = {};
+  String? activeReplyCommentId;
+
 
   @override
   void initState() {
@@ -222,7 +224,10 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
         title: const Text(
           'My Article Details',
           style: TextStyle(
-              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20),
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
         leading: GestureDetector(
           onTap: () => Navigator.pop(context),
@@ -230,12 +235,28 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
             padding: const EdgeInsets.all(8.0),
             child: Image.asset(
               "assets/images/white_back_btn.png",
-              height: 20,
-              width: 20,
+              height: 8,
+              width: 8,
             ),
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: GestureDetector(
+              onTap: () => setState(() {
+                // Your refresh logic here
+              }),
+              child: Icon(
+                Icons.refresh,
+                color: Colors.white,
+                size: 28, // you can replace with iconSize variable if defined
+              ),
+            ),
+          ),
+        ],
       ),
+
       body: LayoutBuilder(
         builder: (context, constraints) => SingleChildScrollView(
           child: ConstrainedBox(
@@ -406,8 +427,9 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                           final timestamp = data['timestamp'];
                           final likes = List<String>.from(data['likedBy'] ?? []);
                           final isLiked = likes.contains(writerId);
-                          bool showReplyField = false;
+                          final bool showReplyField = activeReplyCommentId == doc.id;
                           final replyController = TextEditingController();
+
 
                           return StatefulBuilder(
                             builder: (context, setLocalState) {
@@ -507,10 +529,16 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                       const SizedBox(width: 10),
                                                       GestureDetector(
                                                         onTap: () {
-                                                          setLocalState(() {
-                                                            showReplyField = !showReplyField;
+                                                          setState(() {
+                                                            // If same comment clicked again → close
+                                                            if (activeReplyCommentId == doc.id) {
+                                                              activeReplyCommentId = null;
+                                                            } else {
+                                                              activeReplyCommentId = doc.id; // Open reply for this comment only
+                                                            }
                                                           });
                                                         },
+
                                                         child: Text(
                                                           'Reply',
                                                           style: TextStyle(
@@ -882,9 +910,10 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                   onPressed: () async {
                                                     await replyToComment(doc.id, replyController.text.trim());
                                                     replyController.clear();
-                                                    setLocalState(() {
-                                                      showReplyField = false;
+                                                    setState(() {
+                                                      activeReplyCommentId = null;
                                                     });
+
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       const SnackBar(content: Text("Reply sent successfully")),
                                                     );

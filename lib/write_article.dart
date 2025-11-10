@@ -396,6 +396,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
+            // Bold / Italic / Underline / List
             IconButton(
               icon: Icon(Icons.format_bold, color: _isBold ? Colors.pink : Colors.black),
               onPressed: () => setState(() => _isBold = !_isBold),
@@ -412,7 +413,10 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
               icon: Icon(Icons.format_list_bulleted, color: _isList ? Colors.pink : Colors.black),
               onPressed: () => setState(() => _isList = !_isList),
             ),
+
             const SizedBox(width: 8),
+
+            // Alignment controls
             IconButton(
               icon: Icon(Icons.format_align_left,
                   color: _textAlign == TextAlign.left ? Colors.pink : Colors.black),
@@ -428,11 +432,17 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
                   color: _textAlign == TextAlign.right ? Colors.pink : Colors.black),
               onPressed: () => setState(() => _textAlign = TextAlign.right),
             ),
-            const SizedBox(width: 12),
+            IconButton(
+              icon: Icon(Icons.format_align_justify,
+                  color: _textAlign == TextAlign.justify ? Colors.pink : Colors.black),
+              onPressed: () => setState(() => _textAlign = TextAlign.justify),
+            ),
           ],
         ),
       ),
       const SizedBox(height: 8),
+
+      // Text Editor
       Container(
         height: height,
         padding: const EdgeInsets.all(12),
@@ -468,6 +478,7 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       ),
     ],
   );
+
 
   Widget _buildMediaUpload(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,

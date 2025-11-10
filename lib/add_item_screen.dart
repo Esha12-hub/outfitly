@@ -33,6 +33,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   final picker = ImagePicker();
 
+  bool isSaving = false; // ✅ for save button loading
+
   Future<bool> _checkMediaPermission() async {
     final prefs = await SharedPreferences.getInstance();
     final isMediaAllowed = prefs.getBool('mediaStorage') ?? true;
@@ -533,12 +535,14 @@ class _AddItemScreenState extends State<AddItemScreen> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: _saveItem,
+        onPressed: isSaving ? null : _saveItem, // disable while saving
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.pink,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: Text("Save", style: TextStyle(color: Colors.white, fontSize: 16)),
+        child: isSaving
+            ? CircularProgressIndicator(color: Colors.white)
+            : Text("Save", style: TextStyle(color: Colors.white, fontSize: 16)),
       ),
     );
   }
@@ -551,12 +555,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
       return;
     }
 
+    setState(() => isSaving = true); // ✅ start loading
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("User not logged in")),
         );
+        setState(() => isSaving = false);
         return;
       }
 
@@ -574,7 +581,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         'subcategory': selectedSubcategory,
         'season': selectedSeason,
         'occasion': selectedOccasion,
-        'color': selectedColor?.value,
+        'colors': colors.map((c) => c.value).toList(),
         'image_base64': base64Image,
         'createdAt': Timestamp.now(),
       });
@@ -588,6 +595,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         selectedSeason = 'Summer';
         selectedOccasion = 'Casual';
         selectedColor = null;
+        colors.clear(); // ✅ clear previously selected colors
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -598,6 +606,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Failed to save item")),
       );
+    } finally {
+      setState(() => isSaving = false); // ✅ stop loading
     }
   }
 }
