@@ -62,8 +62,14 @@ class ClothingCategory {
   static List<ClothingCategory> getDefaultCategories() {
     return [
       ClothingCategory(
-        id: 'tops',
-        name: 'Tops',
+        id: 'Eastern',
+        name: 'Eastern Wear',
+        imageUrl: 'assets/images/shirt 1.png',
+        description: 'Shirts, Blouses, T-shirts',
+      ),
+      ClothingCategory(
+        id: 'Western',
+        name: 'Western Wear',
         imageUrl: 'assets/images/shirt 1.png',
         description: 'Shirts, Blouses, T-shirts',
       ),

@@ -357,15 +357,27 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
       for (var doc in snapshot.docs) {
         final categoryRaw = doc['category']?.toString().toLowerCase().trim();
-        if (categoryRaw == null) continue;
+        final subcategoryRaw = doc['subcategory']?.toString().toLowerCase().trim();
 
-        if (['shirt', 'kurti', 'blouse', 'top'].contains(categoryRaw)) {
+        if (categoryRaw == null && subcategoryRaw == null) continue;
+
+        if (['shirt', 'kurti', 'blouse', 'top'].contains(categoryRaw) ||
+            ['shirt', 'kurti', 'blouse', 'top'].contains(subcategoryRaw)) {
           hasTop = true;
-        } else if (['trouser', 'jeans', 'shalwar', 'pants'].contains(categoryRaw)) {
+        }
+
+        if (['trouser', 'jeans', 'shalwar', 'pants'].contains(categoryRaw) ||
+            ['trouser', 'jeans', 'shalwar', 'pants'].contains(subcategoryRaw)) {
           hasBottom = true;
-        } else if (['dupatta', 'scarf', 'wrap'].contains(categoryRaw)) {
+        }
+
+        if (['dupatta', 'scarf', 'wrap'].contains(categoryRaw) ||
+            ['dupatta', 'scarf', 'wrap'].contains(subcategoryRaw)) {
           hasWrap = true;
-        } else if (['shoes', 'sneakers', 'sandals'].contains(categoryRaw)) {
+        }
+
+        if (['shoes', 'sneakers', 'sandals'].contains(categoryRaw) ||
+            ['shoes', 'sneakers', 'sandals'].contains(subcategoryRaw)) {
           hasShoes = true;
         }
       }
@@ -401,11 +413,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
           message: 'You have no shoes in your wardrobe!',
         );
       }
-
     } catch (e) {
       print("❌ Error checking wardrobe items: $e");
     }
   }
+
 
   Future<void> _addNotificationOnce({
     required String type,

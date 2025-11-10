@@ -402,7 +402,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
           onTap: () => Navigator.pop(context),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Image.asset("assets/images/white_back_btn.png", height: 24, width: 24),
+            child: Image.asset("assets/images/white_back_btn.png", height: 15, width: 15),
           ),
         ),
       ),

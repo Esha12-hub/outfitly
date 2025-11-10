@@ -252,13 +252,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Transform.translate(
-                offset: const Offset(0, -30),
-                child: const Icon(Icons.more_vert, color: Colors.white),
-              ),
-            ),
+
           ],
         ),
       ),
