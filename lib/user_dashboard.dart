@@ -19,6 +19,7 @@ import 'smart_assistant_welcome.dart';
 import 'user_login_screen.dart';
 import 'smart_shopping_screen.dart';
 import 'virtual_try.dart';
+import 'user_smart_shopping.dart';
 
 class WardrobeHomeScreen extends StatefulWidget {
   const WardrobeHomeScreen({super.key});
@@ -180,121 +181,120 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
             Stack(
               clipBehavior: Clip.none,
               children: [
+                // Black container with background image & overlay
                 Container(
-                  height: height * 0.45,
+                  height: height * 0.42,
                   padding: EdgeInsets.all(width * 0.04),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(50)),
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(50)),
+                    image: const DecorationImage(
+                      image: AssetImage('assets/images/overlay1.jpeg'),
+                      fit: BoxFit.cover,
+                      alignment: Alignment(-0.3, 0), // X-axis left, Y-axis center
+                    )
+
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        height: height * 0.14,
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: width * 0.07,
-                              backgroundColor: Colors.white,
-                              child: ClipOval(
-                                child: _profileImageBase64 != null
-                                    ? (_profileImageBase64!.startsWith("url::")
-                                    ? Image.network(
-                                  _profileImageBase64!.substring(5),
-                                  width: width * 0.14,
-                                  height: width * 0.14,
-                                  fit: BoxFit.cover,
-                                )
-                                    : Image.memory(
-                                  base64Decode(_profileImageBase64!.split(',').last),
-                                  width: width * 0.14,
-                                  height: width * 0.14,
-                                  fit: BoxFit.cover,
-                                ))
-                                    : Image.asset(
-                                  "assets/images/user (1).png",
-                                  width: width * 0.14,
-                                  height: width * 0.14,
-                                  fit: BoxFit.cover,
+                  child: Container(
+
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: height * 0.16,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: width * 0.07,
+                                backgroundColor: Colors.white,
+                                child: ClipOval(
+                                  child: _profileImageBase64 != null
+                                      ? (_profileImageBase64!.startsWith("url::")
+                                      ? Image.network(
+                                    _profileImageBase64!.substring(5),
+                                    width: width * 0.14,
+                                    height: width * 0.14,
+                                    fit: BoxFit.cover,
+                                  )
+                                      : Image.memory(
+                                    base64Decode(
+                                        _profileImageBase64!.split(',').last),
+                                    width: width * 0.14,
+                                    height: width * 0.14,
+                                    fit: BoxFit.cover,
+                                  ))
+                                      : Image.asset(
+                                    "assets/images/user (1).png",
+                                    width: width * 0.14,
+                                    height: width * 0.14,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
-                            ),
-                            SizedBox(width: width * 0.03),
-                            Text('Hi, $_username',
-                                style: TextStyle(color: Colors.white, fontSize: width * 0.045)),
-                            const Spacer(),
-                            StreamBuilder<QuerySnapshot>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(FirebaseAuth.instance.currentUser?.uid)
-                                  .collection('notifications')
-                                  .where('read', isEqualTo: false)
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                int unreadCount = snapshot.data?.docs.length ?? 0;
-                                return Stack(
-                                  children: [
-                                    IconButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                              builder: (context) => const NotificationScreen()),
-                                        );
-                                      },
-                                      icon: Icon(Icons.notifications,
-                                          color: Colors.white, size: width * 0.07),
-                                    ),
-                                    if (unreadCount > 0)
-                                      Positioned(
-                                        right: width * 0.04,
-                                        top: height * 0.012,
-                                        child: Container(
-                                          width: width * 0.025,
-                                          height: width * 0.025,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
+                              SizedBox(width: width * 0.03),
+                              Text('Hi, $_username',
+                                  style: TextStyle(
+                                      color: Colors.white, fontSize: width * 0.045)),
+                              const Spacer(),
+                              StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(FirebaseAuth.instance.currentUser?.uid)
+                                    .collection('notifications')
+                                    .where('read', isEqualTo: false)
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  int unreadCount = snapshot.data?.docs.length ?? 0;
+                                  return Stack(
+                                    children: [
+                                      IconButton(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                const NotificationScreen()),
+                                          );
+                                        },
+                                        icon: Icon(Icons.notifications,
+                                            color: Colors.white, size: width * 0.07),
+                                      ),
+                                      if (unreadCount > 0)
+                                        Positioned(
+                                          right: width * 0.04,
+                                          top: height * 0.012,
+                                          child: Container(
+                                            width: width * 0.025,
+                                            height: width * 0.025,
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: height * 0.001),
-                      Text(
-                        "Find Your Wardrobe\nItems here",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: width * 0.07,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                      SizedBox(height: height * 0.015),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: width * 0.04),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(width * 0.05),
-                        ),
-                        child: const TextField(
-                          decoration: InputDecoration(
-                            hintText: "Search...",
-                            border: InputBorder.none,
-                            icon: Icon(Icons.search),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: height * 0.001),
+                        Text(
+                          "Find Your Wardrobe\nItems here",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: width * 0.06,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        SizedBox(height: height * 0.015),
+                      ],
+                    ),
                   ),
                 ),
                 Positioned(
-                  bottom: -height * 0.09,
+                  bottom: -height * 0.08,
                   left: width * 0.05,
                   right: width * 0.05,
                   child: Row(
@@ -310,7 +310,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                       ),
                       FeatureCard(
                         icon: Icons.smart_toy_outlined,
-                        label: 'AI Assistant',
+                        label: 'Smart Stylist',
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -331,6 +331,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                 ),
               ],
             ),
+            // rest of the dashboard content...
             SizedBox(height: height * 0.12),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: width * 0.04),
@@ -365,7 +366,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                   SizedBox(width: width * 0.03),
                   categoryCard("Smart Shopping", 'assets/images/smart shopping.png',
                       onTap: () => Navigator.push(
-                          context, MaterialPageRoute(builder: (_) => const SmartShoppingScreen()))),
+                          context, MaterialPageRoute(builder: (_) => const UserSmartShoppingScreen()))),
                   SizedBox(width: width * 0.03),
                   categoryCard("Outfit Planner", 'assets/images/Outfit-Planner.jpg',
                       onTap: () => Navigator.push(
@@ -423,6 +424,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
       ),
     );
   }
+
 
   static Widget categoryCard(String title, String imagePath, {VoidCallback? onTap}) {
     return GestureDetector(

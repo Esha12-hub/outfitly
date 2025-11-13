@@ -176,37 +176,90 @@ class _EditItemScreenState extends State<EditItemScreen> {
     );
   }
 
-  // Add new value dialog for category, subcategory, etc.
-  Future<void> _addNewValueDialog(
-      {required String title, required List<String> list, required Function(String) onAdded}) async {
+  Future<void> _addNewValueDialog({
+    required String title,
+    required List<String> list,
+    required Function(String) onAdded,
+  }) async {
     final controller = TextEditingController();
+
     await showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Add New $title'),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(hintText: 'Enter new $title name'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          TextButton(
-            onPressed: () {
-              final newVal = controller.text.trim();
-              if (newVal.isNotEmpty && !list.contains(newVal)) {
-                setState(() {
-                  list.add(newVal);
-                  onAdded(newVal);
-                });
-              }
-              Navigator.pop(context);
-            },
-            child: const Text('Add'),
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 5,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Colors.white,
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Add New $title',
+                style: const TextStyle(
+                    fontSize: 20, fontWeight: FontWeight.bold, color: Colors.pink),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Enter new $title name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey[300],
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () {
+                        final newVal = controller.text.trim();
+                        if (newVal.isNotEmpty && !list.contains(newVal)) {
+                          setState(() {
+                            list.add(newVal);
+                            onAdded(newVal);
+                          });
+                        }
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Add', style: TextStyle(color: Colors.white)),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+        ),
       ),
     );
   }
+
 
   Widget sectionTitle(String title, {VoidCallback? onAdd, VoidCallback? onDelete}) {
     return Padding(
@@ -344,7 +397,7 @@ class _EditItemScreenState extends State<EditItemScreen> {
                           TextField(
                             controller: fabricController,
                             decoration: const InputDecoration(
-                                labelText: "Fabric", border: OutlineInputBorder()),
+                                labelText: "Material", border: OutlineInputBorder()),
                           ),
                           SizedBox(height: fieldSpacing),
 

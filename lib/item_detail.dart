@@ -329,7 +329,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                     icon: Icons.local_offer,
                                     screenWidth: screenWidth),
                                 _InfoTile(
-                                    label: "Fabric",
+                                    label: "Material",
                                     value: itemData?['fabric'] ?? '-',
                                     icon: Icons.texture,
                                     screenWidth: screenWidth),
@@ -475,6 +475,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       ActionButton(
                         label: 'Edit Item',
                         isTapped: isEditTapped,
+                        backgroundColor: Color(0xFF000000),
+                        textColor: Colors.white,
                         onTap: () {
                           Navigator.push(
                             context,

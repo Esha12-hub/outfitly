@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'outfit_api.dart';
-import 'settings_screen.dart'; // import your settings screen
+import 'settings_screen.dart';
 
 class OutfitScreen extends StatefulWidget {
   const OutfitScreen({super.key});
@@ -22,7 +22,7 @@ class _OutfitScreenState extends State<OutfitScreen> {
   List<File> shoeImages = [];
   List<Map<String, dynamic>> suggestions = [];
   bool loading = false;
-  bool outfitSuggestionsEnabled = true; // default
+  bool outfitSuggestionsEnabled = true;
 
   @override
   void initState() {
@@ -30,7 +30,6 @@ class _OutfitScreenState extends State<OutfitScreen> {
     _fetchOutfitPreference();
   }
 
-  // Fetch user preference for outfit suggestions
   Future<void> _fetchOutfitPreference() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -64,7 +63,6 @@ class _OutfitScreenState extends State<OutfitScreen> {
   }
 
   Future<void> _getSuggestions() async {
-    // Check if outfit suggestions are enabled
     if (!outfitSuggestionsEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
