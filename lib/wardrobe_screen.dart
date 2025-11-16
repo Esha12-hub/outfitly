@@ -21,7 +21,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   bool _isProgrammaticScroll = false;
   bool isLoading = true;
   String? userProfileImage;
-  bool _profileImageFetched = false; // ✅ prevents repeated fetching
+  bool _profileImageFetched = false;
 
   @override
   void initState() {
@@ -76,7 +76,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
   }
 
   Future<void> fetchUserProfileImage() async {
-    if (_profileImageFetched) return; // ✅ fetch only once
+    if (_profileImageFetched) return;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -188,7 +188,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                 ),
               )
                   : RefreshIndicator(
-                onRefresh: fetchWardrobeItems, // ✅ pull-to-refresh
+                onRefresh: fetchWardrobeItems,
                 child: SingleChildScrollView(
                   controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),

@@ -10,9 +10,8 @@ class AppVersionScreen extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    // You can fetch these dynamically using package_info_plus if needed
     const String appName = "Smart Wardrobe Admin";
-    const String version = "1.0.3";
+    const String version = "1.0.0";
     const String buildNumber = "42";
     const String lastUpdated = "2025-10-30";
 
@@ -21,7 +20,6 @@ class AppVersionScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.04, vertical: screenHeight * 0.02),
@@ -64,8 +62,6 @@ class AppVersionScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       SizedBox(height: screenHeight * 0.05),
-
-                      // App Logo
                       Container(
                         width: screenHeight * 0.12,
                         height: screenHeight * 0.12,
@@ -83,7 +79,6 @@ class AppVersionScreen extends StatelessWidget {
                       ),
                       SizedBox(height: screenHeight * 0.03),
 
-                      // App Name
                       Text(
                         appName,
                         style: TextStyle(
@@ -94,7 +89,6 @@ class AppVersionScreen extends StatelessWidget {
                       ),
                       SizedBox(height: screenHeight * 0.02),
 
-                      // Version Info Card
                       _buildInfoCard("Version", version, screenHeight),
                       SizedBox(height: screenHeight * 0.015),
                       _buildInfoCard("Build Number", buildNumber, screenHeight),
@@ -102,7 +96,6 @@ class AppVersionScreen extends StatelessWidget {
                       _buildInfoCard("Last Updated", lastUpdated, screenHeight),
                       SizedBox(height: screenHeight * 0.05),
 
-                      // Check for Updates Button
                       ElevatedButton(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(

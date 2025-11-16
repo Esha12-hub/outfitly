@@ -25,7 +25,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
   final _contentController = TextEditingController();
   final _captionController = TextEditingController();
 
-  // Rich text formatting
   bool _isBold = false;
   bool _isItalic = false;
   bool _isUnderline = false;
@@ -41,7 +40,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     super.dispose();
   }
 
-  // Pick Image Only
   Future<void> _pickMedia() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
@@ -56,7 +54,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     });
   }
 
-  // Unified save function for draft or submit
   Future<void> _saveArticle({required String status}) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -91,10 +88,9 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         'mediaBase64': _selectedMediaBase64 ?? '',
         'caption': _captionController.text.trim(),
         'timestamp': Timestamp.now(),
-        'status': status, // 'draft' or 'pending'
+        'status': status,
       });
 
-      // Reset form
       _titleController.clear();
       _tagController.clear();
       _contentController.clear();
@@ -185,7 +181,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              // Top Bar
               Container(
                 padding:
                 EdgeInsets.symmetric(horizontal: basePadding, vertical: basePadding),
@@ -218,7 +213,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
                 ),
               ),
 
-              // Main Content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -236,7 +230,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
                         ),
                         SizedBox(height: sectionSpacing),
 
-                        // Category + Tags
                         LayoutBuilder(
                           builder: (context, constraints) {
                             if (constraints.maxWidth < 500) {
@@ -313,7 +306,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
     );
   }
 
-  // --- Helper Widgets ---
   Widget _buildDropdown() => DropdownButtonFormField<String>(
     decoration: _inputDecoration(),
     value: _selectedCategory,
@@ -396,7 +388,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            // Bold / Italic / Underline / List
             IconButton(
               icon: Icon(Icons.format_bold, color: _isBold ? Colors.pink : Colors.black),
               onPressed: () => setState(() => _isBold = !_isBold),
@@ -416,7 +407,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
 
             const SizedBox(width: 8),
 
-            // Alignment controls
             IconButton(
               icon: Icon(Icons.format_align_left,
                   color: _textAlign == TextAlign.left ? Colors.pink : Colors.black),
@@ -442,7 +432,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       ),
       const SizedBox(height: 8),
 
-      // Text Editor
       Container(
         height: height,
         padding: const EdgeInsets.all(12),
@@ -478,7 +467,6 @@ class _WriteArticleScreenState extends State<WriteArticleScreen> {
       ),
     ],
   );
-
 
   Widget _buildMediaUpload(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,

@@ -24,7 +24,6 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
   bool _loading = true;
   bool _updating = false;
 
-  // Text formatting states
   bool _isBold = false;
   bool _isItalic = false;
   bool _isUnderline = false;
@@ -180,7 +179,6 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
               ? const Center(child: CircularProgressIndicator())
               : Column(
             children: [
-              // Top Bar
               Container(
                 padding: EdgeInsets.symmetric(
                     horizontal: basePadding, vertical: basePadding),
@@ -363,7 +361,6 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
         decoration: _inputDecoration().copyWith(hintText: hint),
       );
 
-  /// 📝 Rich Editor with Bold / Italic / Underline / Alignment controls
   Widget _buildRichEditor(double height) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [

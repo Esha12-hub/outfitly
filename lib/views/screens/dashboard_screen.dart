@@ -33,7 +33,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const AdminSettingsScreen(),
   ];
 
-  // Intercept back button
   Future<bool> _onWillPop() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -119,7 +118,6 @@ class _DashboardHomeContent extends StatefulWidget {
 }
 
 class _DashboardHomeContentState extends State<_DashboardHomeContent> {
-  // Total wardrobe items for all normal users or outfitly.com users
   Future<int> _getWardrobeItemCount() async {
     final usersSnap = await FirebaseFirestore.instance.collection('users').get();
 
@@ -129,17 +127,14 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
       final role = data['role']?.toString().toLowerCase();
       final email = data['email']?.toString().toLowerCase() ?? '';
 
-      // Include normal users and @outfitly.com or Google users
       if (role == 'user' || email.endsWith('@outfitly.com') || role == 'User') {
         final wardrobeSnap = await userDoc.reference.collection('wardrobe').get();
         totalItems += wardrobeSnap.docs.length;
       }
     }
-
     return totalItems;
   }
 
-  // Total pending items across all users
   Future<int> _getPendingItemsCount() async {
     int totalPending = 0;
     final usersSnap = await FirebaseFirestore.instance.collection('users').get();
@@ -155,7 +150,6 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
     return totalPending;
   }
 
-  // Total feedback count across all users
   Future<int> _getFeedbackCount() async {
     int totalFeedback = 0;
     final usersSnap = await FirebaseFirestore.instance.collection('users').get();
@@ -168,7 +162,6 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
     return totalFeedback;
   }
 
-  // Fetch recent activity (articles & comments within last 15 days)
   Future<List<Map<String, dynamic>>> fetchRecentActivity() async {
     List<Map<String, dynamic>> activities = [];
     final now = DateTime.now();
@@ -228,7 +221,6 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header
         Container(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -262,7 +254,6 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                 child: Text('Dashboard', style: AppTextStyles.whiteHeading),
               ),
 
-              // Notifications Icon with Red Dot
               FutureBuilder<int>(
                 future: _getPendingItemsCount(),
                 builder: (context, pendingSnap) {
@@ -279,11 +270,11 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                         children: [
                           IconButton(
                             onPressed: () {
-                              Navigator.pushReplacement(
+                              Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                    builder: (_) => const NotificationsScreen()),
+                                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                               );
+
                             },
                             icon: const Icon(Icons.notifications,
                                 color: AppColors.textWhite, size: 24),
@@ -311,7 +302,6 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
           ),
         ),
 
-        // Main Content
         Expanded(
           child: Container(
             decoration: const BoxDecoration(
@@ -353,7 +343,6 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
                                 role == 'content writer' ||
                                 email.endsWith('@outfitly.com');
                           }).toList();
-
 
                           return MetricCard(
                             title: 'Users',

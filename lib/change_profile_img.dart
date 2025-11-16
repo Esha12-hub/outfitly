@@ -65,9 +65,8 @@ class _ChangeProfileImageScreenState extends State<ChangeProfileImageScreen> {
         builder: (context, constraints) {
           return Column(
             children: [
-              SizedBox(height: height * 0.07),
-
-              // 🔙 Header
+              SizedBox(height: height * 0.06),
+              // Header
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                 child: Row(
@@ -90,7 +89,7 @@ class _ChangeProfileImageScreenState extends State<ChangeProfileImageScreen> {
                           "Change Profile Image",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20 * textScale,
+                            fontSize: 18 * textScale,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -113,7 +112,7 @@ class _ChangeProfileImageScreenState extends State<ChangeProfileImageScreen> {
 
               SizedBox(height: height * 0.02),
 
-              // ⚪ Main Container
+              // Main Container
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -137,7 +136,6 @@ class _ChangeProfileImageScreenState extends State<ChangeProfileImageScreen> {
                         ),
                         SizedBox(height: height * 0.04),
 
-                        // 🖼 Profile Image Selector
                         GestureDetector(
                           onTap: _pickImage,
                           child: CircleAvatar(
@@ -158,7 +156,6 @@ class _ChangeProfileImageScreenState extends State<ChangeProfileImageScreen> {
 
                         SizedBox(height: height * 0.05),
 
-                        // 💾 Save Button
                         ElevatedButton(
                           onPressed: _isLoading ? null : _saveImage,
                           style: ElevatedButton.styleFrom(

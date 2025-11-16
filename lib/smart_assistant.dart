@@ -44,7 +44,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Future<void> sendMessage(String message) async {
     if (message.trim().isEmpty) return;
 
-    // Add typed message and clear input
     setState(() {
       _messages.add(ChatMessage(text: message, isUser: true));
       _controller.clear();
@@ -78,8 +77,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           ));
         });
 
-        // Optional: play bot speech
-        //_playBotSpeech(botReply);
       } else {
         setState(() {
           _messages.add(ChatMessage(
@@ -157,7 +154,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       final dir = await getTemporaryDirectory();
       final path = '${dir.path}/recorded_audio.wav';
 
-      // Show voice message bubble immediately
       setState(() {
         _isListening = true;
         _messages.add(ChatMessage(
@@ -198,7 +194,6 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       var request = http.MultipartRequest('POST', Uri.parse(listenUrl));
       request.files.add(await http.MultipartFile.fromPath('audio', audioFile.path));
 
-      // Add "Thinking..." bubble
       setState(() {
         _messages.add(ChatMessage(
           text: "Thinking...",

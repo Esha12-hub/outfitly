@@ -59,7 +59,6 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
         return Column(
           children: [
-            // 🔍 Search Bar
             Padding(
               padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding / 2),
               child: CustomSearchField(
@@ -72,7 +71,6 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
               ),
             ),
 
-            // 📋 Firestore Blocked Users List
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -92,7 +90,6 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
                   final users = snapshot.data!.docs;
 
-                  // ✅ Filter search results
                   final filteredUsers = users.where((doc) {
                     final user = doc.data() as Map<String, dynamic>;
                     final name = (user['name'] ?? '').toString().toLowerCase();

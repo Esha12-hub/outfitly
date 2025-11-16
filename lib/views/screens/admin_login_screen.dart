@@ -91,7 +91,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           context,
           MaterialPageRoute(builder: (_) => const MyApp()),
         );
-        return false; // Prevents app from closing
+        return false;
       },
       child: Scaffold(
         backgroundColor: AppColors.surface,

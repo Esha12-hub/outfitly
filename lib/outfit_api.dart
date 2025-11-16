@@ -8,12 +8,11 @@ class OutfitAPI {
   static Future<Map<String, dynamic>> getSuggestions({
     required List<File> shirts,
     required List<File> pants,
-    List<File>? shoes, // ✅ Optional
+    List<File>? shoes,
   }) async {
     final uri = Uri.parse(apiUrl);
     final request = http.MultipartRequest('POST', uri);
 
-    // ✅ Must match FastAPI variable names
     for (final file in shirts) {
       request.files.add(await http.MultipartFile.fromPath('shirts', file.path));
     }
@@ -22,7 +21,6 @@ class OutfitAPI {
       request.files.add(await http.MultipartFile.fromPath('pants', file.path));
     }
 
-    // ✅ Add shoes only if selected
     if (shoes != null && shoes.isNotEmpty) {
       for (final file in shoes) {
         request.files.add(await http.MultipartFile.fromPath('shoes', file.path));

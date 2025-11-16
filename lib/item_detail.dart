@@ -163,7 +163,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         .doc(widget.itemId);
 
     setState(() {
-      isFavorite = !isFavorite; // Toggle UI immediately
+      isFavorite = !isFavorite;
     });
 
     try {
@@ -228,7 +228,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           : SafeArea(
         child: Column(
           children: [
-            // Custom AppBar
             Padding(
               padding: EdgeInsets.symmetric(
                   horizontal: screenWidth * 0.04,
@@ -410,7 +409,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       ),
                       SizedBox(height: screenHeight * 0.03),
 
-                      // Times Worn + Added On
                       Container(
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0F0F0),
@@ -462,7 +460,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       ),
                       SizedBox(height: screenHeight * 0.03),
 
-                      // Buttons
                       ActionButton(
                         label: 'Wear This Today',
                         isTapped: isWearTapped,
@@ -583,8 +580,8 @@ class ActionButton extends StatelessWidget {
   final VoidCallback onTap;
   final bool destructive;
   final double screenWidth;
-  final Color? backgroundColor; // optional background color
-  final Color? textColor;       // optional text color
+  final Color? backgroundColor;
+  final Color? textColor;
 
   const ActionButton({
     super.key,

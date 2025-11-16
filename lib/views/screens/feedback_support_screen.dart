@@ -76,7 +76,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
           .doc(feedbackId)
           .update({'status': 'Read'});
 
-      // Update local list so UI refreshes immediately
       setState(() {
         feedbackList[index]['status'] = 'Read';
       });
@@ -105,7 +104,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // 🔙 Back Button
                   GestureDetector(
                     onTap: () {
                       Navigator.pushReplacement(
@@ -121,20 +119,18 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                     ),
                   ),
 
-                  // 🧭 Title
                   Expanded(
                     child: Center(
                       child: Text(
                         'Feedback & Support',
                         textAlign: TextAlign.center,
                         style: AppTextStyles.whiteHeading.copyWith(
-                          fontSize: screenHeight * 0.028,
+                          fontSize: screenHeight * 0.025,
                         ),
                       ),
                     ),
                   ),
 
-                  // 🔄 Refresh Icon
                   GestureDetector(
                     onTap: () async {
                       await _loadFeedback();
@@ -149,8 +145,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
               ),
             ),
 
-
-            // Feedback list
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -212,7 +206,7 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
         : 'N/A';
 
     final message = feedback['message'] ?? '';
-    final previewLength = 80; // limit preview characters
+    final previewLength = 80;
     final isLong = message.length > previewLength;
     final previewText =
     isLong ? '${message.substring(0, previewLength)}...' : message;
@@ -240,7 +234,7 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
+          // Header
           Row(
             children: [
               Expanded(
@@ -287,8 +281,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
           ),
 
           SizedBox(height: screenHeight * 0.012),
-
-          // Preview (always visible)
           Text(
             isExpanded ? message : previewText,
             style: TextStyle(
@@ -297,8 +289,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
               height: 1.4,
             ),
           ),
-
-          // "Tap to view more" hint (only if long)
           if (isLong && !isExpanded)
             Padding(
               padding: EdgeInsets.only(top: screenHeight * 0.008),
@@ -311,8 +301,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                 ),
               ),
             ),
-
-          // Divider when expanded
           if (isExpanded) ...[
             SizedBox(height: screenHeight * 0.015),
             const Divider(),
@@ -333,5 +321,4 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
       ),
     );
   }
-
 }

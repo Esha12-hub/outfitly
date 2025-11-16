@@ -18,14 +18,12 @@ class AdminSettingsScreen extends StatefulWidget {
 }
 
 class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
-  // Wardrobe & Notification Toggles
   bool seasonBasedFiltering = false;
   bool occasionTags = true;
   bool outfitSuggestions = false;
   bool shoppingRecommendations = true;
   bool appLock = true;
 
-  // Admin App Settings Toggles
   bool darkMode = false;
   bool pushNotifications = true;
   bool twoFA = true;
@@ -38,20 +36,18 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
     return WillPopScope(
       onWillPop: () async {
         await _handleLogout();
-        return false; // Prevent default back behavior
+        return false;
       },
       child: Scaffold(
         backgroundColor: AppColors.darkBackground,
         body: SafeArea(
           child: Column(
             children: [
-              // Header
               Padding(
                 padding: EdgeInsets.symmetric(
                     horizontal: screenWidth * 0.04, vertical: screenHeight * 0.02),
                 child: Row(
                   children: [
-                    // Back / Logout
                     GestureDetector(
                       onTap: _handleLogout,
                       child: Image.asset(
@@ -76,7 +72,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                 ),
               ),
 
-              // Main Content
               Expanded(
                 child: Container(
                   decoration: const BoxDecoration(
@@ -132,7 +127,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         ),
                         SizedBox(height: screenHeight * 0.03),
 
-                        // ADMIN MANAGEMENT
                         _buildSectionTitle('ADMIN MANAGEMENT', screenHeight),
                         SizedBox(height: screenHeight * 0.02),
                         _buildSettingItem('Shopping Management', Icons.category, screenHeight,
@@ -142,7 +136,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                             }),
                         SizedBox(height: screenHeight * 0.03),
 
-                        // USER MANAGEMENT
                         _buildSectionTitle('USER MANAGEMENT', screenHeight),
                         SizedBox(height: screenHeight * 0.02),
                         _buildSettingItem('Users Feedback', Icons.people, screenHeight, onTap: () {
@@ -151,7 +144,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         }),
                         SizedBox(height: screenHeight * 0.02),
 
-                        // APP SETTINGS
                         _buildSectionTitle('APP SETTINGS', screenHeight),
                         SizedBox(height: screenHeight * 0.02),
                         _buildToggleItem('Push Notifications', Icons.notifications,
@@ -162,7 +154,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                             }),
                         SizedBox(height: screenHeight * 0.03),
 
-                        // BACKUP & MAINTENANCE
                         _buildSectionTitle('BACKUP & MAINTENANCE', screenHeight),
                         SizedBox(height: screenHeight * 0.02),
                         _buildSettingItem('App Version Info', Icons.info, screenHeight,onTap: () {
@@ -171,7 +162,6 @@ class _AdminSettingsScreenState extends State<AdminSettingsScreen> {
                         }),
                         SizedBox(height: screenHeight * 0.03),
 
-                        // Centered Logout Button
                         Center(
                           child: ElevatedButton.icon(
                             onPressed: _handleLogout,

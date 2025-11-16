@@ -220,8 +220,9 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
             Center(
               child: Text(
                 "$seasonLabel Wardrobe",
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 20 * scale,
+                  fontSize: 18 * scale,
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -232,12 +233,12 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: SizedBox(
-                  height: 40 * scale,
-                  width: 40 * scale,
+                  height: 35 * scale,
+                  width: 35 * scale,
                   child: Image.asset(
                     "assets/images/white_back_btn.png",
-                    height: 20 * scale,
-                    width: 20 * scale,
+                    height: 15 * scale,
+                    width: 15 * scale,
                   ),
                 ),
               ),
@@ -247,6 +248,7 @@ class _WeatherClothesScreenState extends State<WeatherClothesScreen> {
       ),
     );
   }
+
 
   Widget _buildCategorySlider(double scale) {
     return SizedBox(

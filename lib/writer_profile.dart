@@ -106,7 +106,7 @@ class _WriterProfileScreenState extends State<WriterProfileScreen> {
         centerTitle: true,
         title: const Text(
           "Account Details",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         leading: IconButton(
           icon: Image.asset(

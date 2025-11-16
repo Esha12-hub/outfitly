@@ -65,7 +65,7 @@ class _TermsOfUseScreenState extends State<TermsOfUseScreen> {
                   Text(
                     "Terms of Use",
                     style: TextStyle(
-                      fontSize: fontScale(20),
+                      fontSize: fontScale(18),
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),

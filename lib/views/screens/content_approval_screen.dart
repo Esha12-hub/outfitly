@@ -33,7 +33,7 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
   final List<String> filterTabs = ['pending', 'approved', 'rejected'];
 
   QuerySnapshot? lastSnapshot;
-  final Map<String, Map<String, dynamic>> userCache = {}; // cache user data
+  final Map<String, Map<String, dynamic>> userCache = {};
 
   void _onFilterTapped(int index) {
     setState(() => selectedFilterIndex = index);
@@ -138,7 +138,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
           SafeArea(
             child: Column(
               children: [
-                // Header
                 Container(
                   padding: EdgeInsets.all(width * 0.04),
                   child: Row(
@@ -162,7 +161,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                   ),
                 ),
 
-                // Search Bar
                 if (showSearchBar)
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: width * 0.04),
@@ -183,8 +181,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                   ),
 
                 SizedBox(height: showSearchBar ? height * 0.015 : 0),
-
-                // Main Content
                 Expanded(
                   child: Container(
                     decoration: const BoxDecoration(
@@ -198,7 +194,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
                       children: [
                         SizedBox(height: 10),
 
-                        // Filter Tabs
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           padding: EdgeInsets.symmetric(horizontal: width * 0.04),
@@ -221,7 +216,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
 
                         SizedBox(height: height * 0.02),
 
-                        // Sort By Dropdown
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                           child: Row(
@@ -250,7 +244,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
 
                         SizedBox(height: height * 0.02),
 
-                        // Content List
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
@@ -329,7 +322,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
             ),
           ),
 
-          // Acceptance Overlay
           if (showAcceptanceOverlay)
             Container(
               color: ColorUtils.withOpacity(Colors.black, 0.7),
@@ -368,7 +360,6 @@ class _ContentApprovalScreenState extends State<ContentApprovalScreen> {
               ),
             ),
 
-          // Rejection Dialog
           if (showRejectionDialog)
             Container(
               color: ColorUtils.withOpacity(Colors.black, 0.7),

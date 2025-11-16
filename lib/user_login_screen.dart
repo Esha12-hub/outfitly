@@ -18,15 +18,13 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // 👈 Added this
+  bool _isPasswordVisible = false;
 
-  // ========================= EMAIL/PASSWORD LOGIN =========================
   Future<void> _login() async {
     setState(() => _isLoading = true);
     try {
       final email = _emailController.text.trim();
 
-      // ✅ Restrict email domain
       if (!email.toLowerCase().endsWith('@outfitly.com')) {
         _showErrorSnackBar("Only Outfitly accounts are allowed to log in.");
         setState(() => _isLoading = false);
@@ -60,7 +58,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         return;
       }
 
-      // ✅ Navigate to Dashboard
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const WardrobeHomeScreen()),
@@ -74,7 +71,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     }
   }
 
-  // ========================= GOOGLE LOGIN =========================
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
@@ -163,7 +159,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           context,
           MaterialPageRoute(builder: (_) => const ContinueAsScreen()),
         );
-        return false; // prevent app from closing
+        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.white,
@@ -176,7 +172,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔙 Back Button
                 GestureDetector(
                   onTap: () {
                     Navigator.pushReplacement(
@@ -193,7 +188,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 ),
                 SizedBox(height: spacing),
 
-                // 👋 Welcome Text
                 Text(
                   'Welcome back! Glad to\nsee you, again!',
                   style: TextStyle(
@@ -203,7 +197,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 ),
                 SizedBox(height: spacing * 1.5),
 
-                // 📧 Email Field
                 _buildTextField(
                   controller: _emailController,
                   hint: 'Enter your email',
@@ -211,7 +204,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 ),
                 SizedBox(height: spacing),
 
-                // 🔑 Password Field
                 _buildTextField(
                   controller: _passwordController,
                   hint: 'Password',
@@ -238,7 +230,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 ),
                 SizedBox(height: spacing / 2),
 
-                // 🔘 Login Button
                 SizedBox(
                   width: double.infinity,
                   height: buttonHeight,
@@ -263,7 +254,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 ),
                 SizedBox(height: spacing * 2),
 
-                // OR Divider
                 Center(
                   child: Text(
                     "Or",
@@ -272,7 +262,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 ),
                 SizedBox(height: spacing),
 
-                // 🟢 Google Button
                 SizedBox(
                   width: double.infinity,
                   height: buttonHeight,
@@ -302,8 +291,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                   ),
                 ),
                 SizedBox(height: spacing * 3),
-
-                // 👤 Register Link
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -323,7 +310,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
                 ),
                 SizedBox(height: spacing),
 
-                // ⚖️ Terms Text
                 Center(
                   child: Padding(
                     padding:
@@ -356,7 +342,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
     );
   }
 
-  // ========================= TEXTFIELD BUILDER =========================
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -365,7 +350,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
   }) {
     return TextField(
       controller: controller,
-      obscureText: isPassword ? !_isPasswordVisible : false, // 👈 added logic
+      obscureText: isPassword ? !_isPasswordVisible : false,
       decoration: InputDecoration(
         hintText: hint,
         filled: true,
@@ -376,7 +361,7 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         ),
         contentPadding:
         EdgeInsets.symmetric(vertical: fontSize * 1.2, horizontal: fontSize),
-        // 👇 Added visibility toggle icon for password fields
+
         suffixIcon: isPassword
             ? IconButton(
           icon: Icon(

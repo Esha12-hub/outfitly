@@ -1,22 +1,17 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'user_login_screen.dart';
 import 'user_register_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'continue_as_screen.dart';
-import 'writer_login_screen.dart';
 import 'views/screens/admin_login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  // ✅ Check Firebase initialization
   print("Firebase App Name: ${Firebase.app().name}");
 
   runApp(const MyApp());
 }
-
-
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -32,7 +27,6 @@ class MyApp extends StatelessWidget {
       home: const WelcomeScreen(),
       debugShowCheckedModeBanner: false,
 
-    // 💡 Define routes here
     initialRoute: '/',
     routes: {
       '/register': (context) => const RegisterScreen(),
@@ -70,7 +64,6 @@ class WelcomeScreen extends StatelessWidget {
             ),
           ),
 
-          // Bottom Content
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -89,7 +82,6 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 30),
 
-                  // Login Button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -116,7 +108,6 @@ class WelcomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Register Button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -141,7 +132,6 @@ class WelcomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Continue as Admin link
                   GestureDetector(
                     onTap: () {
                       Navigator.push(

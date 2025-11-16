@@ -98,7 +98,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // 🔥 Logout confirmation dialog
   Future<bool> _showLogoutDialog() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -145,12 +144,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return WillPopScope(
       onWillPop: () async {
-        // 🔙 Navigate to WardrobeHomeScreen on system back button
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const WardrobeHomeScreen()),
         );
-        return false; // prevent default pop
+        return false;
       },
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -159,8 +157,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             return Stack(
               children: [
                 Positioned.fill(child: Container(color: Colors.black)),
-
-                // White content area
                 Positioned(
                   top: 140 * h,
                   left: 0,
@@ -179,25 +175,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 🔍 Search Bar
-                          Container(
-                            padding:
-                            EdgeInsets.symmetric(horizontal: 16 * w, vertical: 4 * h),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(20 * w),
-                            ),
-                            child: const TextField(
-                              decoration: InputDecoration(
-                                hintText: 'Search...',
-                                border: InputBorder.none,
-                                icon: Icon(Icons.search),
-                              ),
-                            ),
-                          ),
+
                           SizedBox(height: 20 * h),
 
-                          // 👤 User Profile Card
                           InkWell(
                             onTap: () {
                               Navigator.push(
@@ -338,7 +318,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                           SizedBox(height: 24 * h),
 
-                          // 🚪 Logout Button
                           ElevatedButton.icon(
                             onPressed: _showLogoutDialog,
                             icon: const Icon(Icons.logout, color: Colors.white),
@@ -363,7 +342,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
 
-                // Top app bar
                 Positioned(
                   top: 60 * h,
                   left: 0,
@@ -374,7 +352,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       Positioned(
                         left: 16 * w,
                         child: IconButton(
-                          // 🔙 Navigate to WardrobeHomeScreen instead of logout
                           onPressed: () {
                             Navigator.pushReplacement(
                               context,
@@ -393,7 +370,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         "Settings",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 22 * w,
+                          fontSize: 20 * w,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -461,7 +438,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
 
-  // 🔥 Delete Profile Confirmation
   Future<void> _confirmDeleteProfile() async {
     final confirm = await showDialog<bool>(
       context: context,

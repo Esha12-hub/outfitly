@@ -57,7 +57,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   void _listenArticleMetrics() {
     final articleRef = _firestore.collection('articles').doc(widget.articleId);
 
-    // Listen for changes in the article document
     articleRef.snapshots().listen((doc) async {
       if (!doc.exists) return;
 
@@ -65,7 +64,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       final likes = data['likes'] ?? 0;
       final bookmarkedUsers = List<String>.from(data['bookmarkedBy'] ?? []);
 
-      // Fetch comments count
       int commentsLen = 0;
       try {
         final commentsSnapshot = await articleRef.collection('comments').get();
@@ -101,7 +99,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       }
     } catch (e) {
       debugPrint('Error updating bookmark: $e');
-      setState(() => isBookmarked = !isBookmarked); // revert on failure
+      setState(() => isBookmarked = !isBookmarked);
     }
   }
 
@@ -115,7 +113,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // ===== Header =====
             Padding(
               padding: EdgeInsets.all(screenWidth * 0.04),
               child: Row(
@@ -142,7 +139,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               ),
             ),
 
-            // ===== Main Content =====
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -158,7 +154,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Hero Image
                         SizedBox(
                           height: screenHeight * 0.35,
                           width: double.infinity,
@@ -187,8 +182,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           ),
                         ),
                         SizedBox(height: screenHeight * 0.02),
-
-                        // Title
                         Text(
                           widget.title,
                           style: AppTextStyles.h2.copyWith(
@@ -199,7 +192,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         ),
                         SizedBox(height: screenHeight * 0.015),
 
-                        // Author Info + Likes/Comments
                         Row(
                           children: [
                             CircleAvatar(
@@ -231,8 +223,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           ],
                         ),
                         SizedBox(height: screenHeight * 0.02),
-
-                        // Article Body
                         Text(
                           widget.description.isNotEmpty
                               ? widget.description
@@ -244,8 +234,6 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           ),
                         ),
                         SizedBox(height: screenHeight * 0.03),
-
-                        // Read Time
                         Text(
                           'Read Time: ${widget.readTime}',
                           style: AppTextStyles.caption.copyWith(fontSize: screenWidth * 0.03),

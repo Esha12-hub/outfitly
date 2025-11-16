@@ -37,7 +37,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   void initState() {
     super.initState();
 
-    // ✅ Make status bar icons white (for black background)
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
@@ -60,7 +59,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       email = data['email'] ?? user.email ?? 'No email';
       birthday = data['birthday'] ?? 'No birthday';
 
-      // 🔹 Format CreatedAt (from Firestore or fallback)
       if (data['createdAt'] != null) {
         try {
           final timestamp = data['createdAt'];
@@ -72,20 +70,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           createdAt = 'Unknown';
         }
       } else {
-        // Fallback to Firebase Auth metadata
         createdAt = DateFormat('dd MMM yyyy')
             .format(user.metadata.creationTime ?? DateTime.now());
       }
 
-      // 🔹 Prefer Firestore image, else use Google photoURL
       if (data['image_base64'] != null &&
           data['image_base64'].toString().isNotEmpty) {
         base64Image = data['image_base64'];
       } else if (user.photoURL != null && user.photoURL!.isNotEmpty) {
-        base64Image = user.photoURL; // use URL instead of base64
+        base64Image = user.photoURL;
       }
     } else {
-      // 🔹 Fallback to Firebase Auth data
       name = user.displayName ?? 'No name';
       email = user.email ?? 'No email';
       birthday = 'No birthday';
@@ -96,7 +91,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       }
     }
 
-    // 🔹 Count collections
     final itemsSnapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -162,7 +156,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          // ✅ Black header
           Container(
             width: double.infinity,
             color: Colors.black,
@@ -172,7 +165,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
             child: Column(
               children: [
-                // Top bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -191,8 +183,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         },
                         child: Image.asset(
                           "assets/images/white_back_btn.png",
-                          height: spacing(35),
-                          width: spacing(35),
+                          height: spacing(32),
+                          width: spacing(32),
                         ),
                       ),
                     ),
@@ -267,7 +259,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
           ),
 
-          // ✅ Scrollable content
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
@@ -403,7 +394,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
                     SizedBox(height: spacing(16)),
                     Text(
-                      "Version 1.1.1",
+                      "Version 1.0.0",
                       style: TextStyle(
                           fontSize: fontScale(12),
                           color: Colors.black54),

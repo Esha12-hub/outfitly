@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'fabric_detail.dart'; // import FabricDetailScreen
+import 'fabric_detail.dart';
 
 class FabricCareAdvisorScreen extends StatelessWidget {
   const FabricCareAdvisorScreen({super.key});
@@ -31,7 +31,6 @@ class FabricCareAdvisorScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Custom AppBar
             Container(
               padding: EdgeInsets.fromLTRB(
                 padding,
@@ -61,12 +60,11 @@ class FabricCareAdvisorScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                  SizedBox(width: isTablet ? 60 : 48), // balance back button space
+                  SizedBox(width: isTablet ? 60 : 48),
                 ],
               ),
             ),
 
-            // White rounded section
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(

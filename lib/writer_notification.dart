@@ -21,7 +21,7 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen>
   bool _initialLoadComplete = false;
   bool submissionAlerts = true;
   bool feedbackNotifications = false;
-  bool _loading = true; // 🔹 Loading state added
+  bool _loading = true;
 
   StreamSubscription<QuerySnapshot>? _articleListener;
   final List<StreamSubscription> _commentListeners = [];
@@ -100,7 +100,7 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen>
 
       setState(() {
         isContentWriter = (userDoc['role'] == 'Content Writer');
-        _loading = false; // 🔹 Finished loading
+        _loading = false;
       });
 
       if (isContentWriter) {
@@ -108,7 +108,7 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen>
       }
     } else {
       setState(() {
-        _loading = false; // 🔹 Done loading even if no user
+        _loading = false;
       });
     }
   }
@@ -286,7 +286,6 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen>
     final iconSize = screenWidth * 0.06;
     final backBtnSize = screenWidth * 0.07;
 
-    // 🔹 Show loader while determining role
     if (_loading) {
       return const Scaffold(
         backgroundColor: Colors.black,
@@ -465,7 +464,6 @@ class _WriterNotificationScreenState extends State<WriterNotificationScreen>
 
             final allNotifs = notifSnapshot.data?.docs ?? [];
 
-            // Filter notifications based on user settings
             final filtered = allNotifs.where((doc) {
               final data = doc.data() as Map<String, dynamic>;
               final type = data['type'] ?? '';

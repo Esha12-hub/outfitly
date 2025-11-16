@@ -7,15 +7,15 @@ class SmartAssistantWelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final paddingHorizontal = size.width * 0.06; // 6% horizontal padding
-    final imageHeight = size.height * 0.4; // 40% of screen height
+    final paddingHorizontal = size.width * 0.06;
+    final imageHeight = size.height * 0.6;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF6FC),
       body: SafeArea(
         child: Column(
           children: [
-            SizedBox(height: size.height * 0.15), // 5% top spacing
+            SizedBox(height: size.height * 0.10),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: paddingHorizontal),
               child: Image.asset(
@@ -33,7 +33,7 @@ class SmartAssistantWelcomeScreen extends StatelessWidget {
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.pink,
-                      padding: EdgeInsets.symmetric(vertical: size.height * 0.02), // responsive vertical padding
+                      padding: EdgeInsets.symmetric(vertical: size.height * 0.02),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

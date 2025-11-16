@@ -17,7 +17,6 @@ class NavigationController extends BaseController {
     setIdle();
   }
 
-  // Enhanced navigation with state management
   Future<void> changeIndex(int index) async {
     if (!_canNavigate.value || _currentIndex.value == index) return;
     
@@ -26,8 +25,7 @@ class NavigationController extends BaseController {
     
     try {
       setLoading();
-      
-      // Add small delay for smooth transition
+
       await Future.delayed(const Duration(milliseconds: 100));
       
       _currentIndex.value = index;
@@ -35,20 +33,18 @@ class NavigationController extends BaseController {
       
     } catch (e) {
       setError('Navigation failed: $e');
-      _currentIndex.value = _previousIndex.value; // Revert on error
+      _currentIndex.value = _previousIndex.value;
     } finally {
       _canNavigate.value = true;
     }
   }
-  
-  // Quick navigation methods
+
   Future<void> goToHome() async => await changeIndex(0);
   Future<void> goToUsers() async => await changeIndex(1);
   Future<void> goToContent() async => await changeIndex(2);
   Future<void> goToAnalytics() async => await changeIndex(3);
   Future<void> goToSettings() async => await changeIndex(4);
 
-  // Reset navigation
   void resetNavigation() {
     _currentIndex.value = 0;
     _previousIndex.value = 0;
@@ -56,7 +52,6 @@ class NavigationController extends BaseController {
     setIdle();
   }
 
-  // Safe navigation with validation
   bool canNavigateToIndex(int index) {
     return index >= 0 && index <= 4 && _canNavigate.value;
   }

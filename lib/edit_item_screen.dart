@@ -41,7 +41,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
     itemNameController.text = widget.itemData['item_name'] ?? '';
     fabricController.text = widget.itemData['fabric'] ?? '';
 
-    // Safely handle custom user categories or fields
     String? cat = widget.itemData['category'];
     String? sub = widget.itemData['subcategory'];
     String? sea = widget.itemData['season'];
@@ -260,7 +259,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
     );
   }
 
-
   Widget sectionTitle(String title, {VoidCallback? onAdd, VoidCallback? onDelete}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -377,7 +375,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
                   ),
                 ),
 
-                // Form
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.all(horizontalPadding),
@@ -401,7 +398,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          // Category Dropdown with Add Button
                           Row(
                             children: [
                               Expanded(
@@ -429,7 +425,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          // Subcategory Dropdown
                           Row(
                             children: [
                               Expanded(
@@ -457,7 +452,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          // Season Dropdown
                           Row(
                             children: [
                               Expanded(
@@ -485,7 +479,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
                           ),
                           SizedBox(height: fieldSpacing),
 
-                          // Occasion Dropdown
                           Row(
                             children: [
                               Expanded(

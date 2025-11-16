@@ -5,7 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_text_styles.dart';
 
 class UserProfileScreen extends StatefulWidget {
-  final String uid; // User UID
+  final String uid;
   final String name;
   final String email;
   final String role;
@@ -183,7 +183,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   IconButton(
                     onPressed: () {
                       setState(() {
-                        // Just rebuild to refresh the stream
                       });
                     },
                     icon: const Icon(Icons.refresh, color: AppColors.textWhite),
@@ -238,7 +237,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           CircleAvatar(
             radius: screenWidth * 0.15,
             backgroundColor: widget.avatarColor.withOpacity(0.3),
-            backgroundImage: profileImage, // ✅ Display fetched image
+            backgroundImage: profileImage,
             child: profileImage == null
                 ? Container(
               decoration: BoxDecoration(

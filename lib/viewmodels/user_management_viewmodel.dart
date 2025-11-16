@@ -58,11 +58,8 @@ class UserManagementViewModel extends BaseController {
   Future<void> loadUsersData() async {
     await safeAsyncCall(() async {
       _isRefreshing.value = true;
-      
-      // Simulate API call
       await Future.delayed(const Duration(milliseconds: 1000));
-      
-      // Mock data
+
       final mockUsers = [
         UserModel(
           id: '1',

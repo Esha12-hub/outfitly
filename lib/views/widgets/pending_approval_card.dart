@@ -10,7 +10,6 @@ class PendingApprovalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Navigate to ContentApprovalScreen using Navigator
         Navigator.push(
           context,
           MaterialPageRoute(

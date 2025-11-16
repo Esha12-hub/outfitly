@@ -42,10 +42,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         'userId': user.uid,
       };
 
-      // ✅ Save feedback in a top-level collection
       await FirebaseFirestore.instance.collection('feedback').add(feedbackData);
 
-      // ✅ Also optionally keep user-specific feedback history
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -105,7 +103,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                           "Feedback",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20 * textScale,
+                            fontSize: 18 * textScale,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

@@ -25,19 +25,16 @@ class DashboardViewModel extends BaseController {
   Future<void> loadDashboardData() async {
     await safeAsyncCall(() async {
       _isRefreshing.value = true;
-      
-      // Simulate API calls
+
       await Future.delayed(const Duration(milliseconds: 1000));
-      
-      // Load metrics
+
       _metrics.value = {
         'users': 2456,
         'items': 12500,
         'activeToday': 1046,
         'aiAccuracy': 98,
       };
-      
-      // Load recent users
+
       _recentUsers.value = [
         UserModel(
           id: '1',
@@ -62,8 +59,7 @@ class DashboardViewModel extends BaseController {
           tryOns: 20,
         ),
       ];
-      
-      // Load pending content
+
       _pendingContent.value = [
         ContentModel(
           id: '1',

@@ -224,7 +224,7 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
                       ),
                       if (hasUnread)
                         Positioned(
-                          right: size.width * 0.02,
+                          right: size.width * 0.03,
                           top: size.height * 0.015,
                           child: Container(
                             height: size.width * 0.025,
@@ -439,7 +439,6 @@ class _WriterDashboardScreenState extends State<WriterDashboardScreen> {
   }
 }
 
-/// 🔹 Stat Card Widget
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
@@ -515,31 +514,29 @@ class _SubmissionTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// 🔹 Reduced Title Font Size
                 Text(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: height * 0.22, // Previously 0.25
+                    fontSize: height * 0.22,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
                 SizedBox(height: height * 0.05),
 
-                /// 🔹 Reduced Status Font Size
                 Text(
                   status,
                   style: TextStyle(
                     color: statusColor,
-                    fontSize: height * 0.16, // Previously 0.18
+                    fontSize: height * 0.16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          Icon(Icons.chevron_right, size: height * 0.25), // Slightly smaller arrow
+          Icon(Icons.chevron_right, size: height * 0.25),
         ],
       ),
     );

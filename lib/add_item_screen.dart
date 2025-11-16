@@ -33,7 +33,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   final picker = ImagePicker();
 
-  bool isSaving = false; // ✅ for save button loading
+  bool isSaving = false;
 
   Future<bool> _checkMediaPermission() async {
     final prefs = await SharedPreferences.getInstance();
@@ -535,7 +535,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: isSaving ? null : _saveItem, // disable while saving
+        onPressed: isSaving ? null : _saveItem,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.pink,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -555,7 +555,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       return;
     }
 
-    setState(() => isSaving = true); // ✅ start loading
+    setState(() => isSaving = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -595,7 +595,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         selectedSeason = 'Summer';
         selectedOccasion = 'Casual';
         selectedColor = null;
-        colors.clear(); // ✅ clear previously selected colors
+        colors.clear();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -607,7 +607,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
         SnackBar(content: Text("Failed to save item")),
       );
     } finally {
-      setState(() => isSaving = false); // ✅ stop loading
+      setState(() => isSaving = false);
     }
   }
 }

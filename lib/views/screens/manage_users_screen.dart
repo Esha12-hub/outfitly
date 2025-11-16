@@ -28,7 +28,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
         return Column(
           children: [
-            // 🔍 Search Bar (outside container)
             Padding(
               padding: EdgeInsets.all(horizontalPadding),
               child: CustomSearchField(
@@ -41,7 +40,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
               ),
             ),
 
-            // 📋 Firestore Users List inside container
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance.collection('users').snapshots(),
@@ -58,7 +56,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
 
                   final users = snapshot.data!.docs;
 
-                  // ✅ Apply search filter
                   final filteredUsers = users.where((doc) {
                     final user = doc.data() as Map<String, dynamic>;
                     final name = (user['name'] ?? '').toString().toLowerCase();
@@ -91,7 +88,6 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                         final userDoc = filteredUsers[index];
                         final data = userDoc.data() as Map<String, dynamic>;
 
-                        // ✅ Handle profile images: Base64, imageUrl, photoUrl, fallback
                         final imageBase64 = data['image_base64'];
                         final imageUrl = data['imageUrl'];
                         final photoUrl = data['photoUrl'];

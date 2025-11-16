@@ -21,7 +21,7 @@ class ActiveUsersScreen extends StatefulWidget {
 }
 
 class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
-  int selectedTabIndex = 1; // 0: All Users, 1: Active, 2: Blocked, 3: Regular, 4: Writer
+  int selectedTabIndex = 1;
 
   final List<Widget> _tabContents = const [
     ManageUsersScreen(),
@@ -31,7 +31,6 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
     ContentWriterScreen(),
   ];
 
-  // ✅ Logout Handler
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -82,7 +81,7 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: _handleLogout, // ✅ Logout on back press
+                    onPressed: _handleLogout,
                     icon: Image.asset(
                       'assets/images/white_back_btn.png',
                       width: screenWidth * 0.07,
@@ -101,7 +100,6 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
                   IconButton(
                     onPressed: () {
                       setState(() {
-                        // Just rebuild to refresh the stream
                       });
                     },
                     icon: const Icon(Icons.refresh, color: AppColors.textWhite),
@@ -110,7 +108,6 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
               ),
             ),
 
-            // Filter Tabs
             Container(
               height: screenHeight * 0.065,
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
@@ -143,7 +140,6 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
             ),
             SizedBox(height: screenHeight * 0.02),
 
-            // Main Content
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -196,7 +192,6 @@ class _ActiveUsersScreenState extends State<ActiveUsersScreen> {
   }
 }
 
-// ✅ Active Users Tab (Base64 + imageUrl + photoUrl + placeholder)
 class _ActiveUsersTab extends StatefulWidget {
   const _ActiveUsersTab();
 
@@ -215,7 +210,6 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
 
     return Column(
       children: [
-        // 🔍 Search Bar
         Padding(
           padding: EdgeInsets.all(screenWidth * 0.04),
           child: CustomSearchField(
@@ -228,7 +222,6 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
           ),
         ),
 
-        // 👥 Firestore Active Users List
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -274,7 +267,6 @@ class _ActiveUsersTabState extends State<_ActiveUsersTab> {
                   final role = data['role'] ?? 'User';
                   final status = data['status'] ?? 'Active';
 
-                  // ✅ Handle all image sources
                   final imageBase64 = data['image_base64'];
                   final imageUrl = data['imageUrl'];
                   final photoUrl = data['photoUrl'];

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Primary Colors
-  static const Color primary = Color(0xFFE91E63); // Pink/Magenta
-  static const Color secondary = Color(0xFF9C27B0); // Purple
+  static const Color primary = Color(0xFFE91E63);
+  static const Color secondary = Color(0xFF9C27B0);
   
   // Background Colors
   static const Color background = Color(0xFFF5F5F5);
@@ -34,13 +34,13 @@ class AppColors {
   
   // Avatar Colors
   static const List<Color> avatarColors = [
-    Color(0xFFE91E63), // Pink
-    Color(0xFF2196F3), // Blue
-    Color(0xFF4CAF50), // Green
-    Color(0xFFFF9800), // Orange
-    Color(0xFF9C27B0), // Purple
-    Color(0xFF795548), // Brown
-    Color(0xFF00BCD4), // Cyan
-    Color(0xFF607D8B), // Blue Grey
+    Color(0xFFE91E63),
+    Color(0xFF2196F3),
+    Color(0xFF4CAF50),
+    Color(0xFFFF9800),
+    Color(0xFF9C27B0),
+    Color(0xFF795548),
+    Color(0xFF00BCD4),
+    Color(0xFF607D8B),
   ];
 } 

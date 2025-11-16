@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'user_login_screen.dart';
 import 'writer_login_screen.dart';
-import 'views/screens/admin_login_screen.dart';
 import 'main.dart';
 
 class ContinueAsScreen extends StatelessWidget {
@@ -26,19 +25,17 @@ class ContinueAsScreen extends StatelessWidget {
 
     return WillPopScope(
       onWillPop: () async {
-        // When user presses physical back button
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const MyApp()),
               (route) => false,
         );
-        return false; // Prevent default back behavior (app closing)
+        return false;
       },
       child: Scaffold(
         resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
-            // Background image
             SizedBox.expand(
               child: Image.asset(
                 "assets/images/background.png",
@@ -46,7 +43,6 @@ class ContinueAsScreen extends StatelessWidget {
               ),
             ),
 
-            // Foreground content
             SafeArea(
               child: Padding(
                 padding: EdgeInsets.symmetric(
@@ -58,7 +54,6 @@ class ContinueAsScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Back button (on-screen)
                       GestureDetector(
                         onTap: () {
                           Navigator.pushAndRemoveUntil(
@@ -76,7 +71,6 @@ class ContinueAsScreen extends StatelessWidget {
 
                       SizedBox(height: spacingLarge),
 
-                      // Title & subtitle
                       Center(
                         child: Column(
                           children: [
@@ -102,7 +96,6 @@ class ContinueAsScreen extends StatelessWidget {
 
                       SizedBox(height: spacingMedium),
 
-                      // User tile
                       _roleOptionTile(
                         context,
                         icon: Icons.person,
@@ -124,7 +117,6 @@ class ContinueAsScreen extends StatelessWidget {
 
                       SizedBox(height: spacingMedium),
 
-                      // Content Writer tile
                       _roleOptionTile(
                         context,
                         icon: Icons.edit,

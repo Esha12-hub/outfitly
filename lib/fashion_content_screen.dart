@@ -17,11 +17,11 @@ class _FashionStylingContentScreenState extends State<FashionStylingContentScree
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          // Header
           Container(
             padding: const EdgeInsets.only(top: 50, left: 16, right: 16, bottom: 16),
             color: Colors.black,
@@ -35,8 +35,8 @@ class _FashionStylingContentScreenState extends State<FashionStylingContentScree
                       onTap: () => Navigator.pop(context),
                       child: Image.asset(
                         "assets/images/white_back_btn.png",
-                        height: 30,
-                        width: 30,
+                        height: width * 0.08,
+                        width: width * 0.08,
                       ),
                     ),
                     const Text(
@@ -70,7 +70,6 @@ class _FashionStylingContentScreenState extends State<FashionStylingContentScree
             ),
           ),
 
-          // Content
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
@@ -185,7 +184,6 @@ class _FashionStylingContentScreenState extends State<FashionStylingContentScree
   }
 }
 
-// ---------------- FILTER CHIP ----------------
 class FilterChipWidget extends StatelessWidget {
   final String label;
   final bool selected;
@@ -222,7 +220,6 @@ class FilterChipWidget extends StatelessWidget {
   }
 }
 
-// ---------------- CONTENT CARD ----------------
 class ContentCard extends StatelessWidget {
   final String imageBase64;
   final String title;
@@ -296,7 +293,6 @@ class ContentCard extends StatelessWidget {
   }
 }
 
-// ---------------- CONTENT DETAIL SCREEN (START) ----------------
 class ContentDetailScreen extends StatefulWidget {
   final Map<String, dynamic> article;
   const ContentDetailScreen({super.key, required this.article});
@@ -387,6 +383,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
   }
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     final bytes = (widget.article['mediaBase64'] != null && widget.article['mediaBase64'] != '')
         ? base64Decode(widget.article['mediaBase64'].split(',').last)
         : null;
@@ -397,14 +394,18 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
         backgroundColor: Colors.black,
         centerTitle: true,
         title: const Text('Fashion Content',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image.asset("assets/images/white_back_btn.png", height: 15, width: 15),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Image.asset(
+            "assets/images/white_back_btn.png",
+            width: width * 0.08,
+            height: width * 0.08,
+            fit: BoxFit.contain,
           ),
         ),
+
+
       ),
       body: Column(
         children: [
@@ -468,7 +469,6 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                         ),
 
                         const Divider(),
-                        // -------------------- COMMENTS --------------------
                         const Text(
                           'Comments',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -523,7 +523,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
 
                                     bool showReplies = false;
                                     bool showReplyBox = false;
-                                    bool showEditBox = false; // ✅ Edit mode for current user's comment
+                                    bool showEditBox = false;
                                     final editController = TextEditingController(text: commentData['text']);
 
                                     return StatefulBuilder(
@@ -577,7 +577,6 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                // 👤 Comment Row
                                                 Row(
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
@@ -591,7 +590,6 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                                                               style: const TextStyle(fontWeight: FontWeight.bold)),
                                                           const SizedBox(height: 4),
 
-                                                          // ---------------- EDIT MODE ----------------
                                                           if (showEditBox)
                                                             TextField(
                                                               controller: editController,
@@ -620,7 +618,6 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                                                             Text(commentData['text'] ?? ''),
                                                           const SizedBox(height: 6),
 
-                                                          // 💗 Like + Reply row
                                                           Wrap(
                                                             spacing: 12,
                                                             crossAxisAlignment: WrapCrossAlignment.center,
@@ -702,7 +699,6 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                                                   ],
                                                 ),
 
-                                                // 💬 Reply Input (main under comment)
                                                 if (showReplyBox)
                                                   Padding(
                                                     padding: const EdgeInsets.only(left: 40, top: 8),
@@ -751,7 +747,6 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                                                       ),
                                                     ),
                                                   ),
-                                                // 🔽 Replies Stream
                                                 StreamBuilder<QuerySnapshot>(
                                                   stream: FirebaseFirestore.instance
                                                       .collection('users')
@@ -914,7 +909,6 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> {
                                                                                 ],
                                                                               ),
 
-                                                                              // 💬 Nested reply input
                                                                               if (showNestedReplyBox)
                                                                                 Padding(
                                                                                   padding: const EdgeInsets.only(left: 40, top: 8),

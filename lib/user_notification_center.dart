@@ -31,7 +31,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -47,10 +46,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 22,
+                      fontSize: 18,
                     ),
                   ),
-                  // Icon with red dot
                   Stack(
                     children: [
                       const Icon(Icons.tune, color: Colors.white, size: 28),
@@ -86,7 +84,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ),
             ),
 
-            // Content
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -329,7 +326,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       'read': false,
       'icon': 'style',
     });
-    print("✅ Test notification added");
+    print("Test notification added");
   }
 
   Future<void> _checkAndNotifyMissingItems() async {
@@ -414,7 +411,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         );
       }
     } catch (e) {
-      print("❌ Error checking wardrobe items: $e");
+      print("Error checking wardrobe items: $e");
     }
   }
 
@@ -439,7 +436,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         'icon': 'style',
         'type': type,
       });
-      print("✅ Notification added: $title");
+      print("Notification added: $title");
     }
   }
 }

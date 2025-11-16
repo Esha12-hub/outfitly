@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class WriterArticleDetailScreen extends StatelessWidget {
   final String title;
-  final String content; // ✅ renamed from description for clarity
+  final String content;
   final String status;
   final String date;
   final String? rejectionReason;
@@ -50,7 +50,6 @@ class WriterArticleDetailScreen extends StatelessWidget {
                           fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
 
-                  // Status
                   Text(
                     "Status: $status",
                     style: TextStyle(
@@ -69,7 +68,6 @@ class WriterArticleDetailScreen extends StatelessWidget {
                       const TextStyle(fontSize: 14, color: Colors.grey)),
                   const SizedBox(height: 16),
 
-                  // ✅ Show rejection reason if rejected
                   if (status.toLowerCase() == "rejected" &&
                       rejectionReason != null &&
                       rejectionReason!.isNotEmpty) ...[
@@ -91,7 +89,6 @@ class WriterArticleDetailScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // ✅ Always show content
                   const Text(
                     "Content:",
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

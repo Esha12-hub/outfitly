@@ -41,7 +41,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          // 🔹 HEADER + FILTER CHIPS
           Container(
             padding: EdgeInsets.only(
                 top: screenHeight * 0.03,
@@ -52,7 +51,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Back + Title + Refresh
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -75,7 +73,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                   ],
                 ),
                 SizedBox(height: screenHeight * 0.015),
-                // Filter chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -93,7 +90,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
             ),
           ),
 
-          // 🔹 WHITE CONTENT AREA
           Expanded(
             child: Container(
               decoration: const BoxDecoration(
@@ -106,7 +102,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
               child: Column(
                 children: [
                   SizedBox(height: screenHeight * 0.015),
-                  // 🔸 STATUS SELECTOR
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: statuses.map((status) {
@@ -133,7 +128,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
                     }).toList(),
                   ),
                   SizedBox(height: screenHeight * 0.015),
-                  // 🔸 CONTENT LIST
                   Expanded(
                     child: writerId == null
                         ? const Center(child: Text("Not signed in"))
@@ -287,7 +281,6 @@ class _WriterContentScreenState extends State<WriterContentScreen> {
   }
 }
 
-// ---------------- FILTER CHIP ----------------
 class FilterChipWidget extends StatelessWidget {
   final String label;
   final bool selected;
@@ -327,7 +320,6 @@ class FilterChipWidget extends StatelessWidget {
   }
 }
 
-// ---------------- CONTENT CARD ----------------
 class ContentCard extends StatelessWidget {
   final String imageBase64;
   final String title;
@@ -337,7 +329,7 @@ class ContentCard extends StatelessWidget {
   final double cardHeight;
   final double titleFontSize;
   final double textFontSize;
-  final String status; // Added for draft label
+  final String status;
 
   const ContentCard({
     super.key,

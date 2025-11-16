@@ -5,7 +5,6 @@ class TransitionService {
   static const Duration _defaultDuration = Duration(milliseconds: 300);
   static const Duration _fastDuration = Duration(milliseconds: 200);
 
-  // Slide transitions
   static Widget slideTransition(
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -24,7 +23,6 @@ class TransitionService {
     );
   }
 
-  // Fade transition
   static Widget fadeTransition(
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -39,7 +37,6 @@ class TransitionService {
     );
   }
 
-  // Scale transition
   static Widget scaleTransition(
     Animation<double> animation,
     Animation<double> secondaryAnimation,
@@ -60,7 +57,6 @@ class TransitionService {
     );
   }
 
-  // Custom page route with transition
   static PageRouteBuilder createRoute(
     Widget page, {
     Duration duration = _defaultDuration,
@@ -75,7 +71,6 @@ class TransitionService {
     );
   }
 
-  // Navigation with custom transitions
   static Future<T?> navigateWithTransition<T>(
     Widget page, {
     bool replace = false,
@@ -94,7 +89,6 @@ class TransitionService {
     }
   }
 
-  // Predefined transitions
   static Future<T?> slideLeft<T>(Widget page, {bool replace = false}) {
     return navigateWithTransition<T>(
       page,

@@ -43,11 +43,9 @@ class ContentApprovalViewModel extends BaseController {
   Future<void> loadContentData() async {
     await safeAsyncCall(() async {
       _isRefreshing.value = true;
-      
-      // Simulate API call
+
       await Future.delayed(const Duration(milliseconds: 1000));
-      
-      // Mock data
+
       final mockContent = [
         ContentModel(
           id: '1',

@@ -131,7 +131,6 @@ class _UserProfileDetailsScreenState extends State<UserProfileDetailsScreen> {
                       ),
                       const SizedBox(height: 32),
 
-                      // Updated Logout Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(

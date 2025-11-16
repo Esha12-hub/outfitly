@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'writer_dashboard_screen.dart';
-import 'writer_change_password.dart'; // create or reuse existing
+import 'writer_change_password.dart';
 
 class WriterForgotPasswordScreen extends StatefulWidget {
   const WriterForgotPasswordScreen({Key? key}) : super(key: key);
@@ -23,7 +23,6 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
     );
   }
 
-  // Verify email exists and role = Content Writer
   Future<void> _verifyEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -58,7 +57,6 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
     }
   }
 
-  // Verification method sheet
   void _showVerificationOptions(DocumentSnapshot userDoc) {
     showModalBottomSheet(
       context: context,
@@ -92,18 +90,18 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
                 icon: Icons.lock_outline,
                 color: Colors.pink,
                 text: "Verify using PIN",
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  _verifyWithPin(userDoc);
+                  await _verifyWithPin(userDoc);
                 },
               ),
               _verificationOption(
                 icon: Icons.question_mark,
                 color: Colors.blue,
                 text: "Answer Security Question",
-                onTap: () {
+                onTap: () async {
                   Navigator.pop(context);
-                  _verifyWithSecurityQuestion(userDoc);
+                  await _verifyWithSecurityQuestion(userDoc);
                 },
               ),
             ],
@@ -143,143 +141,147 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
     );
   }
 
-  // Verify with PIN
   Future<void> _verifyWithPin(DocumentSnapshot userDoc) async {
     if (!userDoc.exists || userDoc['pin'] == null || userDoc['pin'].toString().isEmpty) {
       _showSnackBar("PIN not added for this account", bg: Colors.orange);
       return;
     }
 
-    _showInputDialog(
+    bool verified = await _showInputDialog(
       title: "Enter your PIN",
       hint: "Enter your PIN",
       controller: _pinController,
       obscureText: true,
       color: Colors.pink,
-      onVerify: () async {
-        if (_pinController.text.trim() == userDoc['pin'].toString()) {
-          Navigator.pop(context);
-          await _loginUser(userDoc);
-        } else {
-          _showSnackBar("Incorrect PIN!", bg: Colors.red);
-        }
-      },
     );
+
+    if (verified) {
+      await _loginUser(userDoc);
+    } else {
+      _showSnackBar("Incorrect PIN!", bg: Colors.red);
+    }
   }
 
-  // Verify with Security Question
   Future<void> _verifyWithSecurityQuestion(DocumentSnapshot userDoc) async {
     if (!userDoc.exists || userDoc['securityAnswer'] == null || userDoc['securityAnswer'].toString().isEmpty) {
       _showSnackBar("Security question not added for this account", bg: Colors.orange);
       return;
     }
 
-    _showInputDialog(
+    bool verified = await _showInputDialog(
       title: "Answer Security Question",
       hint: "Enter your answer",
       controller: _securityAnswerController,
       obscureText: true,
       color: Colors.blue,
       questionText: "What is your favorite teacher's name?",
-      onVerify: () async {
-        if (_securityAnswerController.text.trim().toLowerCase() ==
-            userDoc['securityAnswer'].toString().toLowerCase()) {
-          Navigator.pop(context);
-          await _loginUser(userDoc);
-        } else {
-          _showSnackBar("Incorrect answer!", bg: Colors.red);
-        }
-      },
     );
+
+    if (verified) {
+      await _loginUser(userDoc);
+    } else {
+      _showSnackBar("Incorrect answer!", bg: Colors.red);
+    }
   }
 
-  // Common input dialog
-  void _showInputDialog({
+  Future<bool> _showInputDialog({
     required String title,
     required String hint,
     required TextEditingController controller,
     required Color color,
-    required VoidCallback onVerify,
     String? questionText,
     bool obscureText = false,
-  }) {
-    showDialog(
+  }) async {
+    controller.clear();
+
+    if (!mounted) return false;
+
+    return await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (_) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          elevation: 5,
-          backgroundColor: Colors.transparent,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              width: MediaQuery.of(context).size.width * 0.9,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(title,
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-                  const SizedBox(height: 16),
-                  if (questionText != null)
-                    Text(
-                      questionText,
-                      style: const TextStyle(fontSize: 16, color: Colors.black87),
-                      textAlign: TextAlign.center,
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                width: MediaQuery.of(context).size.width * 0.9,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
                     ),
-                  if (questionText != null) const SizedBox(height: 16),
-                  TextField(
-                    controller: controller,
-                    obscureText: obscureText,
-                    keyboardType: title.contains("PIN") ? TextInputType.number : TextInputType.text,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(fontSize: 18, letterSpacing: 2),
-                    decoration: InputDecoration(
-                      hintText: hint,
-                      filled: true,
-                      fillColor: Colors.grey.shade100,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(title,
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
+                    if (questionText != null) const SizedBox(height: 16),
+                    if (questionText != null)
+                      Text(
+                        questionText,
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                        textAlign: TextAlign.center,
+                      ),
+                    if (questionText != null) const SizedBox(height: 16),
+                    TextField(
+                      controller: controller,
+                      obscureText: obscureText,
+                      keyboardType: title.contains("PIN") ? TextInputType.number : TextInputType.text,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 18, letterSpacing: 2),
+                      decoration: InputDecoration(
+                        hintText: hint,
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: onVerify,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (!mounted) return;
+                        bool isValid = controller.text.trim().isNotEmpty;
+                        Navigator.of(context).pop(isValid);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: color,
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text("Verify",
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                     ),
-                    child: const Text("Verify",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("Cancel",
-                        style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500)),
-                  )
-                ],
+                    TextButton(
+                      onPressed: () {
+                        if (!mounted) return;
+                        Navigator.pop(context, false);
+                      },
+                      child: const Text("Cancel",
+                          style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500)),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
-    );
+    ) ?? false;
   }
 
-  // Log in and redirect
+
   Future<void> _loginUser(DocumentSnapshot userDoc) async {
     try {
       String email = userDoc['email'];
@@ -290,36 +292,50 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
         password: password,
       );
 
-      _promptChangePassword();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const WriterDashboardScreen()),
-      );
+      if (!mounted) return;
+
+      bool changePassword = await _promptChangePassword();
+
+      if (!mounted) return;
+
+      if (changePassword) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WriterChangePasswordScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const WriterDashboardScreen()),
+        );
+      }
     } on FirebaseAuthException catch (e) {
-      _showSnackBar("Login failed: ${e.message}");
+      if (mounted) _showSnackBar("Login failed: ${e.message}");
     }
   }
 
-  // Prompt for change password
-  void _promptChangePassword() {
-    showDialog(
+  Future<bool> _promptChangePassword() async {
+    // Safety check
+    if (!mounted) return false;
+
+    bool? result = await showDialog<bool>(
       context: context,
-      builder: (_) {
+      builder: (ctx) {
         return AlertDialog(
           title: const Text("Verification Successful"),
           content: const Text("Do you want to change your password now?"),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (!mounted) return;
+                Navigator.of(ctx).pop(false);
+              },
               child: const Text("No"),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const WriterChangePasswordScreen()),
-                );
+                if (!mounted) return;
+                Navigator.of(ctx).pop(true);
               },
               child: const Text("Yes"),
             ),
@@ -327,7 +343,10 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
         );
       },
     );
+
+    return result ?? false;
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -335,7 +354,7 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          const SizedBox(height: 60),
+          const SizedBox(height: 40),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Stack(
@@ -345,13 +364,13 @@ class _WriterForgotPasswordScreenState extends State<WriterForgotPasswordScreen>
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: Image.asset("assets/images/white_back_btn.png", height: 30, width: 30),
+                    icon: Image.asset("assets/images/white_back_btn.png", height: 25, width: 25),
                   ),
                 ),
                 const Center(
                   child: Text(
                     "Writer Forgot Password",
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],

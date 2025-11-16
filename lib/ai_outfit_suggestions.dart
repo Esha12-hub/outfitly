@@ -204,10 +204,11 @@ class _OutfitScreenState extends State<OutfitScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              suggestion["reason"],
+              "Score: ${suggestion["score"]?.toStringAsFixed(2) ?? 'N/A'}",
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
+
           ],
         ),
       ),
@@ -248,7 +249,7 @@ class _OutfitScreenState extends State<OutfitScreen> {
                       "Outfit Suggestions",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20 * textScale,
+                        fontSize: 18 * textScale,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

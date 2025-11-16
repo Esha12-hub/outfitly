@@ -72,7 +72,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     final email = _emailController.text.trim();
 
-    // ✅ Restrict registration to @outfitly.com emails only
     if (!email.toLowerCase().endsWith('@outfitly.com')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -110,6 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         await _firestore.collection('users').doc(user.uid).set({
           'name': _nameController.text.trim(),
           'email': email,
+          'password': _passwordController.text.trim(), // <-- NEW: store password
           'role': _selectedRole,
           'birthday': _birthdayController.text.trim(),
           'createdAt': FieldValue.serverTimestamp(),
@@ -196,7 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.1), // placeholder
+                  SizedBox(width: screenWidth * 0.1),
                 ],
               ),
             ),
@@ -223,7 +223,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             key: _formKey,
                             child: Column(
                               children: [
-                                // Profile Image Picker
                                 Center(
                                   child: Stack(
                                     children: [

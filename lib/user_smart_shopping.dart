@@ -50,7 +50,7 @@ class _UserSmartShoppingScreenState extends State<UserSmartShoppingScreen> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: _onWillPop, // ✅ Handles both AppBar & device back button
+      onWillPop: _onWillPop,
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
@@ -122,7 +122,6 @@ class _UserSmartShoppingScreenState extends State<UserSmartShoppingScreen> {
     );
   }
 
-  // ---------------- CATEGORY GRID ----------------
   Widget _buildCategoryGrid() {
     final categories = ClothingCategory.getDefaultCategories();
 
@@ -246,7 +245,6 @@ class _UserSmartShoppingScreenState extends State<UserSmartShoppingScreen> {
     );
   }
 
-  // ---------------- CLOTHING ITEMS GRID ----------------
   Widget _buildClothingItemsGrid() {
     return Column(
       children: [
@@ -304,7 +302,6 @@ class _UserSmartShoppingScreenState extends State<UserSmartShoppingScreen> {
     );
   }
 
-  // ---------------- WIDGET HELPERS ----------------
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
@@ -356,7 +353,6 @@ class _UserSmartShoppingScreenState extends State<UserSmartShoppingScreen> {
       ),
     );
   }
-
   String _getCategoryName(String categoryId) {
     final categories = ClothingCategory.getDefaultCategories();
     final category = categories.firstWhere(

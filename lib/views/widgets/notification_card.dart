@@ -19,13 +19,12 @@ class NotificationCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100], // Light gray background like in the image
+        color: Colors.grey[100],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: Row(
         children: [
-          // Icon - T-shirt style icon
           Container(
             width: 40,
             height: 40,
@@ -34,14 +33,13 @@ class NotificationCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              Icons.checkroom, // T-shirt icon
+              Icons.checkroom,
               color: Colors.grey[600],
               size: 20,
             ),
           ),
           const SizedBox(width: 12),
 
-          // Content
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

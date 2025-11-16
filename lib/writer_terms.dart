@@ -36,7 +36,7 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    final fontSize = screenWidth * 0.04; // Responsive text size
+    final fontSize = screenWidth * 0.04;
 
     if (_isLoading) {
       return const Scaffold(
@@ -46,12 +46,10 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
         ),
       );
     }
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          // Header
           SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -62,7 +60,7 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
                 alignment: Alignment.center,
                 children: [
                   Text(
-                    "Writer Terms of Use",
+                    "Terms of Use",
                     style: TextStyle(
                       fontSize: fontSize + 2,
                       color: Colors.white,
@@ -84,8 +82,6 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
               ),
             ),
           ),
-
-          // Body
           Expanded(
             child: Container(
               width: double.infinity,
@@ -155,7 +151,6 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
 
                       SizedBox(height: screenHeight * 0.03),
 
-                      // Checkbox
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -186,8 +181,6 @@ class _WriterTermsOfUseScreenState extends State<WriterTermsOfUseScreen> {
                         ],
                       ),
                       SizedBox(height: screenHeight * 0.02),
-
-                      // Button
                       Center(
                         child: ElevatedButton(
                           onPressed: _isAccepted ? () => Navigator.pop(context) : null,

@@ -64,7 +64,6 @@ class UserCard extends StatelessWidget {
             ),
             const SizedBox(width: 14),
 
-            // User Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,8 +89,6 @@ class UserCard extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Options Menu
             PopupMenuButton<String>(
               color: Colors.white,
               shape: RoundedRectangleBorder(
@@ -103,7 +100,7 @@ class UserCard extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (_) => UserProfileScreen(
-                          uid: userId, // pass actual userId
+                          uid: userId,
                           name: name,
                           email: email,
                           role: role,
@@ -111,7 +108,6 @@ class UserCard extends StatelessWidget {
                           avatarColor: avatarColor,
                           avatarIcon: avatarIcon,
                         ),
-
                       ),
                     );
                     break;

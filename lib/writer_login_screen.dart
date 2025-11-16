@@ -18,7 +18,7 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // 👁️ Added for show/hide password
+  bool _isPasswordVisible = false;
 
   Future<void> _login() async {
     setState(() => _isLoading = true);
@@ -26,7 +26,6 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
-    // ✅ Restrict to outfitly.com domain
     if (!email.toLowerCase().endsWith('@outfitly.com')) {
       _showErrorSnackBar('Only @outfitly.com emails are allowed for writers.');
       setState(() => _isLoading = false);
@@ -55,13 +54,11 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     try {
       final googleSignIn = GoogleSignIn();
 
-      // Allow account selection again
       await googleSignIn.signOut();
 
       final googleUser = await googleSignIn.signIn();
-      if (googleUser == null) return; // User canceled login
+      if (googleUser == null) return;
 
-      // ✅ Restrict to outfitly.com domain
       if (!googleUser.email.toLowerCase().endsWith('@outfitly.com')) {
         await googleSignIn.signOut();
         _showErrorSnackBar(
@@ -105,7 +102,6 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
             'Access denied: This account is registered as a User, not a Content Writer.');
       }
     } else if (googleUser != null) {
-      // New Google Content Writer
       final userData = {
         'uid': uid,
         'name': googleUser.displayName ?? 'Unknown',
@@ -118,13 +114,11 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
       };
       await docRef.set(userData);
     } else {
-      // No document exists for non-Google login
       await FirebaseAuth.instance.signOut();
       throw Exception(
           'Access denied: User not registered as a Content Writer.');
     }
 
-    // Navigate to dashboard
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const WriterDashboardScreen()),
@@ -270,7 +264,7 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: spacingV * 2),
+              SizedBox(height: spacingV * 1),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -323,7 +317,6 @@ class _WriterLoginScreenState extends State<WriterLoginScreen> {
     );
   }
 
-  // 👇 Updated text field builder with show/hide password icon
   Widget _buildTextField(
       TextEditingController controller, String hint, double fontSize,
       {bool isPassword = false}) {

@@ -5,7 +5,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// 🔹 Local imports
 import 'favorite_screen.dart';
 import 'weather.dart';
 import 'user_profile_screen.dart';
@@ -17,7 +16,6 @@ import 'ai_outfit_suggestions.dart';
 import 'fashion_content_screen.dart';
 import 'smart_assistant_welcome.dart';
 import 'user_login_screen.dart';
-import 'smart_shopping_screen.dart';
 import 'virtual_try.dart';
 import 'user_smart_shopping.dart';
 
@@ -181,7 +179,6 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                // Black container with background image & overlay
                 Container(
                   height: height * 0.42,
                   padding: EdgeInsets.all(width * 0.04),
@@ -191,7 +188,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                     image: const DecorationImage(
                       image: AssetImage('assets/images/overlay1.jpeg'),
                       fit: BoxFit.cover,
-                      alignment: Alignment(-0.3, 0), // X-axis left, Y-axis center
+                      alignment: Alignment(-0.3, 0),
                     )
 
                   ),
@@ -234,7 +231,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                               SizedBox(width: width * 0.03),
                               Text('Hi, $_username',
                                   style: TextStyle(
-                                      color: Colors.white, fontSize: width * 0.045)),
+                                      color: Colors.white, fontSize: width * 0.045,fontWeight: FontWeight.bold)),
                               const Spacer(),
                               StreamBuilder<QuerySnapshot>(
                                 stream: FirebaseFirestore.instance
@@ -285,7 +282,7 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: width * 0.06,
-                            fontWeight: FontWeight.w400,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         SizedBox(height: height * 0.015),
@@ -331,7 +328,6 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                 ),
               ],
             ),
-            // rest of the dashboard content...
             SizedBox(height: height * 0.12),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: width * 0.04),

@@ -80,7 +80,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   _buildUserProfileTile(fontSize),
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  /// ACCOUNT SETTINGS
                                   _buildSectionTitle('ACCOUNT SETTINGS', fontSize),
                                   Padding(
                                     padding: EdgeInsets.only(left: fontSize * 0.2),
@@ -111,7 +110,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  /// NOTIFICATIONS
                                   _buildSectionTitle('NOTIFICATIONS', fontSize),
                                   Padding(
                                     padding: EdgeInsets.only(left: fontSize * 0.2),
@@ -131,7 +129,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   SizedBox(height: screenHeight * 0.02),
 
-                                  /// ABOUT
                                   _buildSectionTitle('ABOUT APP', fontSize),
                                   Padding(
                                     padding: EdgeInsets.only(left: fontSize * 0.2),
@@ -155,7 +152,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                   SizedBox(height: screenHeight * 0.01),
 
-                                  /// LOGOUT BUTTON
                                   Center(
                                     child: Container(
                                       width: screenWidth * 0.6,

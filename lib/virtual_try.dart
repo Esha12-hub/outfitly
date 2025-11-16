@@ -141,8 +141,8 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
             padding: EdgeInsets.all(screenWidth * 0.02),
             child: Image.asset(
               'assets/images/white_back_btn.png',
-              width: screenWidth * 0.06,
-              height: screenWidth * 0.06,
+              width: screenWidth * 0.03,
+              height: screenWidth * 0.03,
             ),
           ),
         ),

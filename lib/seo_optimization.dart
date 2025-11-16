@@ -212,12 +212,15 @@ class _SeoAnalyzerScreenState extends State<SeoAnalyzerScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        leading: GestureDetector(
-          onTap: _handleLogout,
-          child: Padding(
-            padding: const EdgeInsets.all(9.0),
-            child: Image.asset('assets/images/white_back_btn.png',height: 10,width: 10,),
+        leading: IconButton(
+          onPressed: _handleLogout,
+          icon: Image.asset(
+            'assets/images/white_back_btn.png',
+            height: 30,
+            width: 30,
           ),
+          padding: EdgeInsets.all(0),
+          constraints: BoxConstraints(),
         ),
       ),
 

@@ -391,42 +391,52 @@ class _OutfitCalendarScreenState extends State<OutfitCalendarScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      isScrollControlled: true, // Allow full height scrolling
       builder: (context) {
         final width = MediaQuery.of(context).size.width;
-        return Container(
-          padding: EdgeInsets.all(width * 0.04),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Select an Outfit",
-                  style: TextStyle(fontSize: width * 0.045, fontWeight: FontWeight.bold)),
-              SizedBox(height: width * 0.04),
-              _wardrobeItems.isEmpty
-                  ? const Text("No wardrobe items found.")
-                  : GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: width > 600 ? 5 : 3,
-                  crossAxisSpacing: width * 0.02,
-                  mainAxisSpacing: width * 0.02,
+        final height = MediaQuery.of(context).size.height;
+
+        return SingleChildScrollView( // Prevent overflow
+          child: Container(
+            padding: EdgeInsets.all(width * 0.04),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "Select an Outfit",
+                  style: TextStyle(fontSize: width * 0.045, fontWeight: FontWeight.bold),
                 ),
-                itemCount: _wardrobeItems.length,
-                itemBuilder: (context, index) {
-                  final itemImg = _wardrobeItems[index];
-                  return GestureDetector(
-                    onTap: () {
-                      _saveOutfit(date, itemImg);
-                      Navigator.pop(context);
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: _buildImage(itemImg, fit: BoxFit.cover),
+                SizedBox(height: width * 0.04),
+                _wardrobeItems.isEmpty
+                    ? const Text("No wardrobe items found.")
+                    : SizedBox(
+                  height: height * 0.5,
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: width > 600 ? 5 : 3,
+                      crossAxisSpacing: width * 0.02,
+                      mainAxisSpacing: width * 0.02,
                     ),
-                  );
-                },
-              ),
-            ],
+                    itemCount: _wardrobeItems.length,
+                    itemBuilder: (context, index) {
+                      final itemImg = _wardrobeItems[index];
+                      return GestureDetector(
+                        onTap: () {
+                          _saveOutfit(date, itemImg);
+                          Navigator.pop(context);
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: _buildImage(itemImg, fit: BoxFit.cover),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

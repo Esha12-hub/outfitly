@@ -58,7 +58,6 @@ class BaseController extends GetxController {
     }
   }
 
-  // Safe async operation wrapper
   Future<T?> safeAsyncCall<T>(Future<T> Function() operation, {
     String? errorMessage,
     bool showLoading = true,

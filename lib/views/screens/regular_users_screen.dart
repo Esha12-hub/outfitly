@@ -42,7 +42,6 @@ class _RegularUsersScreenState extends State<RegularUsersScreen> {
                     ),
                     child: Column(
                       children: [
-                        // 🔍 Search Bar
                         Padding(
                           padding: EdgeInsets.all(horizontalPadding),
                           child: CustomSearchField(
@@ -55,7 +54,6 @@ class _RegularUsersScreenState extends State<RegularUsersScreen> {
                           ),
                         ),
 
-                        // 👥 Firestore Users List
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
@@ -78,7 +76,6 @@ class _RegularUsersScreenState extends State<RegularUsersScreen> {
 
                               final users = snapshot.data!.docs;
 
-                              // 🔍 Filter by name or email
                               final filteredUsers = users.where((doc) {
                                 final user = doc.data() as Map<String, dynamic>;
                                 final name = (user['name'] ?? '').toString().toLowerCase();

@@ -80,7 +80,7 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
   void _showDeleteConfirmation(String itemId, String itemName) {
     showDialog(
       context: context,
-      barrierDismissible: true, // Tap outside to dismiss
+      barrierDismissible: true,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 5,
@@ -154,7 +154,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -187,7 +186,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
               } else if (selectedCategory != null) {
                 selectedCategory = null;
               } else {
-                // Navigate to AdminSettingsScreen
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -198,8 +196,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
             });
           },
         ),
-
-
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -242,7 +238,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
-  // ---------------- CATEGORY GRID ----------------
   Widget _buildCategoryGrid() {
     final categories = ClothingCategory.getDefaultCategories();
 
@@ -367,7 +362,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
-  // ---------------- CLOTHING ITEMS GRID ----------------
   Widget _buildClothingItemsGrid() {
     return Column(
       children: [
@@ -427,7 +421,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
     );
   }
 
-  // ---------------- WIDGET HELPERS ----------------
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
@@ -552,7 +545,6 @@ class _SmartShoppingScreenState extends State<SmartShoppingScreen> {
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),

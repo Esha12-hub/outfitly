@@ -22,8 +22,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<String> xLabels = [];
   bool isLoading = true;
 
-  // Real metrics
-  int dailyActiveUsers = 0; // Latest day's value
+  int dailyActiveUsers = 0;
   int totalNewSignups = 0;
   String sessionDuration = '0m 0s';
 
@@ -33,7 +32,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     fetchAnalytics();
   }
 
-  // ✅ Logout confirmation dialog
   Future<void> _handleLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -127,7 +125,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         setState(() {
           chartPoints = points;
           xLabels = dates;
-          dailyActiveUsers = latestActiveUsers; // Latest day's active users
+          dailyActiveUsers = latestActiveUsers;
           totalNewSignups = 0;
           sessionDuration = '0m 0s';
           isLoading = false;
@@ -190,7 +188,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: Row(
         children: [
           IconButton(
-            onPressed: _handleLogout, // ✅ Added logout dialog trigger
+            onPressed: _handleLogout,
             icon: Image.asset('assets/images/white_back_btn.png', width: 28, height: 28),
           ),
           Expanded(
@@ -216,7 +214,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       height,
     );
   }
-
 
   Widget _buildMetricCard(
       String value,
@@ -398,9 +395,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   }
 }
 
-// -----------------------
-// Chart Painter with Y-axis labels
-// -----------------------
 class LineChartPainter extends CustomPainter {
   final List<Offset> points;
   final List<String> xLabels;
@@ -425,13 +419,11 @@ class LineChartPainter extends CustomPainter {
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
-    // Draw horizontal grid lines
     for (int i = 0; i <= 4; i++) {
       final y = size.height * i / 4;
       canvas.drawLine(Offset(30, y), Offset(size.width, y), gridPaint);
     }
 
-    // Draw Y-axis labels
     final textStyle = TextStyle(fontSize: 10, color: Colors.grey[600]);
     final textPainter = TextPainter(
       textAlign: TextAlign.right,
@@ -446,21 +438,17 @@ class LineChartPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(0, dy));
     }
 
-    // Scale points
     List<Offset> scaledPoints =
     points.map((p) => Offset(30 + p.dx * (size.width - 30), p.dy * size.height)).toList();
 
-    // Draw lines
     for (int i = 0; i < scaledPoints.length - 1; i++) {
       canvas.drawLine(scaledPoints[i], scaledPoints[i + 1], paint);
     }
 
-    // Draw dots
     for (final point in scaledPoints) {
       canvas.drawCircle(point, 4, dotPaint);
     }
 
-    // Draw X-axis labels
     for (int i = 0; i < xLabels.length; i++) {
       textPainter.text = TextSpan(text: xLabels[i], style: textStyle);
       textPainter.layout();

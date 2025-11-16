@@ -46,7 +46,6 @@ class ContentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Author and Date Section
           Padding(
             padding: EdgeInsets.all(screenWidth * 0.04),
             child: Row(
@@ -98,7 +97,6 @@ class ContentCard extends StatelessWidget {
             ),
           ),
 
-          // Image Section
           Container(
             height: screenHeight * 0.25,
             width: double.infinity,
@@ -152,7 +150,6 @@ class ContentCard extends StatelessWidget {
             ),
           ),
 
-          // Action Buttons
           Padding(
             padding: EdgeInsets.all(screenWidth * 0.04),
             child: Row(
@@ -210,8 +207,8 @@ class ContentCard extends StatelessWidget {
                             authorImageBytes: authorImageBytes,
                             readTime: '2 min read',
                             imageBytes: imageBytes,
-                            articleId: '', // Pass real articleId if needed
-                            authorUid: '', // Pass real authorUid if needed
+                            articleId: '',
+                            authorUid: '',
                             onBackPressed: () {
                               Navigator.pop(context);
                             },

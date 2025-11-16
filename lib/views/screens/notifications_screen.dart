@@ -24,7 +24,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // 🔹 Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -49,7 +48,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 22,
+                      fontSize: 20,
                     ),
                   ),
                   GestureDetector(
@@ -64,7 +63,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
             ),
 
-            // 🔹 Main Content
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -89,7 +87,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  // 🔹 Toggle Bar
   Widget _buildToggleBar() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -107,7 +104,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ),
         TextButton(
           onPressed: () {
-            // Optionally implement "Clear all"
           },
           child:
           const Text("Clear all", style: TextStyle(color: Colors.black54)),
@@ -136,7 +132,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  // 🔹 Notifications List
   Widget _buildNotificationsList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -160,7 +155,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   style: TextStyle(color: Colors.black54)));
         }
 
-        // 🔹 Group notifications
         final now = DateTime.now();
         final today = <QueryDocumentSnapshot>[];
         final yesterday = <QueryDocumentSnapshot>[];
@@ -211,7 +205,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  // 🔹 Card Design
   Widget _buildNotificationCard(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final title = data['title'] ?? 'Untitled Article';
@@ -259,7 +252,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  // 🔹 Helpers
   String _formatTime(DateTime date) {
     return DateFormat.jm().format(date);
   }

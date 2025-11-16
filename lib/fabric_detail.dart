@@ -92,7 +92,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
 
                 return Column(
                   children: [
-                    // ===== Top Bar =====
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(horizontal: padding, vertical: 18),
@@ -100,7 +99,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Back Button (Left)
                           Align(
                             alignment: Alignment.centerLeft,
                             child: IconButton(
@@ -109,7 +107,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                             ),
                           ),
 
-                          // Center Title
                           Center(
                             child: Text(
                               "$formattedName Fabric Care",
@@ -118,13 +115,12 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: titleSize,
+                                fontSize: titleSize * 0.85,
                                 letterSpacing: 0.5,
                               ),
                             ),
                           ),
 
-                          // Refresh Icon (Right)
                           Align(
                             alignment: Alignment.centerRight,
                             child: GestureDetector(
@@ -136,8 +132,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                       ),
                     ),
 
-
-                    // ===== Body =====
                     Expanded(
                       child: Container(
                         decoration: const BoxDecoration(
@@ -150,7 +144,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // ===== Image Section =====
                               Center(
                                 child: Container(
                                   height: screenHeight * 0.25,
@@ -175,8 +168,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                                 ),
                               ),
                               SizedBox(height: isTablet ? 32 : 24),
-
-                              // ===== Title =====
                               Text(
                                 "How to Care for $formattedName",
                                 style: TextStyle(
@@ -186,8 +177,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-
-                              // ===== Care Cards =====
                               _CareCard(
                                 icon: FontAwesomeIcons.water,
                                 title: "Washing",
@@ -219,7 +208,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
 
                               const SizedBox(height: 30),
 
-                              // ===== Icon Summary Row =====
                               Text(
                                 "Quick Reminders",
                                 style: TextStyle(
@@ -255,7 +243,6 @@ class _FabricDetailScreenState extends State<FabricDetailScreen> {
   }
 }
 
-// ===== Reusable Care Section Card =====
 class _CareCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -324,7 +311,6 @@ class _CareCard extends StatelessWidget {
   }
 }
 
-// ===== Small Icon + Label Component =====
 class _CareIcon extends StatelessWidget {
   final IconData icon;
   final String label;

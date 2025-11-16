@@ -37,7 +37,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     super.dispose();
   }
 
-  /// Fetch the full favorite items from the wardrobe collection
   Future<void> fetchFavoriteItems() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -53,16 +52,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     for (var doc in snapshot.docs) {
       final data = doc.data();
       final itemData = data['itemData'] as Map<String, dynamic>?;
-
       if (itemData == null) continue;
 
       itemData['id'] = itemData['itemId'] ?? doc.id;
-      final subcategory = itemData['subcategory'] ?? 'Other';
 
-      if (!grouped.containsKey(subcategory)) {
-        grouped[subcategory] = [];
-      }
-      grouped[subcategory]!.add(itemData);
+      final subcategory = (itemData['subcategory'] ?? 'Other').toString().trim();
+      final key = '$subcategory';
+      if (!grouped.containsKey(key)) grouped[key] = [];
+      grouped[key]!.add(itemData);
     }
 
     setState(() {
@@ -74,7 +71,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       isLoading = false;
     });
   }
-
 
   Future<void> fetchUserProfileImage() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -151,6 +147,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     }
   }
 
+  Future<void> _refreshFavorites() async {
+    setState(() {
+      isLoading = true;
+    });
+    await fetchFavoriteItems();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -188,16 +191,20 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                   ],
                 ),
               )
-                  : SingleChildScrollView(
-                controller: _scrollController,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: subcategories.map((subcategory) {
-                    return _buildSection(
-                      subcategory,
-                      favoriteItemsBySubcategory[subcategory]!,
-                    );
-                  }).toList(),
+                  : RefreshIndicator(
+                onRefresh: _refreshFavorites,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: subcategories.map((subcategory) {
+                      return _buildSection(
+                        subcategory,
+                        favoriteItemsBySubcategory[subcategory]!,
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
@@ -240,11 +247,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: GestureDetector(
                 onTap: () => Navigator.pop(context),
                 child: Container(
-                  height: 60, // increased tap area
+                  height: 60,
                   width: 60,
                   alignment: Alignment.center,
                   child: Transform.translate(
-                    offset: const Offset(0, -30), // visual position
+                    offset: const Offset(0, -30),
                     child: Image.asset(
                       "assets/images/white_back_btn.png",
                       height: 30,
@@ -256,13 +263,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
             ),
 
-            Align(
-              alignment: Alignment.centerRight,
-              child: Transform.translate(
-                offset: const Offset(0, -30),
-                child: const Icon(Icons.more_vert, color: Colors.white),
-              ),
-            ),
           ],
         ),
       ),

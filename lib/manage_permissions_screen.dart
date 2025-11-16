@@ -20,7 +20,6 @@ class _ManagePermissionsScreenState extends State<ManagePermissionsScreen> {
     _loadPermissions();
   }
 
-  // Load saved permission states
   Future<void> _loadPermissions() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -32,7 +31,6 @@ class _ManagePermissionsScreenState extends State<ManagePermissionsScreen> {
     });
   }
 
-  // Save permission state locally
   Future<void> _savePermissionStatus(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
@@ -40,11 +38,14 @@ class _ManagePermissionsScreenState extends State<ManagePermissionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final height = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          const SizedBox(height: 50),
+          SizedBox(height: height * 0.06),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
@@ -57,26 +58,27 @@ class _ManagePermissionsScreenState extends State<ManagePermissionsScreen> {
                     width: 30,
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Padding(
-                  padding: EdgeInsets.only(left: 40),
-                  child: Text(
-                    'Manage Permissions',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'Manage Permissions',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
+                const SizedBox(width: 30),
               ],
             ),
           ),
           Expanded(
             child: Container(
               width: double.infinity,
-              margin: const EdgeInsets.only(top: 16),
-              padding: const EdgeInsets.all(16),
+              margin: EdgeInsets.only(top: height * 0.02),
+              padding: EdgeInsets.all(width * 0.04),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -84,78 +86,75 @@ class _ManagePermissionsScreenState extends State<ManagePermissionsScreen> {
                   topLeft: Radius.circular(28),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "PERMISSIONS",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.black54,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "PERMISSIONS",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                    SizedBox(height: height * 0.015),
 
-                  // Camera Access
-                  _permissionTile(
-                    icon: Icons.camera_alt,
-                    title: "Camera Access",
-                    subtitle:
-                    "Allow app to use your camera for taking pictures.",
-                    value: cameraAccess,
-                    onChanged: (val) async {
-                      setState(() => cameraAccess = val);
-                      await _savePermissionStatus('cameraAccess', val);
-                    },
-                  ),
-
-                  // Media & Storage
-                  _permissionTile(
-                    icon: Icons.sd_storage,
-                    title: "Media & Storage",
-                    subtitle: "Access your gallery to upload wardrobe items.",
-                    value: mediaStorage,
-                    onChanged: (val) async {
-                      setState(() => mediaStorage = val);
-                      await _savePermissionStatus('mediaStorage', val);
-                    },
-                  ),
-
-                  // Notifications
-                  _permissionTile(
-                    icon: Icons.notifications,
-                    title: "Notifications",
-                    subtitle:
-                    "Get updates for outfit suggestions and reminders.",
-                    value: notifications,
-                    onChanged: (val) async {
-                      setState(() => notifications = val);
-                      await _savePermissionStatus('notifications', val);
-                    },
-                  ),
-
-
-                  // Microphone Access
-                  _permissionTile(
-                    icon: Icons.mic,
-                    title: "Microphone Access",
-                    subtitle: "Enable voice commands for your AI Assistant.",
-                    value: microphoneAccess,
-                    onChanged: (val) async {
-                      setState(() => microphoneAccess = val);
-                      await _savePermissionStatus('microphoneAccess', val);
-                    },
-                  ),
-
-                  const Spacer(),
-                  const Center(
-                    child: Text(
-                      "Version 1.1.1",
-                      style: TextStyle(color: Colors.black54),
+                    _permissionTile(
+                      icon: Icons.camera_alt,
+                      title: "Camera Access",
+                      subtitle:
+                      "Allow app to use your camera for taking pictures.",
+                      value: cameraAccess,
+                      onChanged: (val) async {
+                        setState(() => cameraAccess = val);
+                        await _savePermissionStatus('cameraAccess', val);
+                      },
                     ),
-                  )
-                ],
+
+                    _permissionTile(
+                      icon: Icons.sd_storage,
+                      title: "Media & Storage",
+                      subtitle: "Access your gallery to upload wardrobe items.",
+                      value: mediaStorage,
+                      onChanged: (val) async {
+                        setState(() => mediaStorage = val);
+                        await _savePermissionStatus('mediaStorage', val);
+                      },
+                    ),
+
+                    _permissionTile(
+                      icon: Icons.notifications,
+                      title: "Notifications",
+                      subtitle:
+                      "Get updates for outfit suggestions and reminders.",
+                      value: notifications,
+                      onChanged: (val) async {
+                        setState(() => notifications = val);
+                        await _savePermissionStatus('notifications', val);
+                      },
+                    ),
+
+                    _permissionTile(
+                      icon: Icons.mic,
+                      title: "Microphone Access",
+                      subtitle: "Enable voice commands for your AI Assistant.",
+                      value: microphoneAccess,
+                      onChanged: (val) async {
+                        setState(() => microphoneAccess = val);
+                        await _savePermissionStatus('microphoneAccess', val);
+                      },
+                    ),
+
+                    SizedBox(height: height * 0.05),
+                    Center(
+                      child: Text(
+                        "Version 1.1.1",
+                        style: TextStyle(color: Colors.black54, fontSize: width * 0.035),
+                      ),
+                    )
+                  ],
+                ),
               ),
             ),
           ),
@@ -164,7 +163,6 @@ class _ManagePermissionsScreenState extends State<ManagePermissionsScreen> {
     );
   }
 
-  // Permission switch tile
   Widget _permissionTile({
     required IconData icon,
     required String title,

@@ -18,7 +18,6 @@ class WriterContentDetailScreen extends StatefulWidget {
 class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
   String? writerId;
 
-  /// ✅ Cache user data (name, photoUrl, base64)
   final Map<String, Map<String, dynamic>> _userCache = {};
   String? activeReplyCommentId;
 
@@ -29,7 +28,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
     writerId = FirebaseAuth.instance.currentUser?.uid;
   }
 
-  /// ✅ Add reply to a specific comment
   Future<void> replyToComment(String commentId, String replyText) async {
     if (writerId == null || replyText.trim().isEmpty) return;
 
@@ -50,7 +48,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
         .add(replyData);
   }
 
-  /// ✅ Format Firestore Timestamp or DateTime
   String formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return '';
     try {
@@ -68,7 +65,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
     }
   }
 
-  /// ✅ Fetch and cache user data
   Future<Map<String, dynamic>> getUserData(String userId) async {
     if (_userCache.containsKey(userId)) {
       return _userCache[userId]!;
@@ -101,7 +97,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
     }
   }
 
-  /// ✅ Delete article with confirmation
   Future<void> deleteArticle() async {
     if (writerId == null) return;
 
@@ -229,28 +224,26 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
             fontSize: 18,
           ),
         ),
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Image.asset(
-              "assets/images/white_back_btn.png",
-              height: 8,
-              width: 8,
-            ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Image.asset(
+            "assets/images/white_back_btn.png",
+            height: 30,
+            width: 30,
           ),
         ),
+
+
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12.0),
             child: GestureDetector(
               onTap: () => setState(() {
-                // Your refresh logic here
               }),
               child: Icon(
                 Icons.refresh,
                 color: Colors.white,
-                size: 28, // you can replace with iconSize variable if defined
+                size: 28,
               ),
             ),
           ),
@@ -276,7 +269,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                     ),
                   const SizedBox(height: 16),
 
-                  /// Title + Status
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -304,8 +296,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-
-                  /// Category + Date
                   Row(
                     children: [
                       Flexible(
@@ -325,7 +315,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  /// Rejection Reason
                   if (status == 'rejected' && rejectionReason.isNotEmpty)
                     Container(
                       width: double.infinity,
@@ -353,7 +342,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                       ),
                     ),
 
-                  /// Likes
                   StreamBuilder<DocumentSnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('users')
@@ -385,7 +373,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                   const Divider(height: 30),
                   const SizedBox(height: 10),
 
-                  /// Article Description
                   Text(
                     widget.article['content'] ?? '',
                     style: TextStyle(fontSize: width * 0.04, height: 1.5),
@@ -397,8 +384,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                       TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
 
-                  /// Comments List
-                  /// Comments List
                   StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('users')
@@ -465,7 +450,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        /// Profile + Name + Comment
                                         Row(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
@@ -530,11 +514,10 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                       GestureDetector(
                                                         onTap: () {
                                                           setState(() {
-                                                            // If same comment clicked again → close
                                                             if (activeReplyCommentId == doc.id) {
                                                               activeReplyCommentId = null;
                                                             } else {
-                                                              activeReplyCommentId = doc.id; // Open reply for this comment only
+                                                              activeReplyCommentId = doc.id;
                                                             }
                                                           });
                                                         },
@@ -570,10 +553,9 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                         ),
 
                                         /// Replies
-                                        /// Replies (hidden by default, expandable like Facebook)
                                         StatefulBuilder(
                                           builder: (context, setLocalState) {
-                                            bool showReplies = false; // persistent toggle for this comment
+                                            bool showReplies = false;
 
                                             return StreamBuilder<QuerySnapshot>(
                                               stream: FirebaseFirestore.instance
@@ -596,7 +578,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                     return Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
                                                       children: [
-                                                        /// View/Hide replies toggle
                                                         GestureDetector(
                                                           onTap: () {
                                                             setReplyListState(() {
@@ -617,7 +598,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                           ),
                                                         ),
 
-                                                        /// Replies (only shown when expanded)
                                                         if (showReplies)
                                                           Column(
                                                             children: replies.map((replyDoc) {
@@ -666,7 +646,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                                         child: Column(
                                                                           crossAxisAlignment: CrossAxisAlignment.start,
                                                                           children: [
-                                                                            /// Reply content
                                                                             Row(
                                                                               crossAxisAlignment:
                                                                               CrossAxisAlignment.start,
@@ -683,7 +662,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                                                 ),
                                                                                 const SizedBox(width: 8),
 
-                                                                                /// Reply text and info
                                                                                 Expanded(
                                                                                   child: Column(
                                                                                     crossAxisAlignment:
@@ -696,7 +674,7 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                                                           color: Colors.black87,
                                                                                         ),
                                                                                         overflow:
-                                                                                        TextOverflow.ellipsis, // ✅ responsive
+                                                                                        TextOverflow.ellipsis,
                                                                                       ),
                                                                                       const SizedBox(height: 4),
                                                                                       Text(
@@ -704,11 +682,10 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                                                         style: const TextStyle(
                                                                                           color: Colors.black87,
                                                                                         ),
-                                                                                        softWrap: true, // ✅ wrap text
+                                                                                        softWrap: true,
                                                                                       ),
                                                                                       const SizedBox(height: 6),
 
-                                                                                      /// Like + Reply buttons (responsive)
                                                                                       Wrap(
                                                                                         crossAxisAlignment:
                                                                                         WrapCrossAlignment.center,
@@ -817,7 +794,7 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                                                               ],
                                                                             ),
 
-                                                                            /// Nested reply field
+                                                                            /// Nested reply
                                                                             if (showNestedReplyField)
                                                                               Padding(
                                                                                 padding: const EdgeInsets.only(
@@ -893,9 +870,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
                                         ),
 
 
-
-
-                                        /// Reply Input (only when tapped)
                                         if (showReplyField)
                                           Padding(
                                             padding: const EdgeInsets.only(left: 45, top: 8),
@@ -944,7 +918,6 @@ class _WriterContentDetailScreenState extends State<WriterContentDetailScreen> {
 
                   const SizedBox(height: 20),
 
-                  /// Edit & Delete Buttons
                   Row(
                     children: [
                       Expanded(

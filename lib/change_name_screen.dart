@@ -59,7 +59,7 @@ class _ChangeNameScreenState extends State<ChangeNameScreen> {
         builder: (context, constraints) {
           return Column(
             children: [
-              SizedBox(height: height * 0.07), // responsive top spacing
+              SizedBox(height: height * 0.06),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                 child: Row(
@@ -82,13 +82,12 @@ class _ChangeNameScreenState extends State<ChangeNameScreen> {
                           "Change Name",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20 * textScale,
+                            fontSize: 18 * textScale,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    // Add transparent icon for layout balance
                     Opacity(
                       opacity: 0,
                       child: IconButton(

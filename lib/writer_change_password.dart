@@ -29,7 +29,7 @@ class _WriterChangePasswordScreenState extends State<WriterChangePasswordScreen>
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          SizedBox(height: height * 0.07),
+          SizedBox(height: height * 0.06),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: width * 0.04),
             child: Stack(
@@ -48,7 +48,7 @@ class _WriterChangePasswordScreenState extends State<WriterChangePasswordScreen>
                 ),
                 Center(
                   child: Text(
-                    "Change Password (Writer)",
+                    "Change Password",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: isSmallScreen ? 18 : width * 0.055,

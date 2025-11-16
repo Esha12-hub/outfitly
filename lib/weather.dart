@@ -9,10 +9,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'weaher_clothes.dart';
 import 'settings_screen.dart';
 
-class WeatherPage extends StatelessWidget {
+class WeatherPage extends StatefulWidget {
   const WeatherPage({super.key});
 
-  // 🌍 Get user location
+  @override
+  State<WeatherPage> createState() => _WeatherPageState();
+}
+
+class _WeatherPageState extends State<WeatherPage> {
+  Future<Map<String, dynamic>>? _weatherFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _weatherFuture = getWeatherData();
+  }
+
   Future<Position> getUserLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) throw Exception('Location services are disabled.');
@@ -30,7 +42,6 @@ class WeatherPage extends StatelessWidget {
     return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
 
-  // 📍 Get city name from coordinates
   Future<String> getCityName(double lat, double lon) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
@@ -41,7 +52,6 @@ class WeatherPage extends StatelessWidget {
     }
   }
 
-  // ☁️ Fetch weather
   Future<Map<String, dynamic>> fetchWeather(double lat, double lon) async {
     const apiKey = '376bd53e40e29b0e441ecfa33c0f05b0';
     final url =
@@ -55,14 +65,22 @@ class WeatherPage extends StatelessWidget {
     try {
       final position = await getUserLocation();
       final cityName = await getCityName(position.latitude, position.longitude);
+
       final weather = await fetchWeather(position.latitude, position.longitude);
       weather.remove('name');
-      weather['city_name'] = (cityName.isNotEmpty && cityName != 'Unknown') ? cityName : 'Unknown';
+
+      final normalizedCity = cityName.split(',').first.trim();
+
+      weather['city_name'] =
+      (normalizedCity.isNotEmpty && normalizedCity != 'Unknown')
+          ? normalizedCity
+          : 'Unknown';
       return weather;
     } catch (e) {
       print('Error fetching weather: $e');
       const fallbackLat = 32.0836;
       const fallbackLon = 72.6711;
+
       final weather = await fetchWeather(fallbackLat, fallbackLon);
       weather.remove('name');
       weather['city_name'] = 'Sahiwal';
@@ -122,6 +140,12 @@ class WeatherPage extends StatelessWidget {
     }
   }
 
+  Future<void> _refreshWeather() async {
+    setState(() {
+      _weatherFuture = getWeatherData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -142,7 +166,7 @@ class WeatherPage extends StatelessWidget {
                   child: IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: Image.asset("assets/images/white_back_btn.png",
-                        height: screenHeight * 0.03, width: screenHeight * 0.03),
+                        height: screenHeight * 0.04, width: screenHeight * 0.04),
                   ),
                 ),
                 Text('Current Weather',
@@ -154,177 +178,181 @@ class WeatherPage extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Container(
-              width: double.infinity,
-              margin: EdgeInsets.only(top: screenHeight * 0.02),
-              padding: EdgeInsets.all(screenWidth * 0.06),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(screenWidth * 0.07),
-                  topLeft: Radius.circular(screenWidth * 0.07),
+            child: RefreshIndicator(
+              onRefresh: _refreshWeather,
+              child: Container(
+                width: double.infinity,
+                margin: EdgeInsets.only(top: screenHeight * 0.02),
+                padding: EdgeInsets.all(screenWidth * 0.06),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(screenWidth * 0.07),
+                    topLeft: Radius.circular(screenWidth * 0.07),
+                  ),
                 ),
-              ),
-              child: FutureBuilder<Map<String, dynamic>>(
-                future: getWeatherData(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting)
-                    return const Center(child: CircularProgressIndicator());
-                  if (snapshot.hasError)
+                child: FutureBuilder<Map<String, dynamic>>(
+                  future: _weatherFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting)
+                      return const Center(child: CircularProgressIndicator());
+                    if (snapshot.hasError)
+                      return Center(
+                          child: Text('Error: ${snapshot.error}',
+                              style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.04)));
+
+                    final weather = snapshot.data!;
+                    final city = weather['city_name'] ?? 'Unknown';
+                    final temp = (weather['main']?['temp'] ?? 25).toDouble();
+                    final description = weather['weather']?[0]?['description'] ?? '';
+                    final imagePath = getWeatherImage(weather);
+
+                    final isNight = imagePath.contains('clear_night');
+                    final isDay = imagePath.contains('clear.png');
+
                     return Center(
-                        child: Text('Error: ${snapshot.error}',
-                            style: TextStyle(color: Colors.red, fontSize: screenWidth * 0.04)));
-
-                  final weather = snapshot.data!;
-                  final city = weather['city_name'] ?? 'Unknown';
-                  final temp = (weather['main']?['temp'] ?? 25).toDouble();
-                  final description = weather['weather']?[0]?['description'] ?? '';
-                  final imagePath = getWeatherImage(weather);
-
-                  final isNight = imagePath.contains('clear_night');
-                  final isDay = imagePath.contains('clear.png');
-
-                  return Center(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (isNight)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                                  child: Image.asset(
-                                    'assets/images/night.jpg',
-                                    height: screenHeight * 0.15,
-                                    width: screenWidth * 0.8,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              if (isDay)
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                                  child: Image.asset(
-                                    'assets/images/day.jpg',
-                                    height: screenHeight * 0.15,
-                                    width: screenWidth * 0.8,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                                child: Image.asset(
-                                  imagePath,
-                                  height: screenHeight * 0.12,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: screenHeight * 0.015),
-                          Container(
-                            padding: EdgeInsets.all(screenWidth * 0.05),
-                            decoration: BoxDecoration(
-                              color: Colors.pink[100],
-                              borderRadius: BorderRadius.circular(screenWidth * 0.05),
-                            ),
-                            child: Column(
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Stack(
+                              alignment: Alignment.center,
                               children: [
-                                Text(city,
-                                    style: TextStyle(
-                                        fontSize: screenWidth * 0.06,
-                                        fontWeight: FontWeight.bold)),
-                                SizedBox(height: screenHeight * 0.01),
-                                Text('${temp.toStringAsFixed(1)}°C',
-                                    style: TextStyle(fontSize: screenWidth * 0.05)),
-                                SizedBox(height: screenHeight * 0.01),
-                                Text(description,
-                                    style: TextStyle(
-                                        fontStyle: FontStyle.italic,
-                                        fontSize: screenWidth * 0.045)),
-                                SizedBox(height: screenHeight * 0.015),
-                                Text("Male: ${getClothingSuggestion(temp, 'male')}",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        fontSize: screenWidth * 0.04, color: Colors.black87)),
-                                SizedBox(height: screenHeight * 0.01),
-                                Text("Female: ${getClothingSuggestion(temp, 'female')}",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                        fontSize: screenWidth * 0.04, color: Colors.black87)),
-                                SizedBox(height: screenHeight * 0.02),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: () async {
-                                      final seasonOn = await isSeasonFilteringOn();
-                                      if (seasonOn) {
-                                        Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                                builder: (_) => WeatherClothesScreen(
-                                                    temperature: temp)));
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            backgroundColor: Colors.black87,
-                                            content: RichText(
-                                              text: TextSpan(
-                                                children: [
-                                                  const TextSpan(
-                                                    text: "Season-based filtering is OFF",
-                                                    style: TextStyle(color: Colors.white),
-                                                  ),
-                                                  const WidgetSpan(
-                                                    child: SizedBox(width: 10),
-                                                  ),
-                                                  TextSpan(
-                                                    text: "Go to Settings",
-                                                    style: TextStyle(
-                                                      color: Colors.pink,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: screenWidth * 0.04,
-                                                    ),
-                                                    recognizer: TapGestureRecognizer()
-                                                      ..onTap = () {
-                                                        Navigator.push(
-                                                          context,
-                                                          MaterialPageRoute(
-                                                              builder: (_) =>
-                                                                  SettingsScreen()),
-                                                        );
-                                                      },
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            duration: const Duration(seconds: 3),
-                                          ),
-                                        );
-                                      }
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.pink,
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: screenHeight * 0.018),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(screenWidth * 0.03)),
+                                if (isNight)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                    child: Image.asset(
+                                      'assets/images/night.jpg',
+                                      height: screenHeight * 0.15,
+                                      width: screenWidth * 0.8,
+                                      fit: BoxFit.cover,
                                     ),
-                                    child: Text('Explore Wardrobe',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: screenWidth * 0.045,
-                                            fontWeight: FontWeight.bold)),
+                                  ),
+                                if (isDay)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                    child: Image.asset(
+                                      'assets/images/day.jpg',
+                                      height: screenHeight * 0.15,
+                                      width: screenWidth * 0.8,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                                  child: Image.asset(
+                                    imagePath,
+                                    height: screenHeight * 0.12,
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
+                            SizedBox(height: screenHeight * 0.015),
+                            Container(
+                              padding: EdgeInsets.all(screenWidth * 0.05),
+                              decoration: BoxDecoration(
+                                color: Colors.pink[100],
+                                borderRadius: BorderRadius.circular(screenWidth * 0.05),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(city,
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.06,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(height: screenHeight * 0.01),
+                                  Text('${temp.toStringAsFixed(1)}°C',
+                                      style: TextStyle(fontSize: screenWidth * 0.05)),
+                                  SizedBox(height: screenHeight * 0.01),
+                                  Text(description,
+                                      style: TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                          fontSize: screenWidth * 0.045)),
+                                  SizedBox(height: screenHeight * 0.015),
+                                  Text("Male: ${getClothingSuggestion(temp, 'male')}",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.04, color: Colors.black87)),
+                                  SizedBox(height: screenHeight * 0.01),
+                                  Text("Female: ${getClothingSuggestion(temp, 'female')}",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          fontSize: screenWidth * 0.04, color: Colors.black87)),
+                                  SizedBox(height: screenHeight * 0.02),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        final seasonOn = await isSeasonFilteringOn();
+                                        if (seasonOn) {
+                                          Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (_) => WeatherClothesScreen(
+                                                      temperature: temp)));
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              backgroundColor: Colors.black87,
+                                              content: RichText(
+                                                text: TextSpan(
+                                                  children: [
+                                                    const TextSpan(
+                                                      text: "Season-based filtering is OFF",
+                                                      style: TextStyle(color: Colors.white),
+                                                    ),
+                                                    const WidgetSpan(
+                                                      child: SizedBox(width: 10),
+                                                    ),
+                                                    TextSpan(
+                                                      text: "Go to Settings",
+                                                      style: TextStyle(
+                                                        color: Colors.pink,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: screenWidth * 0.04,
+                                                      ),
+                                                      recognizer: TapGestureRecognizer()
+                                                        ..onTap = () {
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                                builder: (_) =>
+                                                                    SettingsScreen()),
+                                                          );
+                                                        },
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              duration: const Duration(seconds: 3),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.pink,
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: screenHeight * 0.018),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(screenWidth * 0.03)),
+                                      ),
+                                      child: Text('Explore Wardrobe',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: screenWidth * 0.045,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             ),
           ),

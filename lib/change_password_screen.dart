@@ -30,7 +30,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         builder: (context, constraints) {
           return Column(
             children: [
-              SizedBox(height: height * 0.07), // responsive top spacing
+              SizedBox(height: height * 0.07),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                 child: Row(
@@ -53,13 +53,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           "Change Password",
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 20 * textScale,
+                            fontSize: 18 * textScale,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    // Add a transparent icon for symmetry
                     Opacity(
                       opacity: 0,
                       child: IconButton(

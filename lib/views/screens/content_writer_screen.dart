@@ -20,7 +20,7 @@ class _ContentWriterScreenState extends State<ContentWriterScreen> {
     final imageBase64 = data['image_base64'];
     final imageUrl = data['imageUrl'];
     final photoUrl = data['photoUrl'];
-    final profilePic = data['profilePic']; // sometimes stored with this name
+    final profilePic = data['profilePic'];
 
     ImageProvider? profileImage;
 
@@ -75,7 +75,6 @@ class _ContentWriterScreenState extends State<ContentWriterScreen> {
                     ),
                     child: Column(
                       children: [
-                        // 🔍 Search Bar
                         Padding(
                           padding: EdgeInsets.all(horizontalPadding),
                           child: CustomSearchField(
@@ -88,7 +87,6 @@ class _ContentWriterScreenState extends State<ContentWriterScreen> {
                           ),
                         ),
 
-                        // 📋 Firestore List
                         Expanded(
                           child: StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance

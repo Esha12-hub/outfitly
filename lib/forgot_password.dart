@@ -23,7 +23,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Verify email exists in Firestore
   Future<void> _verifyEmail() async {
     final email = _emailController.text.trim();
     if (email.isEmpty) {
@@ -52,7 +51,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
-  // Show bottom sheet with verification options
   void _showVerificationOptions(DocumentSnapshot userDoc) {
     showModalBottomSheet(
       context: context,
@@ -144,7 +142,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Verify PIN
   Future<void> _verifyWithPin(DocumentSnapshot userDoc) async {
     if (!userDoc.exists || userDoc['pin'] == null || userDoc['pin'].toString().isEmpty) {
       _showSnackBar("PIN not added for this account", bg: Colors.orange);
@@ -168,7 +165,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Verify Security Question
   Future<void> _verifyWithSecurityQuestion(DocumentSnapshot userDoc) async {
     if (!userDoc.exists || userDoc['securityAnswer'] == null || userDoc['securityAnswer'].toString().isEmpty) {
       _showSnackBar("Security question not added for this account", bg: Colors.orange);
@@ -194,7 +190,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
-  // Input Dialog
   void _showInputDialog({
     required String title,
     required String hint,
@@ -218,7 +213,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 padding: EdgeInsets.only(
                   bottom: MediaQuery.of(context).viewInsets.bottom,
                 ),
-                child: SingleChildScrollView( // ✅ Prevent overflow when keyboard opens
+                child: SingleChildScrollView(
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.all(24),
@@ -328,30 +323,24 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
 
-
-
   Future<void> _loginUser(DocumentSnapshot userDoc) async {
     try {
       String email = userDoc['email'];
-      String password = userDoc['password']; // Must match Firebase Auth password
+      String password = userDoc['password'];
 
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      _promptChangePassword(); // Optional prompt
+      _promptChangePassword();
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const WardrobeHomeScreen()),
-      );
     } on FirebaseAuthException catch (e) {
       _showSnackBar("Login failed: ${e.message}");
     }
   }
 
-  // Optional: Prompt to change password
+
   void _promptChangePassword() {
     showDialog(
       context: context,
@@ -360,10 +349,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           title: const Text("Verification Successful"),
           content: const Text("Do you want to change your password now?"),
           actions: [
+
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const WardrobeHomeScreen()),
+                );
+              },
               child: const Text("No"),
             ),
+
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -380,13 +377,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          const SizedBox(height: 60),
+          const SizedBox(height: 40),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Stack(
@@ -398,8 +396,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: Image.asset(
                       "assets/images/white_back_btn.png",
-                      height: 30,
-                      width: 30,
+                      height: 25,
+                      width: 25,
                     ),
                   ),
                 ),
@@ -408,7 +406,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     "Forgot Password",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
