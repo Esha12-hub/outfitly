@@ -40,6 +40,22 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
     requestPermissionsAndInit();
   }
 
+  // 🔄 RESET FUNCTION
+  void resetTryOn() {
+    setState(() {
+      _dressFile = null;
+      _dressPreview = null;
+      _capturedImage = null;
+
+      _dressScale = 1.0;
+      _dressX = 0.0;
+      _dressY = 0.0;
+      _dressRotation = 0.0;
+
+      _status = "Virtual Try-On reset — pick a dress!";
+    });
+  }
+
   Future<void> requestPermissionsAndInit() async {
     final status = await Permission.camera.request();
     if (!status.isGranted) {
@@ -127,6 +143,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
@@ -146,6 +163,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
             ),
           ),
         ),
+
         title: Text(
           "Virtual Try-On",
           style: TextStyle(
@@ -154,12 +172,20 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
             fontSize: screenWidth * 0.05,
           ),
         ),
+
         centerTitle: true,
+
+        actions: [
+          IconButton(
+            onPressed: resetTryOn,
+            icon: Icon(Icons.refresh, color: Colors.white, size: screenWidth * 0.065),
+          ),
+        ],
       ),
+
 
       body: Column(
         children: [
-          // Live camera preview + dress overlay
           Expanded(
             child: RepaintBoundary(
               key: _previewContainerKey,
@@ -168,6 +194,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                 children: [
                   if (_controller != null && _controller!.value.isInitialized)
                     CameraPreview(_controller!),
+
                   if (_dressPreview != null)
                     GestureDetector(
                       onScaleStart: (details) {
@@ -177,13 +204,8 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                       },
                       onScaleUpdate: (details) {
                         setState(() {
-                          // Smooth scale
                           _dressScale = _previousScale * details.scale.clamp(0.2, 5.0);
-
-                          // Smooth rotation
                           _dressRotation = _previousRotation + details.rotation;
-
-                          // Smooth movement using translation delta
                           final delta = details.focalPointDelta;
                           _dressX += delta.dx;
                           _dressY += delta.dy;
@@ -205,8 +227,6 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                       ),
                     ),
 
-
-                  // Countdown display
                   if (_countdown > 0)
                     Positioned(
                       top: screenHeight * 0.07,
@@ -231,13 +251,12 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
             ),
           ),
 
-          // Controls section
+          // CONTROL PANEL
           Container(
             width: double.infinity,
             color: Colors.white,
             padding: EdgeInsets.all(screenWidth * 0.04),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Wrap(
                   alignment: WrapAlignment.center,
@@ -257,9 +276,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.pinkAccent.shade400,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.06,
                           vertical: screenWidth * 0.03,
@@ -279,9 +296,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.pinkAccent.shade400,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.06,
                           vertical: screenWidth * 0.03,
@@ -290,7 +305,9 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                     ),
                   ],
                 ),
+
                 SizedBox(height: screenHeight * 0.015),
+
                 Text(
                   _status,
                   textAlign: TextAlign.center,
@@ -300,6 +317,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                     fontStyle: FontStyle.italic,
                   ),
                 ),
+
                 SizedBox(height: screenHeight * 0.01),
 
                 if (_capturedImage != null)
@@ -317,10 +335,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                               child: InteractiveViewer(
                                 panEnabled: true,
                                 scaleEnabled: true,
-                                child: Image.memory(
-                                  _capturedImage!,
-                                  fit: BoxFit.contain,
-                                ),
+                                child: Image.memory(_capturedImage!, fit: BoxFit.contain),
                               ),
                             ),
                           ),
@@ -334,10 +349,7 @@ class _VirtualTryOnScreenState extends State<VirtualTryOnScreen> {
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.black12),
                       ),
-                      child: Image.memory(
-                        _capturedImage!,
-                        fit: BoxFit.contain,
-                      ),
+                      child: Image.memory(_capturedImage!, fit: BoxFit.contain),
                     ),
                   ),
               ],

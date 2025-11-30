@@ -190,24 +190,6 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
           'userName': userName,
           'time': articleData['timestamp'] ?? Timestamp.now(),
         });
-
-        final commentsSnap = await FirebaseFirestore.instance
-            .collection('users/$userId/articles/${articleDoc.id}/comments')
-            .orderBy('timestamp', descending: true)
-            .get();
-
-        for (var commentDoc in commentsSnap.docs) {
-          final commentData = commentDoc.data();
-          final commentTimestamp = (commentData['timestamp'] as Timestamp).toDate();
-          if (commentTimestamp.isBefore(cutoffDate)) continue;
-
-          activities.add({
-            'type': 'comment',
-            'title': commentData['content'] ?? '',
-            'userName': userName,
-            'time': commentData['timestamp'] ?? Timestamp.now(),
-          });
-        }
       }
     }
 
@@ -216,6 +198,7 @@ class _DashboardHomeContentState extends State<_DashboardHomeContent> {
 
     return activities.take(10).toList();
   }
+
 
   @override
   Widget build(BuildContext context) {

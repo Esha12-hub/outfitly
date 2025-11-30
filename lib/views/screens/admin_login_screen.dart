@@ -138,13 +138,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                       shape: BoxShape.circle,
                       color: AppColors.primary.withOpacity(0.1),
                     ),
-                    child: Icon(
-                      Icons.person,
-                      size: width * 0.125,
-                      color: AppColors.primary,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/admin_logo.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
+
                 SizedBox(height: width * 0.05),
                 Center(
                   child: Text(

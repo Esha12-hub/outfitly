@@ -169,9 +169,10 @@ class _ArticleEditScreenState extends State<ArticleEditScreen> {
 
     return WillPopScope(
       onWillPop: () async {
-        await _handleLogout();
-        return false;
+        Navigator.pop(context);
+        return true;
       },
+
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(

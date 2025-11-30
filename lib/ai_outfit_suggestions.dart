@@ -6,6 +6,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'outfit_api.dart';
 import 'settings_screen.dart';
+import 'saved_outfit_screen.dart';
+import 'package:image/image.dart' as img;
+
+Future<String> compressBase64(String base64Str) async {
+  final bytes = base64Decode(base64Str);
+  img.Image? image = img.decodeImage(bytes);
+
+  final resized = img.copyResize(image!, width: 120);
+
+  final compressed = img.encodeJpg(resized, quality: 70);
+
+  return base64Encode(compressed);
+}
 
 class OutfitScreen extends StatefulWidget {
   const OutfitScreen({super.key});
@@ -208,12 +221,65 @@ class _OutfitScreenState extends State<OutfitScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14, color: Colors.black),
             ),
-
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () => _saveSuggestion(suggestion),
+              icon: const Icon(Icons.save,color: Colors.white,),
+              label: const Text("Save Outfit",style: TextStyle(color: Colors.white),),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.pink.shade600,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
+
+  Future<void> _saveSuggestion(Map<String, dynamic> suggestion) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final collection = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('saved_outfits');
+
+    try {
+      // Compress all images BEFORE saving them
+      final compressedShirt = await compressBase64(suggestion["shirt_base64"]);
+      final compressedPant = await compressBase64(suggestion["pant_base64"]);
+
+      String? compressedShoe;
+      if (suggestion.containsKey("shoe_base64")) {
+        compressedShoe = await compressBase64(suggestion["shoe_base64"]);
+      }
+
+      final dataToSave = {
+        "shirt_base64": compressedShirt,
+        "pant_base64": compressedPant,
+        "score": suggestion["score"],
+        "reason": suggestion["reason"],
+        "timestamp": DateTime.now(),
+      };
+
+      if (compressedShoe != null) {
+        dataToSave["shoe_base64"] = compressedShoe;
+      }
+
+      await collection.add(dataToSave);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Outfit saved successfully!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving outfit: $e")),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -357,6 +423,30 @@ class _OutfitScreenState extends State<OutfitScreen> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                         "Get Outfit Suggestions",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SavedOutfitsScreen()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.pink.shade600,
+                        minimumSize: Size.fromHeight(height * 0.06),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        "View Saved Outfits",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

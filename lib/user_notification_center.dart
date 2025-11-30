@@ -21,6 +21,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     if (userId != null) {
       _checkAndNotifyMissingItems();
+      _listenForFeedbackReplies();
     }
   }
 
@@ -83,7 +84,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ],
               ),
             ),
-
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -227,6 +227,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget _buildCardFromDoc(QueryDocumentSnapshot doc) {
     final iconStr = doc['icon'] ?? "info";
     final icon = _iconFromString(iconStr);
+
     return GestureDetector(
       onTap: () async {
         await doc.reference.update({'read': true});
@@ -415,7 +416,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
 
-
   Future<void> _addNotificationOnce({
     required String type,
     required String title,
@@ -438,5 +438,60 @@ class _NotificationScreenState extends State<NotificationScreen> {
       });
       print("Notification added: $title");
     }
+  }
+
+  void _listenForFeedbackReplies() {
+    final feedbackRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('feedback');
+
+    feedbackRef.snapshots().listen((snapshot) async {
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['replies'] is List) {
+          List replies = List.from(data['replies']);
+
+          bool arrayChanged = false;
+
+          for (int i = 0; i < replies.length; i++) {
+            final reply = Map<String, dynamic>.from(replies[i]);
+
+            if (reply['notified'] == true) continue;
+
+            await _addAdminReplyNotification(
+              feedbackId: doc.id,
+              reply: reply['message'],
+            );
+
+            reply['notified'] = true;
+            replies[i] = reply;
+            arrayChanged = true;
+          }
+
+          if (arrayChanged) {
+            await doc.reference.update({'replies': replies});
+          }
+        }
+      }
+    });
+  }
+
+  Future<void> _addAdminReplyNotification({
+    required String feedbackId,
+    required String reply,
+  }) async {
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('notifications')
+        .add({
+      'title': 'Admin replied to your feedback',
+      'message': reply,
+      'timestamp': FieldValue.serverTimestamp(),
+      'read': false,
+      'icon': 'ai',
+      'type': 'feedback_reply_$feedbackId',
+    });
   }
 }

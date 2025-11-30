@@ -208,49 +208,77 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget _buildNotificationCard(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final title = data['title'] ?? 'Untitled Article';
-    final writerName = data['writerName'] ?? 'Unknown Writer';
-    final submittedAt =
-        (data['submittedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+    final submittedAt = (data['submittedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F3F3),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              backgroundColor: Colors.white,
-              radius: 22,
-              child: Icon(Icons.article, size: 22, color: Colors.black),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("Article Submitted",
-                      style:
-                      TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text("$writerName submitted \"$title\" for approval.",
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black54)),
-                  const SizedBox(height: 4),
-                  Text(_formatTime(submittedAt),
-                      style: const TextStyle(
-                          fontSize: 10, color: Colors.grey)),
-                ],
+    // Get userId from the article's path
+    final userId = doc.reference.parent.parent!.id;
+
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+      builder: (context, userSnap) {
+        if (userSnap.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!userSnap.hasData || !userSnap.data!.exists) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F3F3),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                "Unknown Writer submitted \"$title\"",
+                style: const TextStyle(fontSize: 12, color: Colors.black54),
               ),
             ),
-          ],
-        ),
-      ),
+          );
+        }
+
+        final userData = userSnap.data!.data() as Map<String, dynamic>? ?? {};
+        final writerName = userData['name'] ?? 'Unknown Writer';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F3F3),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Colors.white,
+                  radius: 22,
+                  child: Icon(Icons.article, size: 22, color: Colors.black),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Article Submitted",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text("$writerName submitted \"$title\" for approval.",
+                          style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      const SizedBox(height: 4),
+                      Text(_formatTime(submittedAt),
+                          style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
+
 
   String _formatTime(DateTime date) {
     return DateFormat.jm().format(date);

@@ -13,6 +13,7 @@ import 'fabric_care.dart';
 import 'user_dashboard.dart';
 import 'feedback_screen.dart';
 import 'package:intl/intl.dart';
+import 'skin_tone_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -287,7 +288,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                             context,
                             MaterialPageRoute(
                                 builder: (context) =>
-                                const SkinColorPalettePage()),
+                                SkinToneScreen()),
                           );
                         }),
                     _preferenceOption("Fabric Care Advise", fontScale,

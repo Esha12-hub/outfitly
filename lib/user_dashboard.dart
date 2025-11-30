@@ -344,27 +344,27 @@ class _WardrobeHomeScreenState extends State<WardrobeHomeScreen> {
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: width * 0.04),
                 children: [
-                  categoryCard("Add Items to Wardrobe", 'assets/images/wardrobe1.png',
+                  categoryCard("Add Items to Wardrobe", 'assets/images/add_item.png',
                       onTap: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => AddItemScreen()))),
                   SizedBox(width: width * 0.03),
-                  categoryCard("AI Outfit Suggestions", 'assets/images/outfit.png',
+                  categoryCard("AI Outfit Suggestions", 'assets/images/outfit_sug.png',
                       onTap: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => const OutfitScreen()))),
                   SizedBox(width: width * 0.03),
-                  categoryCard("Virtual Try-On", 'assets/images/virtual try-on.png',
+                  categoryCard("Virtual Try-On", 'assets/images/virual_try.jpeg',
                       onTap: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => const VirtualTryOnScreen()))),
                   SizedBox(width: width * 0.03),
-                  categoryCard("Weather based Suggestions", 'assets/images/weather.png',
+                  categoryCard("Weather based Suggestions", 'assets/images/weather_main.jpeg',
                       onTap: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => const WeatherPage()))),
                   SizedBox(width: width * 0.03),
-                  categoryCard("Smart Shopping", 'assets/images/smart shopping.png',
+                  categoryCard("Smart Shopping", 'assets/images/shopping.png',
                       onTap: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => const UserSmartShoppingScreen()))),
                   SizedBox(width: width * 0.03),
-                  categoryCard("Outfit Planner", 'assets/images/Outfit-Planner.jpg',
+                  categoryCard("Outfit Planner", 'assets/images/planner.png',
                       onTap: () => Navigator.push(
                           context, MaterialPageRoute(builder: (_) => OutfitCalendarScreen()))),
                 ],

@@ -47,6 +47,7 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
             'message': data['message'] ?? '',
             'timestamp': data['timestamp'],
             'status': data['status'] ?? 'Unread',
+            'replies': data['replies'] ?? [],
             'userId': userId,
             'feedbackId': feedbackDoc.id,
           });
@@ -84,6 +85,82 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
     }
   }
 
+  Future<void> _sendReply(
+      String userId,
+      String feedbackId,
+      String replyMessage,
+      ) async {
+    try {
+      final feedbackRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('feedback')
+          .doc(feedbackId);
+
+      final feedbackDoc = await feedbackRef.get();
+      final List replies = feedbackDoc.data()?['replies'] ?? [];
+
+      replies.add({
+        'message': replyMessage,
+        'timestamp': Timestamp.now(),
+      });
+
+      await feedbackRef.update({
+        'replies': replies,
+        'status': 'Read',
+      });
+
+      _loadFeedback();
+    } catch (e) {
+      print("Error sending reply: $e");
+    }
+  }
+
+  void _showReplyDialog(Map<String, dynamic> feedback) {
+    TextEditingController replyController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text(
+            "Reply to Feedback",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: replyController,
+            maxLines: 5,
+            decoration: const InputDecoration(
+              hintText: "Enter your reply...",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (replyController.text.trim().isEmpty) return;
+
+                await _sendReply(
+                  feedback['userId'],
+                  feedback['feedbackId'],
+                  replyController.text.trim(),
+                );
+
+                Navigator.pop(context);
+              },
+              child: const Text("Send"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -109,7 +186,8 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const AdminSettingsScreen()),
+                            builder: (context) =>
+                            const AdminSettingsScreen()),
                       );
                     },
                     child: Image.asset(
@@ -118,7 +196,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                       width: screenHeight * 0.04,
                     ),
                   ),
-
                   Expanded(
                     child: Center(
                       child: Text(
@@ -130,7 +207,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                       ),
                     ),
                   ),
-
                   GestureDetector(
                     onTap: () async {
                       await _loadFeedback();
@@ -144,7 +220,6 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                 ],
               ),
             ),
-
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -169,8 +244,9 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                   itemCount: feedbackList.length,
                   itemBuilder: (context, index) {
                     final feedback = feedbackList[index];
-                    final isExpanded = selectedFeedbackId ==
-                        feedback['feedbackId'];
+                    final isExpanded =
+                        selectedFeedbackId ==
+                            feedback['feedbackId'];
 
                     return GestureDetector(
                       onTap: () async {
@@ -314,6 +390,56 @@ class _FeedbackSupportScreenState extends State<FeedbackSupportScreen> {
                   fontSize: screenHeight * 0.016,
                   fontWeight: FontWeight.w500,
                 ),
+              ),
+            ),
+
+            SizedBox(height: screenHeight * 0.02),
+            if (feedback['replies'] != null && (feedback['replies'] as List).isNotEmpty)
+              ...List<Widget>.from((feedback['replies'] as List).map((r) {
+                final ts = (r['timestamp'] as Timestamp).toDate();
+                return Container(
+                  margin: EdgeInsets.only(bottom: screenHeight * 0.01),
+                  padding: EdgeInsets.all(screenHeight * 0.015),
+                  decoration: BoxDecoration(
+                    color: Colors.pink[50],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Admin Reply:",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: screenHeight * 0.018,
+                          color: Colors.pinkAccent,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        r['message'],
+                        style: TextStyle(fontSize: screenHeight * 0.017),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "${ts.day}-${ts.month}-${ts.year} ${ts.hour}:${ts.minute.toString().padLeft(2,'0')}",
+                          style: TextStyle(
+                              fontSize: screenHeight * 0.014,
+                              color: Colors.grey[600]),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              })),
+
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () => _showReplyDialog(feedback),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.pink),
+                child: const Text("Reply",style: TextStyle(color: Colors.white),),
               ),
             ),
           ],

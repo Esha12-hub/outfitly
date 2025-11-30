@@ -149,7 +149,7 @@ class _ManagePermissionsScreenState extends State<ManagePermissionsScreen> {
                     SizedBox(height: height * 0.05),
                     Center(
                       child: Text(
-                        "Version 1.1.1",
+                        "Version 1.0.0",
                         style: TextStyle(color: Colors.black54, fontSize: width * 0.035),
                       ),
                     )
